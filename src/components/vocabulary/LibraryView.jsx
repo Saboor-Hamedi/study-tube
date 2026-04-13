@@ -1,6 +1,6 @@
-import { Loader2, Trash2 } from 'lucide-react'
+import { Loader2, Trash2, Search as SearchIcon } from 'lucide-react'
 
-export default function LibraryView({ vocab, setVocab, searchQuery, sortBy, displayLimit, setDisplayLimit, api }) {
+export default function LibraryView({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, setSortBy, displayLimit, setDisplayLimit, api }) {
   const filtered = vocab
     .filter(v => {
       const q = searchQuery.toLowerCase()
@@ -14,13 +14,45 @@ export default function LibraryView({ vocab, setVocab, searchQuery, sortBy, disp
     })
 
   return (
-    <div className="grid gap-6 p-6 lg:p-8">
-      {vocab.length === 0 ? (
-        <div className="py-24 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
-          <p className="text-muted italic text-sm">Your library is empty. Highlight or save words from a video to start!</p>
+    <div className="w-full flex-1 flex flex-col p-6 lg:p-8 select-text">
+      {/* Persistent Library Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sticky top-0 z-10 bg-[#0a0a0a] pb-6 mb-2">
+        <div className="space-y-1">
+           <h1 className="text-2xl font-bold text-white uppercase tracking-wider text-sm opacity-50">Study Library</h1>
+           <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{vocab.length} Words Collected</p>
         </div>
-      ) : (
-        <>
+        
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 sm:w-64 group">
+             <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted group-focus-within:text-accent transition-colors" />
+             <input 
+               type="text"
+               placeholder="Filter Library..."
+               value={searchQuery}
+               onChange={e => setSearchQuery(e.target.value)}
+               className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-11 pr-4 py-3 text-sm focus:border-accent/50 focus:bg-white/[0.07] transition-all outline-none placeholder:text-muted/50 text-white"
+             />
+          </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setSortBy(sortBy === 'date' ? 'az' : 'date')}
+              className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted hover:text-white hover:bg-white/[0.08] transition-all"
+            >
+              <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+              {sortBy === 'date' ? 'Latest' : 'A-Z'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6">
+        {vocab.length === 0 ? (
+          <div className="py-24 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
+            <p className="text-muted italic text-sm">Your library is empty. Highlight or save words from a video to start!</p>
+          </div>
+        ) : (
+          <>
           {filtered.slice(0, displayLimit).map((v, i) => (
             <div key={i} className="group bg-[#080808] border border-white/5 p-6 sm:p-8 rounded-[2rem] hover:border-white/10 transition-all flex flex-col gap-6 relative">
               <div className="absolute top-6 right-6">
@@ -88,6 +120,7 @@ export default function LibraryView({ vocab, setVocab, searchQuery, sortBy, disp
           )}
         </>
       )}
+      </div>
     </div>
   )
 }
