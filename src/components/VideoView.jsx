@@ -136,7 +136,16 @@ export default function VideoView({
     
     try {
       const fullMeta = await api.metadata(v.url)
-      setPreview(fullMeta)
+      
+      // Strict title selection: prioritise fullMeta if it's substantial, 
+      // otherwise stick with search result title (v.title)
+      const isGeneric = (t) => !t || t.toLowerCase() === 'youtube video'
+      const finalTitle = isGeneric(fullMeta.title) ? v.title : fullMeta.title
+
+      setPreview({
+        ...fullMeta,
+        title: finalTitle
+      })
       setQuality(fullMeta.qualityOptions?.[0]?.value || '')
       api.getTranscript(fullMeta.id).then(t => setTranscript(t)).catch(() => {})
     } catch (e) {
@@ -150,47 +159,60 @@ export default function VideoView({
     setQuery(val);
   }
 
+  const videoViewSubtext = preview ? `Analyzing Content...` : (busy ? 'Scanning YouTube...' : 'Ready for deep search')
+
+
   return (
     <div className="flex flex-col h-full bg-[#0a0a0a]">
-      {/* Universal Header */}
-      {!preview && (
-        <header className="sticky top-0 z-20 bg-[#0a0a0a] border-b border-white/5 py-2">
-          <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 gap-3 sm:gap-8">
-            <div className="flex items-center gap-2 sm:gap-6 shrink-0 md:min-w-[200px]">
-              <div className="flex items-baseline gap-2 sm:gap-3">
-                <h2 className="text-[18px] font-black text-white tracking-tighter">StudyTube</h2>
-              </div>
-            </div>
-
-            <div className="flex-1 max-w-[600px] flex items-center">
-              <div className="flex-1 flex items-stretch h-9 sm:h-11 border border-white/10 rounded-[5px] bg-white/[0.03] overflow-hidden focus-within:border-accent/40 transition-all shadow-inner cursor-text">
-                <input
-                  value={query}
-                  onChange={doExternalSearch}
-                  onKeyDown={onEnter}
-                  placeholder="Paste URL or keyword..."
-                  className="flex-1 bg-transparent text-[12px] sm:text-sm text-white placeholder:text-muted/40 outline-none px-3 sm:px-5 py-1"
-                  spellCheck={false}
-                />
-                {query && (
-                  <button onClick={() => { setQuery(''); setResults([]) }} className="text-muted/40 hover:text-white px-2 transition-colors">
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-                <button
-                  onClick={() => isUrl ? loadUrl(query.trim()) : search()}
-                  disabled={busy || !query.trim()}
-                  className="flex items-center justify-center px-4 sm:px-6 bg-white/5 border-l border-white/5 hover:bg-accent hover:text-white transition-all disabled:opacity-30"
-                >
-                  <Search className="h-3 w-3 sm:h-4 sm:w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="hidden sm:flex md:min-w-[200px]" />
+      {/* Universal Standardized Header (Always Visible) */}
+      <div className="flex items-center justify-between px-8 py-3 border-b border-white/5 bg-[#0f0f0f] sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <div 
+            onClick={() => preview && setPreview(null)}
+            className={`p-2 rounded-xl transition-all cursor-pointer ${preview ? 'bg-accent/10 text-accent hover:bg-accent hover:text-white' : (busy ? 'bg-accent/20 text-accent animate-pulse' : 'bg-white/5 text-muted')}`}
+          >
+            {preview ? <ChevronLeft className="h-4 w-4" /> : <Search className="h-4 w-4" />}
           </div>
-        </header>
-      )}
+          <div className="hidden sm:block">
+            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">{preview ? 'Video Analysis' : 'Research Discovery'}</h2>
+            <p className="text-[9px] text-muted font-bold uppercase tracking-widest">
+              {preview ? videoViewSubtext : (busy ? 'Scanning YouTube...' : 'Ready for deep search')}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 max-w-xl px-8">
+          <div className="relative group">
+            <input 
+              type="text"
+              value={query}
+              onChange={doExternalSearch}
+              onKeyDown={onEnter}
+              placeholder={preview ? "Search for another video..." : "Paste URL or keyword to begin discovery..."}
+              className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-6 pr-12 text-[13px] text-white outline-none focus:border-accent/40 focus:bg-white/[0.07] transition-all lowercase"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+               {busy ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Search className="h-4 w-4 text-muted group-focus-within:text-accent" />}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-white/5 p-1 rounded-lg">
+            <button 
+              onClick={() => setPreview(null)} 
+              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${!preview ? 'bg-white/10 text-white shadow-lg' : 'text-muted hover:text-white'}`}
+            >
+              Discovery
+            </button>
+            <button 
+              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${preview ? 'bg-white/10 text-white shadow-lg' : 'text-muted/10 cursor-not-allowed'}`}
+            >
+              Analysis
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content Area */}
       {preview ? (
@@ -239,7 +261,7 @@ export default function VideoView({
             ) : !busy && (
               <div className="flex flex-col items-center justify-center py-40 text-center gap-6">
                 <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center">
-                  <Tv2 className="h-6 w-6 text-muted/30" />
+                  <Search className="h-6 w-6 text-muted/30" />
                 </div>
                 <p className="text-sm text-muted/50 max-w-sm">Search for a video or paste a URL to begin.</p>
               </div>

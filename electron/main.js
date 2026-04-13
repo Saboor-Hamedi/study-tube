@@ -73,9 +73,12 @@ async function fetchMetadata(url) {
   const thumbnail =
     [...(details.thumbnails ?? [])].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url || ''
 
-  return {
+    const rawTitle = details.title || ''
+    const cleanTitle = (rawTitle === 'YouTube Video' || rawTitle === 'youtube video') ? '' : rawTitle
+
+    return {
     id: details.videoId,
-    title: details.title || 'YouTube Video',
+    title: cleanTitle,
     duration: Number(details.lengthSeconds) || 0,
     thumbnail,
     url,
@@ -271,7 +274,7 @@ function registerIpcHandlers() {
       try {
         const videoId = ytdl.getURLVideoID(canonical)
         return {
-          id: videoId, title: 'YouTube Video', duration: 0,
+          id: videoId, title: '', duration: 0,
           thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
           url: canonical, author: '', views: 0,
           qualityOptions: DEFAULT_QUALITY_OPTIONS,

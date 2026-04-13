@@ -135,14 +135,25 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
     setTimeout(() => {
       const s = window.getSelection()
       const text = s?.toString().trim()
+      
       if (text && text.length > 0 && text.length < 2000 && s.rangeCount > 0) {
         const range = s.getRangeAt(0)
-        const rect = range.getBoundingClientRect()
-        setSelection({ text, x: rect.left + rect.width / 2, y: rect.top - 10 })
+        const rects = range.getClientRects()
+        if (rects.length === 0) return
+        
+        // Use the first rect to avoid jumping to (0,0)
+        const rect = rects[0]
+        if (rect.left === 0 && rect.top === 0) return
+
+        setSelection({ 
+          text, 
+          x: rect.left + rect.width / 2, 
+          y: rect.top - 12 
+        })
       } else {
-        setSelection(null)
+        if (selection) setSelection(null)
       }
-    }, 50)
+    }, 60)
   }
 
   const handleStop = async () => {
@@ -198,15 +209,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
         )}
       </AnimatePresence>
 
-      {/* Top Banner Navigation (No Modal) */}
-      <div className="flex items-center gap-4 px-6 py-4 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-20">
-        <button onClick={onClose} className="flex items-center gap-2 text-muted hover:text-white px-3 py-1.5 rounded bg-white/[0.03] transition-all">
-          <ChevronLeft className="h-4 w-4" /> 
-          <span className="text-xs font-bold uppercase tracking-widest">Back to Search</span>
-        </button>
-        <div className="h-4 w-px bg-white/10" />
-        <h2 className="text-sm font-bold text-white truncate max-w-xl">{video.title}</h2>
-      </div>
+
 
       <div className="flex flex-1 overflow-hidden lg:flex-row flex-col max-w-[1400px] w-full mx-auto p-4 lg:p-6 gap-6">
         {/* Left Side: Video & Transcript */}

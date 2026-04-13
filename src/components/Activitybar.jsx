@@ -24,7 +24,10 @@ export default function Activitybar({ view, setView }) {
         
         {/* Active Indicator Line */}
         {active && (
-          <motion.div layoutId="sidebar-active" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-accent rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+          <motion.div 
+            layoutId="sidebar-active" 
+            className="absolute left-0 top-2 w-0.5 h-8 bg-accent rounded-r-full" 
+          />
         )}
 
         {/* Tooltip */}
