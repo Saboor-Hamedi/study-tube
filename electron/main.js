@@ -474,15 +474,15 @@ function registerIpcHandlers() {
           messages: [
             { 
               role: 'system', 
-              content: `You are an expert English Professor. For the provided phrase, return a deep analysis. 
+              content: `You are an English dictionary. Keep all facts extremely short, simple, and directly to the point. No conversational filler or long paragraphs.
               STRICT RULE: DO NOT use markdown like **bold**, __italic__, or codes. Use PLAIN TEXT ONLY.
-              1. Classification: [Noun/Verb/Adj/Adv/Phrase/etc.]
+              1. Classification: [Noun/Verb/Adj/Adv/Phrase/etc. max 1-2 words]
               2. Pronunciation: [Simple phonetic guide, e.g., /su-perb/]
-              3. Definition: [Deep explanation]
-              4. Grammar: [Tense and structural notes]
-              5. Usage: [Formal/Informal/Colloquial context]
-              6. Synonyms: [List 5 synonyms separated by commas]
-              7. Examples: [3 natural sentences, each on a new line started with •]` 
+              3. Definition: [A very short, simple 1-sentence definition max 15 words]
+              4. Grammar: [Very brief grammar note, max 1 sentence]
+              5. Usage: [Formal/Informal/Slang max 1-2 words]
+              6. Synonyms: [List 3 synonyms separated by commas]
+              7. Examples: [1-2 short simple sentences, each on a new line started with •]` 
             },
             { role: 'user', content: text }
           ]

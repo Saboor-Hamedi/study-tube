@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Play, Pause, Volume2, VolumeX, Maximize2, X,
   Download, FolderOpen, CheckCircle, ChevronLeft,
-  Clock, Plus, Sparkles, MessageCircle
+  Clock, Plus, Sparkles, MessageCircle, StopCircle
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
@@ -109,6 +109,8 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
   const [seekTo, setSeekTo] = useState(null)
   const [savedLines, setSavedLines] = useState(new Set())
   const [chatInp, setChatInp] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const [selection, setSelection] = useState(null)
   const [messages, setMessages] = useState([
     { role: 'assistant', content: "Hi! I'm your AI English Tutor. I've read the transcript for this video. Ask me anything!" }
   ])
@@ -126,14 +128,36 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
   const handleAddVocab = (line, idx) => {
     const uniqueId = `${idx}-${line.text.slice(0, 10)}`
     setSavedLines(prev => new Set([...prev, uniqueId]))
-    onAddVocab({ text: line.text, videoTitle: video.title, timestamp: line.start })
+    onAddVocab({ text: line.text, videoTitle: video.title, timestamp: line.start, skipAI: true, type: 'sentence' })
+  }
+
+  const captureSelection = () => {
+    setTimeout(() => {
+      const s = window.getSelection()
+      const text = s?.toString().trim()
+      if (text && text.length > 0 && text.length < 50 && s.rangeCount > 0) {
+        const range = s.getRangeAt(0)
+        const rect = range.getBoundingClientRect()
+        setSelection({ text, x: rect.left + rect.width / 2, y: rect.top - 10 })
+      } else {
+        setSelection(null)
+      }
+    }, 50)
+  }
+
+  const handleStop = async () => {
+    if (api) {
+      await api.stopAI?.()
+      setIsTyping(false)
+    }
   }
 
   const sendMessage = async () => {
-    if (!chatInp.trim() || !api) return
+    if (!chatInp.trim() || !api || isTyping) return
     const text = chatInp
     setMessages(prev => [...prev, { role: 'user', content: text }])
     setChatInp('')
+    setIsTyping(true)
     
     try {
       const tr = (transcript || []).map(t => t.text).join(' ').slice(0, 5000)
@@ -144,11 +168,36 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
       }
     } catch (e) {
       console.error(e)
+    } finally {
+      setIsTyping(false)
     }
   }
 
   return (
-    <div className="flex-1 flex flex-col w-full bg-[#0a0a0a]">
+    <div className="flex-1 flex flex-col w-full bg-[#0a0a0a]" onMouseUp={captureSelection} onDoubleClick={captureSelection}>
+      <AnimatePresence>
+        {selection && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed z-[100] -translate-x-1/2 -translate-y-full"
+            style={{ left: selection.x, top: selection.y }}
+          >
+            <button 
+              onClick={() => {
+                onAddVocab({ text: selection.text, videoTitle: video.title, timestamp: curTime })
+                window.getSelection()?.removeAllRanges()
+                setSelection(null)
+              }}
+              className="px-4 py-2 bg-accent text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-2xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
+            >
+              <Sparkles className="h-3 w-3" /> Save Word
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top Banner Navigation (No Modal) */}
       <div className="flex items-center gap-4 px-6 py-4 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-20">
         <button onClick={onClose} className="flex items-center gap-2 text-muted hover:text-white px-3 py-1.5 rounded bg-white/[0.03] transition-all">
@@ -216,7 +265,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
                      <div key={i} className={`p-4 rounded-xl border border-transparent transition-all group cursor-pointer ${isActive ? 'bg-accent/10 border-accent/30' : 'bg-white/[0.02] hover:bg-white/[0.05] border-white/5'}`} onClick={() => setSeekTo(line.start / 1000)}>
                        <div className="flex justify-between items-start gap-4">
                          <span className="text-[10px] font-mono text-muted/40 mt-1">{fmtTime(line.start / 1000)}</span>
-                         <p className={`flex-1 text-sm ${isActive ? 'text-white' : 'text-slate-300'}`}>{line.text}</p>
+                         <p className={`flex-1 text-sm select-text ${isActive ? 'text-white' : 'text-slate-300'}`}>{line.text}</p>
                          <button onClick={(e) => { e.stopPropagation(); handleAddVocab(line, i) }} className={`p-2 rounded-lg transition-all ${isSaved ? 'text-green-500 bg-green-500/10' : 'text-muted hover:text-accent hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}>
                            {isSaved ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                          </button>
@@ -242,10 +291,16 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
                 </div>
                 <div className="pt-4 border-t border-white/10 mt-4 relative">
                   <input value={chatInp} onChange={e => setChatInp(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                    placeholder="Ask about this video..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white outline-none focus:border-accent/50" />
-                  <button onClick={sendMessage} className="absolute right-2 top-6 h-8 w-8 bg-accent text-white rounded flex items-center justify-center hover:bg-white hover:text-black transition-all">
-                    <MessageCircle className="h-4 w-4" />
-                  </button>
+                    placeholder="Ask about this video..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white outline-none focus:border-accent/50" disabled={isTyping} />
+                  {isTyping ? (
+                    <button onClick={handleStop} className="absolute right-2 top-6 h-8 w-8 bg-red-500/20 text-red-500 rounded flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+                      <StopCircle className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button onClick={sendMessage} className="absolute right-2 top-6 h-8 w-8 bg-accent text-white rounded flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                      <MessageCircle className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
