@@ -36,7 +36,7 @@ export default function Activitybar({ view, setView }) {
   }
 
   return (
-    <div className="w-[68px] h-full shrink-0 bg-[#080808] border-r border-white/5 flex flex-col items-center py-6 relative z-30">
+    <div className="w-[68px] h-full shrink-0 bg-[#080808] border-r border-white/5 flex flex-col items-center pt-1 pb-6 relative z-30">
       <div className="flex flex-col gap-6 w-full items-center">
         {mainTabs.map(renderTab)}
       </div>

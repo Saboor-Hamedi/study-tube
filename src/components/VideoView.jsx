@@ -141,16 +141,16 @@ export default function VideoView({ savePath, setSavePath, onAddVocab }) {
     <div className="flex flex-col h-full bg-[#0a0a0a]">
       {/* Universal Header */}
       {!preview && (
-        <header className="sticky top-0 z-20 bg-[#0a0a0a] border-b border-white/5 pt-2 sm:pt-4 pb-2 sm:pb-4">
+        <header className="sticky top-0 z-20 bg-[#0a0a0a] border-b border-white/5 py-2">
           <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 gap-3 sm:gap-8">
             <div className="flex items-center gap-2 sm:gap-6 shrink-0 md:min-w-[200px]">
               <div className="flex items-baseline gap-2 sm:gap-3">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tighter">StudyTube</h2>
+                <h2 className="text-[18px] font-black text-white tracking-tighter">StudyTube</h2>
               </div>
             </div>
 
             <div className="flex-1 max-w-[600px] flex items-center">
-              <div className="flex-1 flex items-stretch h-9 sm:h-11 border border-white/10 rounded-[5px] bg-white/[0.03] overflow-hidden focus-within:border-accent/40 transition-all shadow-inner">
+              <div className="flex-1 flex items-stretch h-9 sm:h-11 border border-white/10 rounded-[5px] bg-white/[0.03] overflow-hidden focus-within:border-accent/40 transition-all shadow-inner cursor-text">
                 <input
                   value={query}
                   onChange={doExternalSearch}

@@ -43,30 +43,30 @@ export default function App() {
       <Activitybar view={view} setView={setView} />
       
       <main className="flex-1 relative overflow-hidden">
-        {/* Search View (Persistent Layer) */}
-        <div className={`absolute inset-0 ${view !== 'search' ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
-          <VideoView savePath={savePath} setSavePath={setSavePath} onAddVocab={addVocab} />
-        </div>
-
-        {/* Other views (Scrollable Layer) */}
-        <div className={`absolute inset-0 overflow-y-auto scrollbar-thin ${view === 'search' ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
-          <div className="w-full mx-auto h-full">
-            <div className={view !== 'vocab' ? 'hidden' : 'h-full'}>
-              <LibraryView 
-                vocab={vocab} setVocab={setVocab}
-                searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-                sortBy={sortBy} setSortBy={setSortBy}
-                displayLimit={displayLimit} setDisplayLimit={setDisplayLimit}
-                api={api}
-              />
-            </div>
-            
-            <div className={view !== 'settings' ? 'hidden' : 'p-6 lg:p-8'}>
-              <h1 className="text-2xl font-bold mb-4 text-white">Settings</h1>
-              <p className="text-muted">Configuration coming soon...</p>
-            </div>
+        {view === 'search' && (
+          <div className="absolute inset-0">
+            <VideoView savePath={savePath} setSavePath={setSavePath} onAddVocab={addVocab} />
           </div>
-        </div>
+        )}
+
+        {view === 'vocab' && (
+          <div className="absolute inset-0 overflow-y-auto scrollbar-thin">
+            <LibraryView 
+              vocab={vocab} setVocab={setVocab}
+              searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+              sortBy={sortBy} setSortBy={setSortBy}
+              displayLimit={displayLimit} setDisplayLimit={setDisplayLimit}
+              api={api}
+            />
+          </div>
+        )}
+
+        {view === 'settings' && (
+          <div className="absolute inset-0 overflow-y-auto scrollbar-thin p-6 lg:p-8">
+            <h1 className="text-2xl font-bold mb-4 text-white">Settings</h1>
+            <p className="text-muted">Configuration coming soon...</p>
+          </div>
+        )}
       </main>
     </div>
   )
