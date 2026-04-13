@@ -12,13 +12,17 @@ function fmtViews(n) {
   return n + ' views'
 }
 
-export default function VideoView({ savePath, setSavePath, onAddVocab }) {
+export default function VideoView({ 
+  savePath, setSavePath, onAddVocab, 
+  query, setQuery, 
+  results, setResults, 
+  preview, setPreview, 
+  transcript, setTranscript,
+  loadingTranscript, setLoadingTranscript,
+  showToast
+}) {
   const api = window.youtubeAPI
-  const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(false)
-  const [results, setResults] = useState([])
-  const [preview, setPreview] = useState(null)
-  const [transcript, setTranscript] = useState(null)
   const [quality, setQuality] = useState('')
   const [progress, setProgress] = useState({})
   const [taskId, setTaskId] = useState(null)
@@ -48,14 +52,23 @@ export default function VideoView({ savePath, setSavePath, onAddVocab }) {
   async function loadUrl(url) {
     setBusy(true)
     setTranscript(null)
+    setLoadingTranscript(true)
     try {
       const meta = await api.metadata(url)
       setPreview(meta)
       setResults([])
       setQuality(meta.qualityOptions?.[0]?.value || '')
-      api.getTranscript(meta.id).then(t => setTranscript(t)).catch(() => {})
+      api.getTranscript(meta.id)
+        .then(t => {
+          setTranscript(t)
+          setLoadingTranscript(false)
+        })
+        .catch(() => {
+          setLoadingTranscript(false)
+        })
     } catch (e) {
       console.error(e)
+      setLoadingTranscript(false)
     } finally {
       setBusy(false)
     }
@@ -186,7 +199,9 @@ export default function VideoView({ savePath, setSavePath, onAddVocab }) {
             video={preview}
             onClose={() => setPreview(null)}
             transcript={transcript}
+            loadingTranscript={loadingTranscript}
             onAddVocab={onAddVocab}
+            showToast={showToast}
             quality={quality}
             onQualityChange={setQuality}
             savePath={savePath}

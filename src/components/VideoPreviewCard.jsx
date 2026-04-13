@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Play, Pause, Volume2, VolumeX, Maximize2, X,
   Download, FolderOpen, CheckCircle, ChevronLeft,
-  Clock, Plus, Sparkles, MessageCircle, StopCircle
+  Clock, Plus, Sparkles, MessageCircle, StopCircle, Library
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
@@ -101,7 +101,7 @@ function VideoPlayer({ src, thumbnail, title, onClose, seekTo, onTimeUpdate }) {
   )
 }
 
-export default function VideoPreviewCard({ video, onClose, transcript, onAddVocab, quality, onQualityChange, savePath, onPickPath, onDownload, onCancel, progress, downloading }) {
+export default function VideoPreviewCard({ video, onClose, transcript, loadingTranscript, onAddVocab, quality, onQualityChange, savePath, onPickPath, onDownload, onCancel, progress, downloading, showToast }) {
   const api = window.youtubeAPI
   const [activeTab, setActiveTab] = useState('learn')
   const [streamUrl, setStreamUrl] = useState(null)
@@ -135,7 +135,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
     setTimeout(() => {
       const s = window.getSelection()
       const text = s?.toString().trim()
-      if (text && text.length > 0 && text.length < 50 && s.rangeCount > 0) {
+      if (text && text.length > 0 && text.length < 2000 && s.rangeCount > 0) {
         const range = s.getRangeAt(0)
         const rect = range.getBoundingClientRect()
         setSelection({ text, x: rect.left + rect.width / 2, y: rect.top - 10 })
@@ -186,13 +186,13 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
           >
             <button 
               onClick={() => {
-                onAddVocab({ text: selection.text, videoTitle: video.title, timestamp: curTime })
+                onAddVocab({ text: selection.text, videoTitle: video.title, timestamp: curTime, skipAI: selection.text.split(' ').length > 8 })
                 window.getSelection()?.removeAllRanges()
                 setSelection(null)
               }}
               className="px-4 py-2 bg-accent text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-2xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
             >
-              <Sparkles className="h-3 w-3" /> Save Word
+              <Sparkles className="h-3 w-3" /> {selection.text.split(' ').length > 4 ? 'Save Selection' : 'Save Word'}
             </button>
           </motion.div>
         )}
@@ -254,27 +254,54 @@ export default function VideoPreviewCard({ video, onClose, transcript, onAddVoca
 
           <div className="flex-1 overflow-hidden relative">
             {activeTab === 'learn' && (
-              <div className="absolute inset-0 overflow-y-auto p-6 scrollbar-thin space-y-4">
-                 <div className="flex items-center justify-between mb-2">
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Live Transcript</p>
+              <div className="absolute inset-0 flex flex-col overflow-hidden">
+                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.01]">
+                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Reader Mode</p>
+                   <button 
+                     onClick={() => {
+                        const fullText = (transcript || []).map(t => t.text).join(' ')
+                        onAddVocab({ text: video.title, definition: fullText, type: 'Collection', videoTitle: video.title, date: new Date().toISOString(), skipAI: true })
+                        showToast(`Collection "${video.title}" saved!`)
+                     }}
+                     className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
+                   >
+                     <Library className="h-3.5 w-3.5" />
+                     Save as Collection
+                   </button>
                  </div>
-                 {transcript?.length ? transcript.map((line, i) => {
-                   const isActive = curTime >= line.start && curTime < (line.start + (line.duration || 3000));
-                   const isSaved = savedLines.has(`${i}-${line.text.slice(0, 10)}`);
-                   return (
-                     <div key={i} className={`p-4 rounded-xl border border-transparent transition-all group cursor-pointer ${isActive ? 'bg-accent/10 border-accent/30' : 'bg-white/[0.02] hover:bg-white/[0.05] border-white/5'}`} onClick={() => setSeekTo(line.start / 1000)}>
-                       <div className="flex justify-between items-start gap-4">
-                         <span className="text-[10px] font-mono text-muted/40 mt-1">{fmtTime(line.start / 1000)}</span>
-                         <p className={`flex-1 text-sm select-text ${isActive ? 'text-white' : 'text-slate-300'}`}>{line.text}</p>
-                         <button onClick={(e) => { e.stopPropagation(); handleAddVocab(line, i) }} className={`p-2 rounded-lg transition-all ${isSaved ? 'text-green-500 bg-green-500/10' : 'text-muted hover:text-accent hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}>
-                           {isSaved ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                         </button>
-                       </div>
-                     </div>
-                   )
-                 }) : (
-                   <p className="text-muted text-sm text-center pt-20">No matching transcript data.</p>
-                 )}
+                 
+                 <div className="flex-1 overflow-y-auto p-8 scrollbar-thin bg-black/20">
+                    <div className="max-w-prose mx-auto">
+                      {loadingTranscript ? (
+                        <div className="h-full flex flex-col items-center justify-center pt-20 text-accent gap-4">
+                           <Loader2 className="h-10 w-10 animate-spin opacity-40" />
+                           <p className="text-[10px] uppercase font-black tracking-[0.2em] animate-pulse">Generating Script...</p>
+                        </div>
+                      ) : transcript?.length ? (
+                        <div className="text-[13px] text-white/80 leading-[1.8] text-justify select-text lowercase space-y-4">
+                           <p>
+                             {transcript.map((line, i) => {
+                               const isActive = curTime >= line.start && curTime < (line.start + (line.duration || 3000));
+                               return (
+                                 <span 
+                                   key={i} 
+                                   className={`inline mr-1.5 transition-all cursor-pointer rounded-sm ${isActive ? 'bg-accent/40 text-white font-bold px-0.5' : 'hover:bg-white/10 hover:text-white'}`}
+                                   onClick={() => setSeekTo(line.start / 1000)}
+                                 >
+                                   {line.text}
+                                 </span>
+                               )
+                             })}
+                           </p>
+                        </div>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center pt-20 text-muted/40 gap-4">
+                           <Library className="h-12 w-12 opacity-10" />
+                           <p className="text-sm italic">No script data found for this video.</p>
+                        </div>
+                      )}
+                    </div>
+                 </div>
               </div>
             )}
 

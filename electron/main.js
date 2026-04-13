@@ -515,9 +515,11 @@ function registerIpcHandlers() {
       let content = data.choices?.[0]?.message?.content || ''
       
       const getSection = (name) => {
-        // Stop at next number OR next known header name
+        // Highly defensive stop-condition: next number OR next recognized header
         const headers = 'Classification|Pronunciation|Definition|Grammar|Usage|Synonyms|Antonyms_Acronyms|Examples';
-        const regex = new RegExp(`(?:\\d\\.\\s*)?${name}:?\\s*([\\s\\S]*?)(?=\\d\\.|\\n\\d\\.|${headers}|$)`, 'i')
+        // Lookahead for (Any whitespace or newline) + (Digit. OR any Header:?)
+        const lookahead = `(?=\\s*\\d\\.|\\n\\d\\.|\\s*(?:${headers}):?)`;
+        const regex = new RegExp(`(?:\\d\\.\\s*)?${name}:?\\s*([\\s\\S]*?)(?:${lookahead}|$)`, 'i')
         let val = content.match(regex)?.[1]?.trim() || ''
         return val.replace(/\*\*|__|\"|\[|\]|`/g, '').trim()
       }
@@ -558,6 +560,8 @@ function registerIpcHandlers() {
 
   ipcMain.handle('settings:getSavePath', () => readAppState().savePath || app.getPath('downloads'))
   ipcMain.handle('settings:setSavePath', (_e, p) => { writeAppState({ savePath: p }); return p })
+  ipcMain.handle('settings:getAiKey', () => readAppState().aiApiKey || '')
+  ipcMain.handle('settings:setAiKey', (_e, key) => { writeAppState({ aiApiKey: key }); return key })
   ipcMain.handle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
 }
 

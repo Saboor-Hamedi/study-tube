@@ -1,7 +1,9 @@
 import { useMemo, memo, useState } from 'react'
-import { Loader2, Trash2, Search as SearchIcon, RefreshCcw } from 'lucide-react'
+import { Loader2, Trash2, Search as SearchIcon, RefreshCcw, Library, FileText, ChevronRight, X } from 'lucide-react'
+import ScriptReaderModal from './ScriptReaderModal'
 
-const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, setSortBy, displayLimit, setDisplayLimit, api }) => {
+const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, setSortBy, displayLimit, setDisplayLimit, api, showToast }) => {
+  const [selectedScript, setSelectedScript] = useState(null)
   const filtered = useMemo(() => {
     return vocab
       .filter(v => {
@@ -86,20 +88,39 @@ const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, set
                   {v.loading ? (
                     <div className="flex items-center gap-2 py-1 opacity-50">
                       <Loader2 className="h-3 w-3 animate-spin text-accent" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-accent">Calling AI...</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
+                    </div>
+                  ) : v.type === 'Collection' ? (
+                    <div className="space-y-3">
+                       <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/5 rounded-lg w-fit">
+                         <Library className="h-3 w-3 text-accent" />
+                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent">full collection</span>
+                       </div>
+                       <div className="relative group/script">
+                         <p className="text-[12px] text-white/40 leading-relaxed lowercase italic line-clamp-[6] select-text">
+                           {v.definition}
+                         </p>
+                         <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#080808] to-transparent pointer-events-none" />
+                       </div>
+                       <button 
+                         onClick={() => setSelectedScript(v)}
+                         className="text-[10px] font-bold text-muted hover:text-accent flex items-center gap-1 transition-all uppercase tracking-widest"
+                       >
+                         open reader view <ChevronRight className="h-3 w-3" />
+                       </button>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {/* Unified List Section */}
                       <ul className="space-y-1.5">
-                        {v.definition && v.text?.split(' ').length <= 3 && (
+                        {v.definition && (
                           <li className="text-[13px] text-white/90 leading-snug flex gap-2 lowercase">
                             <span className="text-accent/60 font-black">•</span>
                             <span>{v.definition}</span>
                           </li>
                         )}
                         
-                        {!v.loading && v.text?.split(' ').length <= 3 && (
+                        {!v.loading && (
                           <>
                             {v.synonyms && (
                               <li className="text-[13px] text-white/60 flex gap-2 italic lowercase">
@@ -146,6 +167,7 @@ const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, set
                           final[fIdx] = { ...updated, date: v.date } // Keep original date
                           setVocab(final)
                           api.saveVocab(final)
+                          showToast(`Updated "${v.text}"`)
                         }
                       } catch (e) {
                         const errorList = [...vocab]
@@ -165,6 +187,7 @@ const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, set
                     const newList = vocab.filter(item => item.date !== v.date)
                     setVocab(newList)
                     api.saveVocab(newList)
+                    showToast(`Deleted "${v.text}"`, 'error')
                   }} className="p-1 px-2 text-muted/20 hover:text-red-500 hover:bg-red-500/5 rounded transition-all shrink-0">
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -186,6 +209,13 @@ const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, set
           )}
         </>
       )}
+
+      <ScriptReaderModal 
+        isOpen={!!selectedScript} 
+        script={selectedScript} 
+        onClose={() => setSelectedScript(null)} 
+        showToast={showToast}
+      />
           </div>
         </div>
       </div>

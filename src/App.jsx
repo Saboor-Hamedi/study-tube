@@ -1,16 +1,30 @@
 import Activitybar from './components/Activitybar'
 import VideoView from './components/VideoView'
 import LibraryView from './components/vocabulary/LibraryView'
-import { useState, useEffect } from 'react'
+import SettingsView from './components/SettingsView'
+import { useState, useEffect, useCallback } from 'react'
+import { CheckCircle, AlertCircle, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function App() {
   const [savePath, setSavePath] = useState('')
   const [view, setView] = useState('search') // 'search' | 'vocab' | 'settings'
   const [vocab, setVocab] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState('date') // 'date' | 'az'
+  const [sortBy, setSortBy] = useState('date')
   const [displayLimit, setDisplayLimit] = useState(10)
+  const [videoQuery, setVideoQuery] = useState('')
+  const [videoResults, setVideoResults] = useState([])
+  const [videoPreview, setVideoPreview] = useState(null)
+  const [videoTranscript, setVideoTranscript] = useState(null)
+  const [loadingTranscript, setLoadingTranscript] = useState(false)
+  const [toast, setToast] = useState(null)
   const api = window.youtubeAPI
+
+  const showToast = useCallback((msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }, [])
 
   useEffect(() => {
     if (api) api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
@@ -21,6 +35,7 @@ export default function App() {
     setVocab(prev => {
       const newList = [basicItem, ...prev]
       api.saveVocab(newList)
+      showToast(`Saved "${item.text}"`)
       return newList
     })
 
@@ -45,7 +60,15 @@ export default function App() {
       <main className="flex-1 relative overflow-hidden">
         {view === 'search' && (
           <div className="absolute inset-0">
-            <VideoView savePath={savePath} setSavePath={setSavePath} onAddVocab={addVocab} />
+            <VideoView 
+              savePath={savePath} setSavePath={setSavePath} onAddVocab={addVocab}
+              query={videoQuery} setQuery={setVideoQuery}
+              results={videoResults} setResults={setVideoResults}
+              preview={videoPreview} setPreview={setVideoPreview}
+              transcript={videoTranscript} setTranscript={setVideoTranscript}
+              loadingTranscript={loadingTranscript} setLoadingTranscript={setLoadingTranscript}
+              showToast={showToast}
+            />
           </div>
         )}
 
@@ -57,17 +80,30 @@ export default function App() {
               sortBy={sortBy} setSortBy={setSortBy}
               displayLimit={displayLimit} setDisplayLimit={setDisplayLimit}
               api={api}
+              showToast={showToast}
             />
           </div>
         )}
 
-        {view === 'settings' && (
-          <div className="absolute inset-0 overflow-y-auto scrollbar-thin p-6 lg:p-8">
-            <h1 className="text-2xl font-bold mb-4 text-white">Settings</h1>
-            <p className="text-muted">Configuration coming soon...</p>
-          </div>
-        )}
+        {view === 'settings' && <SettingsView api={api} />}
       </main>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 20, x: '-50%' }}
+            className="fixed bottom-8 left-1/2 z-[1000] px-6 py-3 bg-[#111] border border-white/10 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl"
+          >
+            {toast.type === 'success' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}
+            <span className="text-xs font-bold uppercase tracking-widest text-white">{toast.msg}</span>
+            <button onClick={() => setToast(null)} className="ml-2 p-1 hover:bg-white/5 rounded">
+              <X className="h-3 w-3 text-muted" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
