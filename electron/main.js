@@ -473,17 +473,37 @@ function registerIpcHandlers() {
           model: 'deepseek-chat',
           messages: [
             { 
-              role: 'system', 
-              content: `You are an English dictionary. Keep all facts extremely short, simple, and directly to the point. No conversational filler or long paragraphs.
-              STRICT RULE: DO NOT use markdown like **bold**, __italic__, or codes. Use PLAIN TEXT ONLY.
-              1. Classification: [STRICTLY 1 word: Noun, Verb, Pronoun, Adjective, Adverb, etc.]
-              2. Pronunciation: [Simple phonetic guide, e.g., /su-perb/]
-              3. Definition: [A very short, simple 1-sentence definition max 15 words]
-              4. Grammar: [Very brief grammar note, max 1 sentence]
-              5. Usage: [Formal/Informal/Slang max 1-2 words]
-              6. Synonyms: [List 3 synonyms separated by commas]
-              7. Antonyms_Acronyms: [List 2 antonyms or acronyms if applicable]
-              8. Examples: [Exactly 3 short simple sentences, each on a new line started with •]` 
+              content: `You are an English dictionary. Output data in a strict, short, and structured format.
+              STRICT RULE: PLAIN TEXT ONLY. No markdown, no filler, no bolding.
+              
+              EXAMPLES FOR FORMATTING:
+              Word: "Exuberant"
+              1. Classification: Adjective
+              2. Pronunciation: /ig-zoo-ber-uhnt/
+              3. Definition: Full of energy, excitement, and cheerfulness.
+              4. Grammar: Used to describe people or actions.
+              5. Usage: General
+              6. Synonyms: Energetic, enthusiastic, cheerful
+              7. Antonyms_Acronyms: Depressed, lethargic
+              8. Examples:
+              • The children were exuberant after winning.
+              • She gave an exuberant wave to the crowd.
+              • His exuberant personality lit up the room.
+
+              Word: "Analyze"
+              1. Classification: Verb
+              2. Pronunciation: /an-uh-lahyz/
+              3. Definition: To examine something in detail to explain it.
+              4. Grammar: Transitive verb; requires an object.
+              5. Usage: Academic
+              6. Synonyms: Examine, study, scrutinize
+              7. Antonyms_Acronyms: Ignore, neglect
+              8. Examples:
+              • We need to analyze the results before deciding.
+              • Scientists analyze soil samples for minerals.
+              • He analyzed the situation and made a choice.
+
+              TAKE THE WORD BELOW AND FOLLOW THIS EXACT 1-8 FORMAT:` 
             },
             { role: 'user', content: text }
           ]
@@ -495,12 +515,14 @@ function registerIpcHandlers() {
       let content = data.choices?.[0]?.message?.content || ''
       
       const getSection = (name) => {
-        const regex = new RegExp(`${name}:?\\s*([\\s\\S]*?)(?=\\d\\.|\\n\\d\\.|$)`, 'i')
+        // Stop at next number OR next known header name
+        const headers = 'Classification|Pronunciation|Definition|Grammar|Usage|Synonyms|Antonyms_Acronyms|Examples';
+        const regex = new RegExp(`(?:\\d\\.\\s*)?${name}:?\\s*([\\s\\S]*?)(?=\\d\\.|\\n\\d\\.|${headers}|$)`, 'i')
         let val = content.match(regex)?.[1]?.trim() || ''
         return val.replace(/\*\*|__|\"|\[|\]|`/g, '').trim()
       }
 
-      return {
+      const updated = {
         text: text.replace(/\*\*|__|\"|\[|\]|`/g, '').trim(),
         videoTitle,
         type: getSection('Classification').split(/[.,]/)[0].trim().substring(0, 15),
@@ -513,6 +535,7 @@ function registerIpcHandlers() {
         examples: getSection('Examples').split('\n').map(s => s.replace(/•|\*|-/g, '').replace(/\"|\[|\]/g, '').trim()).filter(Boolean).slice(0,3),
         date: new Date().toISOString()
       }
+      return updated
     } catch (e) {
       clearTimeout(timeout)
       console.error('AI Explain error:', e.name === 'AbortError' ? 'Timed out' : e.message)

@@ -1,5 +1,5 @@
-import { useMemo, memo } from 'react'
-import { Loader2, Trash2, Search as SearchIcon } from 'lucide-react'
+import { useMemo, memo, useState } from 'react'
+import { Loader2, Trash2, Search as SearchIcon, RefreshCcw } from 'lucide-react'
 
 const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, setSortBy, displayLimit, setDisplayLimit, api }) => {
   const filtered = useMemo(() => {
@@ -68,69 +68,107 @@ const LibraryView = ({ vocab, setVocab, searchQuery, setSearchQuery, sortBy, set
           </div>
         ) : (
           <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.slice(0, displayLimit).map((v, i) => (
             <div key={i} className="group bg-[#080808] border border-white/5 p-5 rounded-3xl hover:border-white/10 transition-all flex flex-col gap-4 relative">
 
-              <div className="space-y-3 pr-10">
+              <div className="space-y-2">
                   <div className="flex flex-col gap-1.5">
                     {v.text?.split(' ').length > 3 ? (
                       <h3 className="text-base italic text-white/90 border-l-2 border-accent pl-3 py-1 leading-relaxed">"{v.text}"</h3>
                     ) : (
                       <h3 className="text-xl font-black text-white leading-none">{v.text}</h3>
                     )}
-                    {(v.type || v.pronunciation) && v.text?.split(' ').length <= 3 && (
-                      <div className="flex flex-col gap-0.5">
-                        {v.type && <span className="text-accent text-[9px] font-bold uppercase tracking-[0.15em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 15)}</span>}
-                        {v.pronunciation && <span className="text-[10px] font-mono text-muted/30">/{v.pronunciation}/</span>}
-                      </div>
+                    {(v.type) && v.text?.split(' ').length <= 3 && (
+                      <span className="text-accent text-[13px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 15)}</span>
                     )}
                   </div>
-                 {v.loading ? (
-                   <div className="flex items-center gap-2 py-1 opacity-50">
-                     <Loader2 className="h-3 w-3 animate-spin text-accent" />
-                     <span className="text-[10px] font-bold uppercase tracking-widest text-accent">Calling AI...</span>
-                   </div>
-                 ) : (
-                   v.definition && v.text?.split(' ').length <= 3 && (
-                     <p className="text-sm text-slate-300 leading-relaxed font-light">{v.definition}</p>
-                   )
-                 )}
-              </div>
+                  {v.loading ? (
+                    <div className="flex items-center gap-2 py-1 opacity-50">
+                      <Loader2 className="h-3 w-3 animate-spin text-accent" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-accent">Calling AI...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Unified List Section */}
+                      <ul className="space-y-1.5">
+                        {v.definition && v.text?.split(' ').length <= 3 && (
+                          <li className="text-[13px] text-white/90 leading-snug flex gap-2 lowercase">
+                            <span className="text-accent/60 font-black">•</span>
+                            <span>{v.definition}</span>
+                          </li>
+                        )}
+                        
+                        {!v.loading && v.text?.split(' ').length <= 3 && (
+                          <>
+                            {v.synonyms && (
+                              <li className="text-[13px] text-white/60 flex gap-2 italic lowercase">
+                                <span className="font-bold opacity-30 shrink-0">syn:</span>
+                                <span className="line-clamp-1">{v.synonyms}</span>
+                              </li>
+                            )}
+                            {v.examples && v.examples.slice(0, 2).map((ex, idx) => (
+                              <li key={idx} className="text-[13px] text-white/50 italic leading-snug border-l border-white/10 pl-2 line-clamp-1 hover:text-white/90 transition-colors lowercase">{ex}</li>
+                            ))}
+                          </>
+                        )}
+                      </ul>
 
-              {!v.loading && v.text?.split(' ').length <= 3 && (
-                 <div className="space-y-2 pt-2 border-t border-white/5">
-                   {v.synonyms && (
-                     <div className="text-[10px] text-slate-400 flex gap-2">
-                       <span className="text-muted font-bold uppercase tracking-tighter opacity-40 shrink-0">Synonyms:</span>
-                       <span className="line-clamp-1">{v.synonyms}</span>
-                     </div>
-                   )}
-                   {v.antonyms && (
-                     <div className="text-[10px] text-slate-400 flex gap-2">
-                       <span className="text-muted font-bold uppercase tracking-tighter opacity-40 shrink-0">Opposites:</span>
-                       <span className="line-clamp-1">{v.antonyms}</span>
-                     </div>
-                   )}
-                   {v.examples && v.examples.length > 0 && (
-                     <ul className="space-y-1 mt-1">
-                       {v.examples.map((ex, idx) => (
-                         <li key={idx} className="text-[10px] text-slate-500 italic leading-snug border-l border-white/10 pl-2 line-clamp-2">{ex}</li>
-                       ))}
-                     </ul>
-                   )}
-                 </div>
-              )}
+                      {(v.usage || v.grammar) && (
+                        <div className="flex flex-wrap gap-x-2 text-[13px] text-white/20 font-bold lowercase tracking-normal">
+                          {v.usage && <span>{v.usage}</span>}
+                          {v.usage && v.grammar && <span className="opacity-10">|</span>}
+                          {v.grammar && <span className="italic">{v.grammar}</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+               </div>
 
               <div className="mt-auto pt-1.5 flex items-center justify-between gap-4 border-t border-white/[0.03]">
-                <div className="text-[9px] font-mono text-muted/30 truncate">From: {v.videoTitle}</div>
-                <button onClick={() => {
-                  const newList = vocab.filter(item => item.date !== v.date)
-                  setVocab(newList)
-                  api.saveVocab(newList)
-                }} className="p-1 px-2 text-muted/20 hover:text-red-500 hover:bg-red-500/5 rounded transition-all opacity-0 group-hover:opacity-100 shrink-0">
-                  <Trash2 className="h-3 w-3" />
-                </button>
+                <div className="text-[13px] font-mono text-muted/30 truncate">from: {v.videoTitle}</div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button 
+                    disabled={v.loading}
+                    onClick={async () => {
+                      const newList = [...vocab]
+                      const idx = vocab.findIndex(item => item.date === v.date)
+                      if (idx === -1) return
+                      
+                      newList[idx] = { ...v, loading: true }
+                      setVocab(newList)
+                      
+                      try {
+                        const updated = await api.explainWord({ text: v.text, videoTitle: v.videoTitle })
+                        const final = [...vocab] // Refresh ref
+                        const fIdx = final.findIndex(item => item.date === v.date)
+                        if (fIdx !== -1) {
+                          final[fIdx] = { ...updated, date: v.date } // Keep original date
+                          setVocab(final)
+                          api.saveVocab(final)
+                        }
+                      } catch (e) {
+                        const errorList = [...vocab]
+                        const eIdx = errorList.findIndex(item => item.date === v.date)
+                        if (eIdx !== -1) {
+                          errorList[eIdx].loading = false
+                          setVocab(errorList)
+                        }
+                      }
+                    }} 
+                    className="p-1 px-2 text-muted/20 hover:text-accent hover:bg-accent/5 rounded transition-all shrink-0"
+                    title="Refresh AI Data"
+                  >
+                    <RefreshCcw className={`h-3 w-3 ${v.loading ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button onClick={() => {
+                    const newList = vocab.filter(item => item.date !== v.date)
+                    setVocab(newList)
+                    api.saveVocab(newList)
+                  }} className="p-1 px-2 text-muted/20 hover:text-red-500 hover:bg-red-500/5 rounded transition-all shrink-0">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
