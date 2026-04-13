@@ -113,7 +113,32 @@ export default function MainView({ savePath, setSavePath, onAddVocab }) {
   }
 
   async function selectResult(v) {
-    await loadUrl(v.url)
+    // 1. Instantly set a "Partial" preview so the page opens immediately
+    const optimisticMeta = { 
+      id: v.id, 
+      title: v.title, 
+      thumbnail: v.thumbnail, 
+      author: v.author, 
+      duration: v.durationSec || 0,
+      qualityOptions: [] 
+    }
+    setPreview(optimisticMeta)
+    setResults([])
+    setBusy(true)
+
+    try {
+      // 2. Hydrate the full metadata in the background
+      const fullMeta = await api.metadata(v.url)
+      setPreview(fullMeta)
+      setQuality(fullMeta.qualityOptions?.[0]?.value || '')
+      
+      // 3. Kick off transcript load
+      api.getTranscript(fullMeta.id).then(t => setTranscript(t)).catch(() => {})
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

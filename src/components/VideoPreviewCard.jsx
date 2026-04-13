@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   Play, Pause, Volume2, VolumeX, Maximize2, X,
-  Download, FolderOpen, ChevronDown, CheckCircle,
+  Download, FolderOpen, ChevronDown, CheckCircle, ChevronLeft,
   Clock, Eye, User, ExternalLink, Loader2, AlertCircle, StopCircle,
   Plus, BookOpen, Sparkles, MessageCircle, Languages, Send
 } from 'lucide-react'
@@ -17,7 +17,146 @@ function fmtTime(sec) {
 }
 
 // ─── Inline Video Player ──────────────────────────────────────────────────────
-function VideoPlayer({ src, thumbnail, title, onClose, seekTo }) {
+// ─── Word Explorer Modal ─────────────────────────────────────────────────────
+function WordExplorerModal({ text, videoTitle, onClose, onAddVocab, cache }) {
+  const api = window.youtubeAPI
+  const [loading, setLoading] = useState(true)
+  const [entry, setEntry] = useState(null)
+  
+  useEffect(() => {
+    if (text) {
+      if (cache?.has(text)) {
+        setEntry(cache.get(text))
+        setLoading(false)
+        return
+      }
+      setLoading(true)
+      api.explainWord({ text, videoTitle }).then(res => {
+        setEntry(res)
+        setLoading(false)
+      })
+    }
+  }, [text])
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xl p-4 transition-all"
+      onMouseUp={e => e.stopPropagation()}
+    >
+      <motion.div 
+        initial={{ scale: 0.98, opacity: 0, y: 10 }} 
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        className="relative w-full max-w-2xl h-[650px] bg-gradient-to-b from-[#141414] to-[#0a0a0a] border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col"
+      >
+        
+        <button onClick={onClose} className="absolute top-8 right-8 text-muted hover:text-white transition-all z-20 bg-white/5 p-2 rounded-full border border-white/5">
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="flex-1 overflow-y-auto custom-scroll p-12 space-y-10">
+          <div className="space-y-3 pt-4">
+            <div className="flex items-center gap-3">
+               <div className="h-2 w-2 rounded-full bg-accent shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+               <span className="text-accent font-black text-[10px] uppercase tracking-[0.4em]">Language Lab</span>
+            </div>
+            <h2 className="text-5xl font-black text-white leading-none tracking-tighter">"{text}"</h2>
+          </div>
+
+          {loading ? (
+            <div className="space-y-10">
+              <div className="flex gap-3">
+                <div className="h-6 w-20 bg-white/5 rounded-full" />
+                <div className="h-6 w-24 bg-white/5 rounded-full" />
+              </div>
+              <div className="space-y-4">
+                <div className="h-4 w-full bg-white/5 rounded-full" />
+                <div className="h-4 w-[90%] bg-white/5 rounded-full" />
+                <div className="h-4 w-[40%] bg-white/10 rounded-full" />
+              </div>
+              <div className="h-40 bg-white/[0.03] rounded-3xl border border-dashed border-white/10" />
+              <div className="h-32 bg-white/[0.02] rounded-3xl" />
+            </div>
+          ) : (
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="flex flex-wrap items-center gap-4">
+                 <div className="flex gap-2">
+                   {entry?.type && (
+                     <span className="px-4 py-1.5 bg-accent text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-2xl shadow-accent/40">
+                       {entry.type}
+                     </span>
+                   )}
+                   {entry?.pronunciation && (
+                     <span className="px-4 py-1.5 bg-white/5 text-accent text-[10px] font-bold tracking-[0.2em] rounded-full border border-accent/20 italic">
+                       {entry.pronunciation}
+                     </span>
+                   )}
+                 </div>
+                 <span className="px-4 py-1.5 bg-white/[0.02] text-muted text-[10px] font-bold uppercase tracking-widest rounded-full border border-white/5 backdrop-blur-md">
+                   {videoTitle?.slice(0, 30)}...
+                 </span>
+              </div>
+
+              <div className="grid gap-10">
+                <div className="space-y-3">
+                  <p className="text-[10px] text-muted font-bold uppercase tracking-widest opacity-40">Definition & Intellectual Scope</p>
+                  <p className="text-xl text-slate-200 leading-relaxed font-light select-text">{entry?.definition}</p>
+                </div>
+
+                {entry?.synonyms && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest opacity-40">Semantic Alternatives</p>
+                    <div className="flex flex-wrap gap-2">
+                      {entry.synonyms.split(',').map((s, i) => (
+                        <span key={i} className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-300 hover:bg-accent/10 hover:border-accent/40 transition-all cursor-default">
+                          {s.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {entry?.grammar && (
+                  <div className="bg-white/[0.03] border border-white/[0.05] p-8 rounded-[2rem] space-y-3 shadow-inner">
+                    <p className="text-[11px] text-accent font-black uppercase tracking-widest">Structural Audit</p>
+                    <p className="text-base text-slate-300 leading-relaxed">{entry.grammar}</p>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <p className="text-[10px] text-muted font-bold uppercase tracking-widest opacity-50">Usage Protocol</p>
+                  <p className="text-sm text-slate-400 leading-relaxed italic border-l-2 border-white/10 pl-4">{entry?.usage}</p>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-[10px] text-muted font-bold uppercase tracking-widest opacity-50 px-1">Contextual Examples</p>
+                  <div className="space-y-3">
+                    {(entry?.examples || []).map((ex, idx) => (
+                      <div key={idx} className="bg-white/5 p-4 rounded-xl text-sm text-slate-300 italic flex gap-3 leading-relaxed">
+                        <span className="text-accent opacity-50">•</span> {ex}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-4 sticky bottom-0 bg-[#0c0c0c] py-4 border-t border-white/5">
+                <button onClick={() => { onAddVocab(entry); onClose() }}
+                  className="flex-1 bg-white text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-accent hover:text-white transition-all shadow-2xl">
+                  <Plus className="h-4 w-4 inline mr-2" /> Add to Study Library
+                </button>
+                <button onClick={onClose}
+                  className="px-8 bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+function VideoPlayer({ src, thumbnail, title, onClose, seekTo, onTimeUpdate }) {
   const ref = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -30,11 +169,13 @@ function VideoPlayer({ src, thumbnail, title, onClose, seekTo }) {
     const v = ref.current
     if (!v) return
     const handlers = {
-      timeupdate: () => setCur(v.currentTime),
+      timeupdate: () => {
+        setCur(v.currentTime)
+        onTimeUpdate?.(v.currentTime * 1000) // back to ms for sync
+      },
       loadedmetadata: () => { 
         setDur(v.duration)
         setLoading(false)
-        // Seek on initial load if seekTo is provided
         if (typeof seekTo === 'number') {
           v.currentTime = seekTo
           v.play().catch(() => {})
@@ -146,7 +287,46 @@ export default function VideoPreviewCard({ video, transcript, onAddVocab, qualit
   ])
   const [chatInp, setChatInp] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [curTime, setCurTime] = useState(0)
+  const [savedLines, setSavedLines] = useState(new Set())
+  const [selection, setSelection] = useState({ text: '', x: 0, y: 0 })
+  const [exploringWord, setExploringWord] = useState(null)
+  const wordCache = useRef(new Map())
   const chatEndRef = useRef(null)
+  const transcriptRefs = useRef([])
+
+  useEffect(() => {
+    if (!transcript) return
+    const activeIdx = transcript.findIndex(l => curTime >= l.start && curTime < (l.start + (l.duration || 3000)))
+    if (activeIdx !== -1 && transcriptRefs.current[activeIdx]) {
+      transcriptRefs.current[activeIdx].scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }
+  }, [curTime, transcript])
+
+  const handleSelection = (e) => {
+    const s = window.getSelection()
+    const text = s.toString().trim()
+    if (text && text.length < 100) {
+      setSelection({ text, x: e.clientX, y: e.clientY })
+      // Predictive Pre-fetch: Start explaining in background
+      if (!wordCache.current.has(text)) {
+        api.explainWord({ text, videoTitle: video.title }).then(res => {
+          wordCache.current.set(text, res)
+        })
+      }
+    } else {
+      setSelection({ text: '', x: 0, y: 0 })
+    }
+  }
+
+  const handleAddVocab = (line, index) => {
+    const uniqueId = `${index}-${line.text.slice(0, 10)}`
+    setSavedLines(prev => new Set([...prev, uniqueId]))
+    onAddVocab({ text: line.text, videoTitle: video.title })
+  }
 
   const scrollDown = () => {
     if (chatEndRef.current) {
@@ -238,279 +418,211 @@ export default function VideoPreviewCard({ video, transcript, onAddVocab, qualit
   return (
     <>
       <AnimatePresence>
-        {streamUrl && (
-          <VideoPlayer 
-            src={streamUrl} 
-            thumbnail={video.thumbnail} 
-            title={video.title} 
-            onClose={() => setStreamUrl(null)} 
-            seekTo={seekTo}
+        {exploringWord && (
+          <WordExplorerModal 
+            text={exploringWord} 
+            videoTitle={video.title} 
+            onClose={() => setExploringWord(null)} 
+            onAddVocab={onAddVocab}
+            cache={wordCache.current}
           />
         )}
       </AnimatePresence>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        {/* Tabs Header */}
-        <div className="flex border-b border-border bg-black/20">
-          <button 
-            onClick={() => setActiveTab('download')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${activeTab === 'download' ? 'text-accent border-b-2 border-accent bg-accent/5' : 'text-muted hover:text-white'}`}
-          >
-            <Download className="h-4 w-4" /> Download
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:p-10 bg-black/60 backdrop-blur-3xl transition-all duration-1000"
+           onMouseUp={handleSelection}>
+        <motion.div 
+          initial={{ y: 30, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: 30, opacity: 0 }}
+          className="w-full max-w-7xl h-[90vh] bg-black border border-white/10 shadow-[0_50px_150px_rgba(0,0,0,0.9)] rounded-[3.5rem] overflow-hidden flex flex-col lg:flex-row relative glass-panel"
+        >
+          {/* Navigation */}
+          <button onClick={onClose} 
+            className="absolute top-10 left-10 z-[60] p-4 bg-white/5 hover:bg-accent rounded-full border border-white/10 text-white transition-all shadow-2xl">
+            <ChevronLeft className="h-6 w-6" />
           </button>
-          <button 
-            onClick={() => setActiveTab('learn')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${activeTab === 'learn' ? 'text-accent border-b-2 border-accent bg-accent/5' : 'text-muted hover:text-white'}`}
-          >
-            <BookOpen className="h-4 w-4" /> Study
-          </button>
-          <button 
-            onClick={() => setActiveTab('chat')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${activeTab === 'chat' ? 'text-accent border-b-2 border-accent bg-accent/5' : 'text-muted hover:text-white'}`}
-          >
-            <MessageCircle className="h-4 w-4" /> AI Tutor
-          </button>
-        </div>
 
-        <div className="md:grid md:grid-cols-[5fr_6fr]">
-
-          {/* Thumbnail / Video Area */}
-          <div className="relative overflow-hidden bg-black group h-[480px]">
-            <img 
-              src={video.thumbnail} 
-              alt={video.title} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-              onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=400&auto=format&fit=crop' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-
-            {/* Play button */}
-            {!downloading && (
-              <button onClick={handlePlay} disabled={loadingStream}
-                className="absolute inset-0 flex items-center justify-center">
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}
-                  className="h-14 w-14 rounded-full bg-white/20 hover:bg-accent/80 border border-white/30 flex items-center justify-center backdrop-blur-sm transition-colors">
-                  {loadingStream
-                    ? <Loader2 className="h-6 w-6 text-white animate-spin" />
-                    : <Play className="h-6 w-6 text-white fill-white ml-0.5" />}
-                </motion.div>
-              </button>
-            )}
-
-
-            {/* Download progress overlay */}
-            {downloading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80">
-                {/* Circle progress */}
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
-                    <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.1)" strokeWidth="8" fill="none" />
-                    <motion.circle
-                      cx="48" cy="48" r="40" stroke="#3b82f6" strokeWidth="8" fill="none"
-                      strokeLinecap="round" strokeDasharray={251.2}
-                      animate={{ strokeDashoffset: 251.2 - (251.2 * percent) / 100 }}
-                      transition={{ ease: 'linear', duration: 0.3 }}
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white">{percent}%</span>
+          {/* Left Side: Media Canvas */}
+          <div className="flex-1 min-w-0 bg-black relative flex flex-col">
+            <div className="aspect-video w-full bg-[#050505] overflow-hidden group shadow-2xl relative">
+              <VideoPlayer src={streamUrl} thumbnail={video.thumbnail} title={video.title} onClose={() => setStreamUrl(null)} seekTo={seekTo} onTimeUpdate={setCurTime} />
+              
+              {!streamUrl && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
+                   <img src={video.thumbnail} className="absolute inset-0 w-full h-full object-cover opacity-20 blur-md" />
+                   <button onClick={handlePlay} disabled={loadingStream}
+                      className="relative z-10 h-20 w-20 rounded-full bg-white/10 hover:bg-accent border border-white/20 flex items-center justify-center backdrop-blur-xl transition-all group/play">
+                     {loadingStream ? <Loader2 className="h-8 w-8 text-white animate-spin" /> : <Play className="h-8 w-8 text-white fill-white ml-1 group-hover/play:scale-110 transition-transform" />}
+                   </button>
                 </div>
-                <p className="text-sm text-slate-300 text-center px-4 select-text">{statusMsg}</p>
-              </div>
-            )}
+              )}
+            </div>
+            
+            <div className="p-12 flex-1 flex flex-col justify-center max-w-3xl mx-auto text-center space-y-6">
+               <div className="flex items-center justify-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-accent animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.8)]" />
+                  <span className="text-accent font-black text-[11px] uppercase tracking-[0.5em]">Research Studio</span>
+               </div>
+               <h1 className="text-5xl font-black text-white tracking-widest leading-tight select-text text-gradient">{video.title}</h1>
+               <p className="text-muted/60 text-[11px] font-black tracking-[0.3em] uppercase">{video.author} • {fmtTime(video.duration)}</p>
+            </div>
           </div>
 
-          {/* Info & Learning Panel */}
-          <div className="p-5 flex flex-col gap-4 overflow-hidden h-[480px]">
-            
-            {activeTab === 'download' && (
-              <div className="flex flex-col h-full gap-4">
-                {/* Title & meta */}
-                <div>
-                  <h2 className="text-base font-semibold text-white leading-snug select-text line-clamp-3">{video.title}</h2>
-                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted">
-                    {video.author && <span className="flex items-center gap-1 select-text"><User className="h-3 w-3" />{video.author}</span>}
-                    {video.duration > 0 && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmtTime(video.duration)}</span>}
-                    {video.views > 0 && <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{Number(video.views).toLocaleString()} views</span>}
-                  </div>
-                </div>
+          {/* Right Side: Scientific Panel */}
+          <div className="w-full lg:w-[520px] bg-black border-l border-white/10 flex flex-col overflow-hidden relative shadow-[20px_0_100px_rgba(0,0,0,0.8)]">
+            {/* Tab Controller */}
+            <div className="flex items-center justify-around border-b border-white/10 p-6 bg-[#0c0c0c]">
+              {['learn', 'chat', 'download'].map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  className={`relative px-8 py-2 text-[11px] font-black uppercase tracking-[0.3em] transition-all duration-700 ${
+                    activeTab === tab ? 'text-accent font-black' : 'text-muted/40 hover:text-white'
+                  }`}>
+                  {tab}
+                  {activeTab === tab && <motion.div layoutId="tab-bar" className="absolute -bottom-6 left-0 right-0 h-1 bg-accent shadow-[0_0_20px_rgba(59,130,246,0.8)]" />}
+                </button>
+              ))}
+            </div>
 
-                {/* Quality selector */}
-                <div>
-                  <label className="text-[10px] font-semibold text-muted uppercase tracking-widest block mb-1">Quality</label>
-                  <div className="relative">
-                    <select value={quality} onChange={e => onQualityChange(e.target.value)} disabled={downloading}
-                      className="w-full appearance-none bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-accent transition disabled:opacity-50 cursor-pointer">
-                      {(video.qualityOptions || []).map(o => (
-                        <option key={o.value} value={o.value} className="bg-[#1a1a1a]">{o.label}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-                  </div>
-                </div>
+            <div className="p-8 flex-1 overflow-hidden">
+              <AnimatePresence mode="wait">
+                {activeTab === 'learn' && (
+                  <motion.div key="learn" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col h-full gap-8">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-muted uppercase tracking-[0.4em]">Transcription Stream</span>
+                      <button onClick={handleAnalyzeAI} disabled={isAnalyzing || !transcript}
+                        className="px-6 py-2 rounded-full bg-white text-black hover:bg-accent hover:text-white text-[10px] font-black uppercase tracking-widest transition-all">
+                        {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI Digest
+                      </button>
+                    </div>
 
-                {/* Save path */}
-                <div>
-                  <label className="text-[10px] font-semibold text-muted uppercase tracking-widest block mb-1">Save to</label>
-                  <button onClick={onPickPath} disabled={downloading}
-                    className="w-full flex items-center gap-2 bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-left hover:border-accent/50 transition disabled:opacity-50">
-                    <FolderOpen className="h-4 w-4 text-muted shrink-0" />
-                    <span className="truncate text-slate-300">{savePath ? savePath.split(/[\\\\/]/).pop() || savePath : 'Choose save folder…'}</span>
-                    {savePath && <CheckCircle className="h-4 w-4 text-success ml-auto shrink-0" />}
-                  </button>
-                </div>
-
-                <div className="flex-1" />
-
-                <div className="space-y-2">
-                  {downloading ? (
-                    <button onClick={onCancel}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl h-10 bg-red-600/80 hover:bg-red-600 text-white text-sm font-medium transition">
-                      <StopCircle className="h-4 w-4" /> Cancel Download
-                    </button>
-                  ) : (
-                    <button onClick={onDownload}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl h-10 bg-accent hover:bg-accent-hover text-white text-sm font-medium transition">
-                      <Download className="h-4 w-4" /> Download
-                    </button>
-                  )}
-                  {lastFile && (
-                    <button onClick={() => api?.openFilePath?.(lastFile)}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl h-9 border border-border text-xs text-muted hover:text-white hover:border-white/20 transition">
-                      <ExternalLink className="h-3.5 w-3.5" /> Open saved file
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'learn' && (
-              <div className="flex flex-col h-full gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted uppercase tracking-widest">Transcript</span>
-                  <button onClick={handleAnalyzeAI} disabled={isAnalyzing || !transcript}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/20 hover:bg-accent/30 text-accent text-[11px] font-bold transition disabled:opacity-30">
-                    {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    Quick Summary
-                  </button>
-                </div>
-
-                {aiAnalysis && (
-                  <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-xs text-slate-200 leading-relaxed overflow-y-auto max-h-[140px] scrollbar-thin">
-                    <div className="flex items-center gap-2 mb-2 text-accent font-bold"><MessageCircle className="h-3.5 w-3.5" /> AI Insights</div>
-                    {aiAnalysis}
-                  </div>
+                    <div className="flex-1 overflow-y-auto pr-4 custom-scroll space-y-2">
+                       {transcript?.map((line, i) => {
+                         const isActive = curTime >= line.start && curTime < (line.start + (line.duration || 3000))
+                         return (
+                           <div key={i} 
+                             ref={el => transcriptRefs.current[i] = el}
+                             className={`group relative flex flex-col gap-3 p-5 rounded-[2rem] transition-all duration-700 ${
+                               isActive ? 'bg-white/10 shadow-2xl ring-1 ring-accent/30 scale-[1.02]' : 'hover:bg-white/[0.04]'
+                             }`}
+                           >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-mono text-muted/40">{fmtTime(line.start / 1000)}</span>
+                                <button onClick={() => handleAddVocab(line, i)} 
+                                  className={`p-2 rounded-lg transition-all ${savedLines.has(`${i}-${line.text.slice(0,10)}`) ? 'text-green-500 scale-110' : 'text-muted/0 group-hover:text-accent group-hover:bg-accent/10'}`}>
+                                  {savedLines.has(`${i}-${line.text.slice(0,10)}`) ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                </button>
+                              </div>
+                              <p className="text-base text-slate-200 leading-relaxed font-light select-text">{line.text}</p>
+                           </div>
+                         )
+                       })}
+                    </div>
+                  </motion.div>
                 )}
 
-                <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin space-y-2">
-                  {transcript ? (
-                    transcript.map((line, i) => (
-                      <div key={i} className="group relative flex items-start gap-3 p-2 rounded-lg hover:bg-white/5 transition-all">
-                        <button onClick={() => handlePlayLine(line.start / 1000)}
-                          className="text-[10px] text-muted font-mono bg-white/5 px-1.5 py-0.5 rounded group-hover:bg-accent group-hover:text-white transition-colors"
-                        >
-                          {fmtTime(line.start / 1000)}
-                        </button>
-                        <p className="text-sm text-slate-300 leading-relaxed flex-1 select-text">{line.text}</p>
-                        <button onClick={() => onAddVocab({ text: line.text, videoTitle: video.title })}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-accent/20 text-accent transition-all">
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-muted gap-2 text-xs">
-                      <Loader2 className="h-5 w-5 animate-spin" /> Fetching script…
+                {activeTab === 'chat' && (
+                  <motion.div key="chat" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col h-full">
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scroll space-y-6 pb-6 pt-2">
+                      {messages.map((m, i) => (
+                        <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[85%] p-5 rounded-[2rem] text-sm leading-relaxed ${
+                            m.role === 'user' ? 'bg-accent text-white shadow-xl rounded-tr-none' : 'bg-white/5 text-slate-200 border border-white/10 rounded-tl-none select-text'
+                          }`}>
+                            {m.content}
+                          </div>
+                        </div>
+                      ))}
+                      {isTyping && (
+                        <div className="flex justify-start">
+                          <div className="bg-white/5 p-4 rounded-3xl animate-pulse flex gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-bounce" />
+                            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-bounce delay-75" />
+                            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-bounce delay-150" />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'chat' && (
-              <div className="flex flex-col h-full overflow-hidden">
-                <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin space-y-4 p-1">
-                  {messages.map((m, i) => (
-                    <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm ${
-                        m.role === 'user' 
-                          ? 'bg-accent text-white rounded-tr-none shadow-accent/10' 
-                          : m.isError 
-                            ? 'bg-red-500/10 border border-red-500/30 text-red-400 rounded-tl-none italic'
-                            : 'bg-surface-2 border border-border text-slate-200 rounded-tl-none'
-                      }`}>
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            p: ({children}) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                            ul: ({children}) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
-                            ol: ({children}) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
-                            li: ({children}) => <li className="pl-1">{children}</li>,
-                            code: ({children}) => <code className="bg-black/40 px-1.5 py-0.5 rounded font-mono text-xs text-accent-hover">{children}</code>,
-                            pre: ({children}) => <pre className="bg-black/40 p-2 rounded-lg my-2 overflow-x-auto scrollbar-thin">{children}</pre>,
-                            strong: ({children}) => <strong className="font-bold text-white">{children}</strong>,
-                            a: ({children, href}) => <a href={href} target="_blank" className="text-accent hover:underline decoration-2">{children}</a>
-                          }}
-                        >
-                          {m.content}
-                        </ReactMarkdown>
-                      </div>
+                    <div className="relative mt-auto pt-4 border-t border-white/5">
+                       <input value={chatInp} onChange={e => setChatInp(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                         placeholder="Consult AI Professor..."
+                         className="w-full bg-white/[0.03] border border-white/10 rounded-3xl pl-6 pr-24 py-5 text-sm outline-none focus:border-accent/50 focus:bg-white/[0.06] transition-all"
+                       />
+                       <button onClick={() => sendMessage()}
+                         className="absolute right-3 top-7 p-3 bg-accent text-white rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-accent/20">
+                         <Send className="h-4 w-4" />
+                       </button>
                     </div>
-                  ))}
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="bg-surface-2 border border-border px-4 py-2 rounded-2xl rounded-tl-none flex gap-1 items-center">
-                        <div className="h-1 w-1 bg-accent rounded-full animate-bounce" />
-                        <div className="h-1 w-1 bg-accent rounded-full animate-bounce [animation-delay:0.2s]" />
-                        <div className="h-1 w-1 bg-accent rounded-full animate-bounce [animation-delay:0.4s]" />
-                      </div>
+                  </motion.div>
+                )}
+
+                {activeTab === 'download' && (
+                  <motion.div key="download" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col h-full justify-between gap-10">
+                    <div className="space-y-10 pt-4">
+                       <div className="space-y-4">
+                         <p className="text-[10px] font-black text-muted uppercase tracking-[0.4em]">Media Quality</p>
+                         <div className="relative group">
+                           <select value={quality} onChange={e => onQualityChange(e.target.value)} disabled={downloading}
+                             className="w-full bg-white/[0.03] border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm appearance-none focus:border-accent transition-all cursor-pointer">
+                             {(video.qualityOptions || []).map(o => (
+                               <option key={o.value} value={o.value} className="bg-[#0c0c0c]">{o.label}</option>
+                             ))}
+                           </select>
+                           <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted pointer-events-none group-hover:text-accent" />
+                         </div>
+                       </div>
+                       
+                       <div className="space-y-4">
+                         <p className="text-[10px] font-black text-muted uppercase tracking-[0.4em]">Save Destination</p>
+                         <button onClick={onPickPath} className="w-full flex items-center gap-4 p-5 bg-white/[0.03] border border-white/10 rounded-[1.5rem] hover:bg-white/[0.07] transition text-left">
+                           <FolderOpen className="h-5 w-5 text-accent" />
+                           <span className="text-xs truncate flex-1 text-slate-300 font-bold uppercase tracking-widest">{savePath ? savePath.split(/[\\\\/]/).pop() || savePath : 'Select Folder'}</span>
+                         </button>
+                       </div>
                     </div>
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
 
-                <div className="mt-4 space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {['Explain grammar', 'Quiz me!', 'Main topics'].map(hint => (
-                      <button key={hint} onClick={() => sendMessage(hint)}
-                        className="text-[10px] px-2.5 py-1 rounded-full border border-border text-muted hover:text-white hover:border-accent/40 transition-colors">
-                        {hint}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div className="flex items-end gap-2 bg-surface-2 border border-border rounded-xl px-2 py-1.5 focus-within:border-accent transition-colors shadow-inner">
-                    <textarea 
-                      rows="1"
-                      value={chatInp}
-                      onChange={e => setChatInp(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          sendMessage()
-                        }
-                      }}
-                      placeholder="Ask your tutor…"
-                      className="flex-1 bg-transparent border-none outline-none text-sm p-2 text-white placeholder:text-muted resize-none max-h-32 scrollbar-thin"
-                    />
-                    <button 
-                      onClick={() => isTyping ? handleStop() : sendMessage()} 
-                      disabled={!isTyping && !chatInp.trim()}
-                      className={`h-9 w-9 flex items-center justify-center rounded-lg transition-all mb-0.5 shadow-lg ${
-                        isTyping 
-                          ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-900/40 animate-pulse' 
-                          : 'bg-accent hover:bg-accent-hover text-white shadow-accent/20 disabled:opacity-30 disabled:grayscale'
-                      }`}
-                      title={isTyping ? 'Stop Tutor' : 'Send Message'}
-                    >
-                      {isTyping ? <StopCircle className="h-5 w-5" /> : <Send className="h-5 w-5" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
+                    <div className="space-y-6">
+                      {downloading ? (
+                         <div className="space-y-4">
+                            <div className="flex justify-between items-end">
+                               <p className="text-[10px] font-black text-accent uppercase tracking-[0.3em] animate-pulse">Encryption Phase</p>
+                               <p className="text-xl font-black text-white">{percent}%</p>
+                            </div>
+                            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                               <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className="h-full bg-accent shadow-[0_0_20px_rgba(59,130,246,1)]" />
+                            </div>
+                            <button onClick={onCancel} className="w-full text-[10px] font-black uppercase tracking-[0.4em] text-red-500/50 hover:text-red-500 transition-colors">Abort Mission</button>
+                         </div>
+                      ) : (
+                         <button onClick={onDownload} 
+                           className="w-full h-20 bg-white text-black rounded-[2.5rem] font-black flex items-center justify-center gap-4 hover:bg-accent hover:text-white transition-all shadow-2xl hover:shadow-accent/40 group">
+                           <Download className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                           <span className="text-base uppercase tracking-[0.2em]">Store Assets Offline</span>
+                         </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
+        </motion.div>
+
+        {/* Floating AI Highlight Trigger */}
+        <AnimatePresence>
+          {selection.text && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ left: selection.x, top: selection.y - 70 }}
+              onClick={() => { setExploringWord(selection.text); setSelection({ text: '', x: 0, y: 0 }) }}
+              className="fixed z-[110] flex items-center gap-3 bg-accent text-white px-6 py-3 rounded-full shadow-2xl font-black text-[10px] uppercase tracking-widest ring-8 ring-accent/20 hover:scale-110 active:scale-95 transition-all"
+            >
+              <Sparkles className="h-4 w-4" /> Analyze Context
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </>
   )

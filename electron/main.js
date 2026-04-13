@@ -436,6 +436,94 @@ function registerIpcHandlers() {
     }
   })
 
+  // ─── Vocabulary Persistence & AI Explanation ────────────────────────────────
+  const dataDir = path.join(app.getAppPath(), 'data')
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
+  const vocabPath = path.join(dataDir, 'library.json')
+
+  ipcMain.handle('vocab:load', () => {
+    try {
+      if (fs.existsSync(vocabPath)) return JSON.parse(fs.readFileSync(vocabPath, 'utf8'))
+    } catch (e) { console.error('Failed to load vocab', e) }
+    return []
+  })
+
+  ipcMain.handle('vocab:save', (_e, list) => {
+    try {
+      fs.writeFileSync(vocabPath, JSON.stringify(list, null, 2))
+      return true
+    } catch (e) { console.error('Failed to save vocab', e); return false }
+  })
+
+  ipcMain.handle('ai:explain', async (_e, { text, videoTitle }) => {
+    const state = readAppState()
+    const apiKey = state.aiApiKey
+    if (!apiKey) return { text, definition: 'No API Key', example: '' }
+
+    console.log(`[DeepSeek] Explaining: "${text}"`)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { 
+              role: 'system', 
+              content: `You are an expert English Professor. For the provided phrase, return a deep analysis. 
+              STRICT RULE: DO NOT use markdown like **bold**, __italic__, or codes. Use PLAIN TEXT ONLY.
+              1. Classification: [Noun/Verb/Adj/Adv/Phrase/etc.]
+              2. Pronunciation: [Simple phonetic guide, e.g., /su-perb/]
+              3. Definition: [Deep explanation]
+              4. Grammar: [Tense and structural notes]
+              5. Usage: [Formal/Informal/Colloquial context]
+              6. Synonyms: [List 5 synonyms separated by commas]
+              7. Examples: [3 natural sentences, each on a new line started with •]` 
+            },
+            { role: 'user', content: text }
+          ]
+        })
+      })
+      clearTimeout(timeout)
+      
+      const data = await response.json()
+      let content = data.choices?.[0]?.message?.content || ''
+      
+      const getSection = (name) => {
+        const regex = new RegExp(`${name}:?\\s*([\\s\\S]*?)(?=\\d\\.|\\n\\d\\.|$)`, 'i')
+        let val = content.match(regex)?.[1]?.trim() || ''
+        return val.replace(/\*\*|__|\"|\[|\]|`/g, '').trim()
+      }
+
+      return {
+        text: text.replace(/\*\*|__|\"|\[|\]|`/g, '').trim(),
+        videoTitle,
+        type: getSection('Classification'),
+        pronunciation: getSection('Pronunciation'),
+        definition: getSection('Definition'),
+        grammar: getSection('Grammar'),
+        usage: getSection('Usage'),
+        synonyms: getSection('Synonyms'),
+        examples: getSection('Examples').split('\n').map(s => s.replace(/•|\*|-/g, '').replace(/\"|\[|\]/g, '').trim()).filter(Boolean),
+        date: new Date().toISOString()
+      }
+    } catch (e) {
+      clearTimeout(timeout)
+      console.error('AI Explain error:', e.name === 'AbortError' ? 'Timed out' : e.message)
+      return { 
+        text, 
+        videoTitle, 
+        definition: e.name === 'AbortError' ? 'AI timed out. Please try again.' : 'AI explanation unavailable.', 
+        example: '',
+        date: new Date().toISOString()
+      }
+    }
+  })
+
   ipcMain.handle('fs:pickSavePath', async () => {
     const r = await dialog.showOpenDialog({ title: 'Select Folder', properties: ['openDirectory', 'createDirectory'] })
     if (r.canceled || !r.filePaths.length) return null
