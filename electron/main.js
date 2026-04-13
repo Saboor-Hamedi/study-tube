@@ -476,13 +476,14 @@ function registerIpcHandlers() {
               role: 'system', 
               content: `You are an English dictionary. Keep all facts extremely short, simple, and directly to the point. No conversational filler or long paragraphs.
               STRICT RULE: DO NOT use markdown like **bold**, __italic__, or codes. Use PLAIN TEXT ONLY.
-              1. Classification: [Noun/Verb/Adj/Adv/Phrase/etc. max 1-2 words]
+              1. Classification: [STRICTLY 1 word: Noun, Verb, Pronoun, Adjective, Adverb, etc.]
               2. Pronunciation: [Simple phonetic guide, e.g., /su-perb/]
               3. Definition: [A very short, simple 1-sentence definition max 15 words]
               4. Grammar: [Very brief grammar note, max 1 sentence]
               5. Usage: [Formal/Informal/Slang max 1-2 words]
               6. Synonyms: [List 3 synonyms separated by commas]
-              7. Examples: [1-2 short simple sentences, each on a new line started with •]` 
+              7. Antonyms_Acronyms: [List 2 antonyms or acronyms if applicable]
+              8. Examples: [Exactly 3 short simple sentences, each on a new line started with •]` 
             },
             { role: 'user', content: text }
           ]
@@ -502,13 +503,14 @@ function registerIpcHandlers() {
       return {
         text: text.replace(/\*\*|__|\"|\[|\]|`/g, '').trim(),
         videoTitle,
-        type: getSection('Classification'),
+        type: getSection('Classification').split(/[.,]/)[0].trim().substring(0, 15),
         pronunciation: getSection('Pronunciation'),
         definition: getSection('Definition'),
         grammar: getSection('Grammar'),
         usage: getSection('Usage'),
         synonyms: getSection('Synonyms'),
-        examples: getSection('Examples').split('\n').map(s => s.replace(/•|\*|-/g, '').replace(/\"|\[|\]/g, '').trim()).filter(Boolean),
+        antonyms: getSection('Antonyms_Acronyms'),
+        examples: getSection('Examples').split('\n').map(s => s.replace(/•|\*|-/g, '').replace(/\"|\[|\]/g, '').trim()).filter(Boolean).slice(0,3),
         date: new Date().toISOString()
       }
     } catch (e) {

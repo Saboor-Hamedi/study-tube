@@ -1,1 +1,69 @@
-[]
+[
+  {
+    "text": "obviously",
+    "videoTitle": "YouTube Video",
+    "timestamp": 0,
+    "date": "2026-04-13T10:44:58.955Z",
+    "loading": false,
+    "type": "Adverb\nPronunciation: /ob-vee-us-lee/\nDefinition: In a way that is easily seen or understood.\nGrammar: Used to emphasize something clear or true.\nUsage: Formal/Informal\nSynonyms: clearly, evidently, plainly\nExamples:\n• He was obviously tired.\n• That is obviously the best choice.",
+    "pronunciation": "/ob-vee-us-lee/\nDefinition: In a way that is easily seen or understood.\nGrammar: Used to emphasize something clear or true.\nUsage: Formal/Informal\nSynonyms: clearly, evidently, plainly\nExamples:\n• He was obviously tired.\n• That is obviously the best choice.",
+    "definition": "In a way that is easily seen or understood.\nGrammar: Used to emphasize something clear or true.\nUsage: Formal/Informal\nSynonyms: clearly, evidently, plainly\nExamples:\n• He was obviously tired.\n• That is obviously the best choice.",
+    "grammar": "Used to emphasize something clear or true.\nUsage: Formal/Informal\nSynonyms: clearly, evidently, plainly\nExamples:\n• He was obviously tired.\n• That is obviously the best choice.",
+    "usage": "Formal/Informal\nSynonyms: clearly, evidently, plainly\nExamples:\n• He was obviously tired.\n• That is obviously the best choice.",
+    "synonyms": "clearly, evidently, plainly\nExamples:\n• He was obviously tired.\n• That is obviously the best choice.",
+    "examples": [
+      "He was obviously tired.",
+      "That is obviously the best choice."
+    ]
+  },
+  {
+    "text": "immigrants",
+    "videoTitle": "YouTube Video",
+    "timestamp": 0,
+    "date": "2026-04-13T10:41:27.335Z",
+    "loading": false,
+    "type": "Noun\nPronunciation: /im-i-grants/\nDefinition: People who move to live in a new country.\nGrammar: Usually used as a plural noun.\nUsage: Formal/Informal\nSynonyms: newcomers, settlers, migrants\nExamples:\n• The city has many immigrants from different countries.\n• Immigrants often learn a new language.",
+    "pronunciation": "/im-i-grants/\nDefinition: People who move to live in a new country.\nGrammar: Usually used as a plural noun.\nUsage: Formal/Informal\nSynonyms: newcomers, settlers, migrants\nExamples:\n• The city has many immigrants from different countries.\n• Immigrants often learn a new language.",
+    "definition": "People who move to live in a new country.\nGrammar: Usually used as a plural noun.\nUsage: Formal/Informal\nSynonyms: newcomers, settlers, migrants\nExamples:\n• The city has many immigrants from different countries.\n• Immigrants often learn a new language.",
+    "grammar": "Usually used as a plural noun.\nUsage: Formal/Informal\nSynonyms: newcomers, settlers, migrants\nExamples:\n• The city has many immigrants from different countries.\n• Immigrants often learn a new language.",
+    "usage": "Formal/Informal\nSynonyms: newcomers, settlers, migrants\nExamples:\n• The city has many immigrants from different countries.\n• Immigrants often learn a new language.",
+    "synonyms": "newcomers, settlers, migrants\nExamples:\n• The city has many immigrants from different countries.\n• Immigrants often learn a new language.",
+    "examples": [
+      "The city has many immigrants from different countries.",
+      "Immigrants often learn a new language."
+    ]
+  },
+  {
+    "text": "listen for it for years the government",
+    "videoTitle": "YouTube Video",
+    "skipAI": true,
+    "type": "sentence",
+    "date": "2026-04-13T10:40:30.713Z",
+    "loading": false
+  },
+  {
+    "text": "turna blind ey turn a blind ey just",
+    "videoTitle": "YouTube Video",
+    "skipAI": true,
+    "type": "sentence",
+    "date": "2026-04-13T10:40:12.514Z",
+    "loading": false
+  },
+  {
+    "text": "notifications",
+    "videoTitle": "YouTube Video",
+    "timestamp": 0,
+    "date": "2026-04-13T10:35:34.540Z",
+    "loading": false,
+    "type": "Noun\nPronunciation: /noh-tuh-fi-kay-shuhnz/\nDefinition: Alerts or messages that inform you about something.\nGrammar: Usually plural; countable noun.\nUsage: Formal/Informal\nSynonyms: alerts, messages, updates\nExamples:\n• I turned off my phone notifications.\n• The app sends notifications for new messages.",
+    "pronunciation": "/noh-tuh-fi-kay-shuhnz/\nDefinition: Alerts or messages that inform you about something.\nGrammar: Usually plural; countable noun.\nUsage: Formal/Informal\nSynonyms: alerts, messages, updates\nExamples:\n• I turned off my phone notifications.\n• The app sends notifications for new messages.",
+    "definition": "Alerts or messages that inform you about something.\nGrammar: Usually plural; countable noun.\nUsage: Formal/Informal\nSynonyms: alerts, messages, updates\nExamples:\n• I turned off my phone notifications.\n• The app sends notifications for new messages.",
+    "grammar": "Usually plural; countable noun.\nUsage: Formal/Informal\nSynonyms: alerts, messages, updates\nExamples:\n• I turned off my phone notifications.\n• The app sends notifications for new messages.",
+    "usage": "Formal/Informal\nSynonyms: alerts, messages, updates\nExamples:\n• I turned off my phone notifications.\n• The app sends notifications for new messages.",
+    "synonyms": "alerts, messages, updates\nExamples:\n• I turned off my phone notifications.\n• The app sends notifications for new messages.",
+    "examples": [
+      "I turned off my phone notifications.",
+      "The app sends notifications for new messages."
+    ]
+  }
+]

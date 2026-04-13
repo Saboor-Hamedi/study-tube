@@ -17,17 +17,19 @@ export default function App() {
   }, [api])
 
   const addVocab = async (item) => {
-    const basicItem = { ...item, date: new Date().toISOString(), loading: true }
+    const basicItem = { ...item, date: new Date().toISOString(), loading: !item.skipAI }
     setVocab(prev => {
       const newList = [basicItem, ...prev]
       api.saveVocab(newList)
       return newList
     })
 
+    if (item.skipAI) return
+
     try {
       const entry = await api.explainWord({ text: item.text, videoTitle: item.videoTitle })
       setVocab(prev => {
-        const newList = prev.map(v => v.text === item.text && v.loading ? entry : v)
+        const newList = prev.map(v => v.text === item.text && v.loading ? { ...v, ...entry, loading: false } : v)
         api.saveVocab(newList)
         return newList
       })
