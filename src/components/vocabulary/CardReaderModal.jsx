@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, memo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Library, FileText, Sparkles, Brain, ListChecks, Loader2, Quote, Star, RefreshCcw, Pencil, Maximize2, Minimize2, Copy } from 'lucide-react'
+import { X, Library, FileText, Sparkles, Brain, ListChecks, Loader2, Quote, Star, RefreshCcw, Pencil, Maximize2, Minimize2, Copy, AlertCircle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -16,14 +16,14 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
             <input 
               value={titleEditVal}
               onChange={e => setTitleEditVal(e.target.value)}
-              className="w-full bg-accent/5 border-b-2 border-accent text-[22px] font-black text-white outline-none py-2 transition-all"
+              className="w-full bg-accent/5 border-b-2 border-accent text-[18px] font-black text-white outline-none py-2 transition-all"
               placeholder="Designate research title..."
               autoFocus
             />
           ) : (
             <div className="space-y-1">
               <span className="text-[9px] font-black uppercase tracking-[0.4em] text-accent/40 opacity-0 group-hover/title:opacity-100 transition-opacity">Record ID: {item.date?.slice(0,8)}</span>
-              <h1 className="text-[20px] font-black text-white tracking-tight leading-none select-text">{item.text}</h1>
+              <h1 className="text-[18px] font-black text-white tracking-tight leading-none select-text">{item.text}</h1>
             </div>
           )}
         </div>
@@ -41,7 +41,7 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
             <textarea
               value={editVal}
               onChange={e => setEditVal(e.target.value)}
-              className="w-full bg-accent/[0.02] border border-accent/10 rounded-2xl p-10 text-xl text-white font-mono leading-relaxed focus:border-accent/40 outline-none min-h-[650px] scrollbar-thin resize-none shadow-2xl transition-all"
+              className="w-full bg-accent/[0.02] border border-accent/10 rounded-2xl p-10 text-xl text-white font-mono leading-relaxed focus:border-accent/40 outline-none min-h-[550px] scrollbar-thin resize-none shadow-2xl transition-all"
               placeholder="Begin neural drafting..."
             />
           ) : (
@@ -100,14 +100,22 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   const handleGenerateSummary = async () => {
     if (isSummarizing) return
     setIsSummarizing(true)
+    
+    // Shield Logic: Timeout Promise
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('AI Request Timed Out')), 45000))
+
     try {
-      const response = await api.chatWithAI({ 
-        messages: [{ role: 'user', content: `Analyze and summarize this study entry with 5 advanced bulleted insights (Plain Text Only): ${editVal.slice(0, 8000)}` }] 
+      const chatPromise = api.chatWithAI({ 
+        messages: [{ role: 'user', content: `Summarize in 5 bullet points (No markdown/bold): ${editVal.slice(0, 8000)}` }] 
       })
+      
+      const response = await Promise.race([chatPromise, timeout])
       const cleaned = response.replace(/[#*`~_]/g, '').replace(/^(Sure|Of course|Here is).+?(:|\.)/i, '').trim()
+      
       setSummary(cleaned)
+      onUpdate({ ...item, summary: cleaned }) // Auto-sync to persistence
     } catch (e) {
-      showToast('Synthesis interrupted')
+      showToast(e.message === 'AI Request Timed Out' ? 'Synthesis Time Out' : 'Synthesis Interrupted', 'error')
     } finally {
       setIsSummarizing(false)
     }
@@ -116,17 +124,29 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   const handleIdentifyVocab = async () => {
     if (isHighlighting) return
     setIsHighlighting(true)
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Heatmap Timed Out')), 30000))
+
     try {
-      const resp = await api.chatWithAI({ messages: [{ role: 'user', content: `List 8 high-level vocabulary words from this text (comma separated): ${editVal.slice(0, 5000)}` }] })
-      setHighlights(resp.split(',').map(w => w.trim().toLowerCase()).filter(Boolean))
+      const respPromise = api.chatWithAI({ messages: [{ role: 'user', content: `List 8 high-level words from text (comma separated): ${editVal.slice(0, 5000)}` }] })
+      const resp = await Promise.race([respPromise, timeout])
+      
+      const words = resp.split(',').map(w => w.trim().toLowerCase()).filter(w => w && w.length > 2)
+      setHighlights(words)
       showToast('Heatmap construction complete')
+    } catch (e) {
+      showToast('Heatmap Construction Interrupted', 'error')
     } finally {
       setIsHighlighting(false)
     }
   }
 
   const renderContentWithHeatmap = (text) => {
-    const regex = new RegExp(`\\b(${highlights.join('|')})\\b`, 'gi')
+    if (!highlights.length) return <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+    
+    // Hardened Regex: Escape special characters in highlights
+    const safeHighlights = highlights.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    const regex = new RegExp(`\\b(${safeHighlights.join('|')})\\b`, 'gi')
+    
     return (
       <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {text.split(regex).map(p => highlights.includes(p.toLowerCase()) ? `**${p}**` : p).join('')}
@@ -156,9 +176,9 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
           {/* Industrial Command Sidebar */}
           <div className="w-[280px] shrink-0 border-l border-white/5 bg-[#0a0a0a] flex flex-col p-6 space-y-8 relative z-50 shadow-[ -20px_0_40px_rgba(0,0,0,0.4)] overflow-y-auto scrollbar-thin">
              
-             {/* Master Controls */}
+             {/* Master Controls (Compact) */}
              <div className="flex items-center justify-between pb-5 border-b border-white/5">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                    <div className="p-2 bg-accent/10 rounded-lg border border-accent/20">
                       <Library className="h-4 w-4 text-accent" />
                    </div>
@@ -167,12 +187,12 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                       <span className="text-[7px] font-bold uppercase tracking-widest text-muted/30">Archive</span>
                    </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                    <button onClick={() => setIsMaximized(!isMaximized)} className="p-2 bg-white/5 hover:bg-accent hover:text-white rounded-lg text-muted transition-all border border-white/5">
-                    {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    {isMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                    </button>
                    <button onClick={onClose} className="p-2 bg-red-500/10 hover:bg-red-500 rounded-lg text-red-500 hover:text-white transition-all border border-red-500/10">
-                    <X className="h-4 w-4" />
+                    <X className="h-3.5 w-3.5" />
                    </button>
                 </div>
              </div>
@@ -212,7 +232,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                    <Brain className="h-3 w-3" /> Logic
                 </p>
                 <div className="space-y-3">
-                   <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 rounded-[20px] flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left">
+                   <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 rounded-[20px] flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left relative">
                      {isSummarizing ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Sparkles className="h-4 w-4 text-accent group-hover:text-white" />}
                      <div>
                        <p className="text-[10px] font-black text-white uppercase tracking-widest">Synthesis</p>
@@ -230,22 +250,22 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                 </div>
              </div>
 
-             {/* Routing */}
+             {/* Shield Status / Summary Flow */}
              {summary && (
-                <div className="p-6 bg-accent/5 rounded-2xl border border-accent/10 space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                <div className="p-4 bg-accent/5 rounded-2xl border border-accent/10 space-y-3 animate-in fade-in slide-in-from-bottom-2">
                    <div className="flex items-center gap-2 text-accent">
-                      <Sparkles className="h-3 w-3" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">AI Synthesis Complete</span>
+                      <Sparkles className="h-2.5 w-2.5" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Synthesis Cached</span>
                    </div>
-                   <div className="text-[11px] text-white/60 leading-relaxed font-medium space-y-3">
+                   <div className="text-[10px] text-white/60 leading-relaxed font-medium space-y-2">
                       {summary.split('\n').slice(0, 3).map((l, i) => <p key={i}>• {l.replace(/^[•\-\d\.]+\s*/, '')}</p>)}
                    </div>
                 </div>
              )}
 
-             <div className="mt-auto pt-10 flex items-center justify-between opacity-10 grayscale">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted">Core-AI Archive Terminal</span>
-                <Brain className="h-4 w-4 text-accent" />
+             <div className="mt-auto pt-6 flex items-center justify-between opacity-10 grayscale border-t border-white/5">
+                <span className="text-[8px] font-black uppercase tracking-widest text-muted">Shield Active</span>
+                <Brain className="h-3.5 w-3.5 text-accent" />
              </div>
           </div>
         </motion.div>
