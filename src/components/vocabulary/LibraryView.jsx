@@ -39,13 +39,13 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
           <div className="flex flex-col gap-2">
              <button 
               onClick={onConfirm}
-              className="w-full py-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em]  hover:bg-red-600 transition-all shadow-lg shadow-red-500/10"
+              className="w-full py-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em]  hover:bg-red-600 transition-all shadow-lg shadow-red-500/10 rounded-[5px]"
              >
                 Confirm Delete
              </button>
              <button 
               onClick={onCancel}
-              className="w-full py-3 bg-surface-2 text-muted hover:text-text text-[10px] font-black uppercase tracking-[0.2em]  transition-all"
+              className="w-full py-3 bg-surface-2 text-muted hover:text-text text-[10px] font-black uppercase tracking-[0.2em]  transition-all rounded-[5px]"
              >
                 Cancel
              </button>

@@ -32,7 +32,7 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
           ) : (
             <div className="space-y-1">
               <span className="text-[9px] font-black uppercase tracking-[0.4em] text-accent/40 opacity-0 group-hover/title:opacity-100 transition-opacity">Record ID: {item.date?.slice(0,8)}</span>
-              <h1 className="text-[18px] font-black text-text tracking-tight leading-none select-text">{item.text}</h1>
+              <h1 className="text-[18px] font-black text-text tracking-tight leading-none select-text leading-normal">{item.text}</h1>
             </div>
           )}
         </div>
@@ -220,7 +220,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
              {/* Master Controls (Compact) */}
              <div className="flex items-center justify-between pb-5 border-b border-border">
                 <div className="flex items-center gap-2">
-                   <div className="p-2 bg-accent/10 border border-accent/20 ">
+                   <div className="p-2 bg-accent/10 border border-accent/20 rounded-[5px]">
                       <Library className="h-4 w-4 text-accent" />
                    </div>
                    <div className="flex flex-col">
@@ -229,10 +229,10 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                    </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                   <button onClick={() => setIsMaximized(!isMaximized)} className="p-2 bg-surface-2 hover:bg-accent hover:text-white text-muted transition-all border border-border ">
+                   <button onClick={() => setIsMaximized(!isMaximized)} className="p-2 bg-surface-2 hover:bg-accent hover:text-white text-muted transition-all border border-border rounded-[5px]">
                     {isMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                    </button>
-                   <button onClick={onClose} className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/10 ">
+                   <button onClick={onClose} className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/10 rounded-[5px]">
                     <X className="h-3.5 w-3.5" />
                    </button>
                 </div>
@@ -246,11 +246,11 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                 <div className="flex flex-col gap-2">
                     {isEditing ? (
                       <div className="flex gap-1.5">
-                        <button onClick={handleSaveEdit} className="flex-1 py-3 bg-accent text-white  text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20">Commit</button>
-                        <button onClick={() => setIsEditing(false)} className="px-4 py-3 bg-surface-2 text-muted hover:bg-surface-3 hover:text-text  text-[10px] font-black uppercase tracking-widest transition-all">Abort</button>
+                        <button onClick={handleSaveEdit} className="flex-1 py-3 bg-accent text-white  text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20 rounded-[5px]">Commit</button>
+                        <button onClick={() => setIsEditing(false)} className="px-4 py-3 bg-surface-2 text-muted hover:bg-surface-3 hover:text-text  text-[10px] font-black uppercase tracking-widest transition-all rounded-[5px]">Abort</button>
                       </div>
                     ) : (
-                      <button onClick={startEditing} className="w-full py-3 bg-surface-2 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-text hover:text-background transition-all flex items-center justify-center gap-2 group ">
+                      <button onClick={startEditing} className="w-full py-3 bg-surface-2 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-text hover:text-background transition-all flex items-center justify-center gap-2 group rounded-[5px]">
                         <Pencil className="h-3.5 w-3.5 text-accent group-hover:text-background" /> Edit
                       </button>
                     )}
@@ -260,7 +260,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                         navigator.clipboard.writeText(`${item.text}\n\n${item.definition}`)
                         showToast('Copied')
                       }}
-                      className="w-full py-3 bg-surface-2 border border-border text-muted/50 text-[10px] font-black uppercase tracking-widest hover:bg-surface-3 hover:text-text transition-all flex items-center justify-center gap-2 "
+                      className="w-full py-3 bg-surface-2 border border-border text-muted/50 text-[10px] font-black uppercase tracking-widest hover:bg-surface-3 hover:text-text transition-all flex items-center justify-center gap-2 rounded-[5px]"
                     >
                       <Copy className="h-3.5 w-3.5" /> Copy
                     </button>
@@ -273,7 +273,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                    <Brain className="h-3 w-3" /> Logic
                 </p>
                 <div className="space-y-3">
-                   <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left relative ">
+                   <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left relative rounded-[5px]">
                      {isSummarizing ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Sparkles className="h-4 w-4 text-accent group-hover:text-white" />}
                      <div>
                        <p className="text-[10px] font-black text-text uppercase tracking-widest group-hover:text-white">Synthesis</p>
@@ -281,7 +281,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                      </div>
                    </button>
 
-                   <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="w-full p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left ">
+                   <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="w-full p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left rounded-[5px]">
                      {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-muted" /> : <ListChecks className="h-4 w-4 text-text" />}
                      <div>
                        <p className="text-[10px] font-black text-text uppercase tracking-widest">Heatmap</p>

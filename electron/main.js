@@ -7,6 +7,8 @@ import ytdl from '@distube/ytdl-core'
 import ytSearch from 'yt-search'
 import ffmpegPath from 'ffmpeg-static'
 import { YoutubeTranscript } from 'youtube-transcript/dist/youtube-transcript.esm.js'
+import pkgUpdater from 'electron-updater'
+const { autoUpdater } = pkgUpdater
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -492,6 +494,36 @@ function registerIpcHandlers() {
   safeHandle('settings:getTheme', () => readAppState().theme || 'dark')
   safeHandle('settings:setTheme', (_e, theme) => { writeAppState({ theme }); return theme })
   safeHandle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
+  safeHandle('app:getVersion', () => app.getVersion())
+
+  // ─── Auto-Updater ──────────────────────────────────────────────────────────
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  const sendUStatus = (status, info = null) => {
+    if (mainWindow) sendToRenderer(mainWindow.webContents, 'update:status', { status, info })
+  }
+
+  autoUpdater.on('checking-for-update', () => sendUStatus('checking'))
+  autoUpdater.on('update-available', (info) => sendUStatus('available', info))
+  autoUpdater.on('update-not-available', (info) => sendUStatus('not-available', info))
+  autoUpdater.on('error', (err) => sendUStatus('error', err.message))
+  autoUpdater.on('download-progress', (p) => sendUStatus('downloading', p))
+  autoUpdater.on('update-downloaded', (info) => sendUStatus('downloaded', info))
+
+  ipcMain.handle('updater:check', () => {
+    if (isDev) {
+      sendUStatus('not-available', { version: app.getVersion() })
+      return { success: false, message: 'Dev Mode' }
+    }
+    autoUpdater.checkForUpdates().catch(e => sendUStatus('error', e.message))
+    return { success: true }
+  })
+
+  ipcMain.handle('updater:install', () => {
+    autoUpdater.quitAndInstall()
+    return true
+  })
 }
 
 let mainWindow = null

@@ -25,6 +25,15 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
   cancelDownload: (taskId) => ipcRenderer.invoke('download:cancel', taskId),
   openFilePath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    onUpdateStatus: (cb) => {
+      const fn = (_e, d) => cb(d)
+      ipcRenderer.on('update:status', fn)
+      return () => ipcRenderer.removeListener('update:status', fn)
+    }
+  },
   onProgress: (cb) => {
     const fn = (_e, d) => cb(d)
     ipcRenderer.on('download:progress', fn)
@@ -40,4 +49,5 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
     ipcRenderer.on('download:cancelled', fn)
     return () => ipcRenderer.removeListener('download:cancelled', fn)
   },
+  getVersion: () => ipcRenderer.invoke('app:getVersion'),
 })

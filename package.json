@@ -1,6 +1,6 @@
 {
   "name": "yt-downloader",
-  "version": "0.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Premium AI-powered YouTube learning studio.",
@@ -13,9 +13,14 @@
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",
     "build": "vite build",
-    "win": "vite build && npx rimraf dist-electron && npx electron-builder --win",
-    "linux": "vite build && npx electron-builder --linux",
-    "build:all": "vite build && npx electron-builder --win --mac --linux",
+    "win": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win",
+    "build:win": "npm run win",
+    "mac": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --mac",
+    "build:mac": "npm run mac",
+    "linux": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --linux",
+    "build:linux": "npm run linux",
+    "build:all": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win --mac --linux",
+    "publish": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win --mac --linux -p always",
     "preview": "vite preview"
   },
   "build": {
@@ -30,6 +35,13 @@
       "node_modules/**/*",
       "package.json",
       "data/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Saboor-Hamedi",
+        "repo": "study-tube"
+      }
     ],
     "win": {
       "icon": "electron/assets/icon.png",
@@ -46,8 +58,10 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.1",
+    "app-builder-bin": "^5.0.0-alpha.12",
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
     "postcss": "^8.5.9",
@@ -60,6 +74,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "electron-updater": "^6.8.3",
     "ffmpeg-static": "^5.3.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
