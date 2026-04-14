@@ -314,7 +314,7 @@ function LibraryView({
                       <div className="flex flex-col gap-4 overflow-hidden">
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex flex-col gap-1 min-h-[44px]">
-                            <h3 className="text-[16px] font-black text-white leading-tight line-clamp-2">{v.text}</h3>
+                            <h3 className="text-[14px] font-semibold text-white leading-normal line-clamp-2">{v.text}</h3>
                             {v.type && (
                               <span className="text-accent text-[11px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 20)}</span>
                             )}
@@ -326,44 +326,16 @@ function LibraryView({
                           </div>
                         </div>
 
-                        {/* Content Area - Fixed Height Containment */}
+                        {/* Content Area - Unified Global Standard */}
                         <div className="flex-1 overflow-hidden relative">
                           {v.loading ? (
                             <div className="flex items-center gap-2 py-1 opacity-50">
                               <Loader2 className="h-3 w-3 animate-spin text-accent" />
                               <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
                             </div>
-                          ) : v.archived || v.type === 'Collection' || v.videoTitle === 'AI Research Insight' ? (
-                             <div className="prose prose-invert prose-xs text-[12px] text-white/50 leading-relaxed select-text line-clamp-4">
-                               <ReactMarkdown>{v.definition}</ReactMarkdown>
-                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              <ul className="space-y-1.5">
-                                {v.definition && (
-                                  <li className="text-[13px] text-white/90 leading-snug flex gap-2 overflow-hidden">
-                                    <span className="text-accent/60 font-black shrink-0">•</span>
-                                    <div className="prose prose-invert prose-xs max-w-none line-clamp-2">
-                                       <ReactMarkdown>{v.definition}</ReactMarkdown>
-                                    </div>
-                                  </li>
-                                )}
-                                {!v.loading && (
-                                  <>
-                                    {v.synonyms && (
-                                      <li className="text-[12px] text-white/40 flex gap-2 italic">
-                                        <span className="font-bold opacity-30 shrink-0">syn:</span>
-                                        <span className="line-clamp-1">{v.synonyms}</span>
-                                      </li>
-                                    )}
-                                    {v.examples && (
-                                      <li className="text-[12px] text-white/30 italic leading-snug border-l border-white/10 pl-2 line-clamp-1">
-                                        {v.examples[0]}
-                                      </li>
-                                    )}
-                                  </>
-                                )}
-                              </ul>
+                            <div className="prose prose-invert prose-xs text-[13px] text-white/70 leading-[1.6] select-text line-clamp-4">
+                               <ReactMarkdown>{v.definition}</ReactMarkdown>
                             </div>
                           )}
                           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0f0f0f] group-hover:from-[#121212] transition-colors to-transparent pointer-events-none" />

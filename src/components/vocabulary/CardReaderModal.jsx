@@ -51,10 +51,10 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
                   prose-h1:text-2xl prose-h1:font-black prose-h1:text-white prose-h1:mb-6 prose-h1:tracking-tight
                   prose-h2:text-xl prose-h2:font-black prose-h2:text-white/90 prose-h2:mb-4 prose-h2:border-l-2 prose-h2:border-accent prose-h2:pl-4
                   prose-h3:text-lg prose-h3:font-bold prose-h3:text-accent prose-h3:mb-3 prose-h3:uppercase prose-h3:tracking-widest
-                  prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-p:mb-6
+                  prose-p:text-[16px] prose-p:leading-[1.8] prose-p:text-white/80 prose-p:mb-6
                   prose-strong:text-accent prose-strong:font-black prose-strong:bg-accent/5 prose-strong:px-1
                   prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2
-                  selection:bg-accent/40 select-text font-light tracking-wide">
+                  selection:bg-accent/40 select-text font-extralight tracking-wide">
                  {highlights.length > 0 ? renderContentWithHeatmap(item.definition) : (
                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.definition}</ReactMarkdown>
                  )}

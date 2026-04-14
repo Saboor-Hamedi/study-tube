@@ -43,8 +43,9 @@ export default function App() {
     const basicItem = { ...item, date: new Date().toISOString(), loading: !item.skipAI }
     setVocab(prev => {
       const newList = [basicItem, ...prev]
+      const displayTitle = item.text.length > 30 ? item.text.slice(0, 30) + '...' : item.text
+      showToast(`Saved "${displayTitle}"`)
       api.saveVocab(newList)
-      showToast(`Saved "${item.text}"`)
       return newList
     })
 

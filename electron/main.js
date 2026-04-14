@@ -339,6 +339,27 @@ function registerIpcHandlers() {
   })
 
 
+  safeHandle('ai:reconstruct-transcript', async (_e, text) => {
+    const apiKey = readAppState().aiApiKey
+    if (!apiKey) throw new Error('API Key found missing.')
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ 
+            role: 'system', 
+            content: 'You are a script editor. Take the raw transcript and add proper punctuation and sensible paragraph breaks. IMPORTANT: Return the exact same text, just punctuated. Do not add summaries or intros.' 
+          }, { role: 'user', content: text }],
+          temperature: 0.3
+        })
+      })
+      const data = await response.json()
+      return data.choices?.[0]?.message?.content || text
+    } catch (e) { throw new Error(`Reconstruction failed: ${e.message}`) }
+  })
+
   ipcMain.handle('ai:processTranscript', async (_e, { text, prompt }) => {
     const apiKey = readAppState().aiApiKey
     if (!apiKey) throw new Error('API Key found missing.')

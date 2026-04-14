@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Play, Pause, Volume2, VolumeX, Maximize2, X,
   Download, FolderOpen, CheckCircle, ChevronLeft,
-  Clock, Plus, Sparkles, MessageCircle, StopCircle, Library
+  Clock, Plus, Sparkles, MessageCircle, StopCircle, Library, Loader2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
@@ -115,6 +115,10 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
     { role: 'assistant', content: "Hi! I'm your AI English Tutor. I've read the transcript for this video. Ask me anything!" }
   ])
 
+  const [refinedTranscript, setRefinedTranscript] = useState(null)
+  const [isRefining, setIsRefining] = useState(false)
+  const [scriptMode, setScriptMode] = useState('raw') // 'raw' | 'neural'
+
   const handlePlay = async () => {
     if (!api) return
     try {
@@ -122,6 +126,22 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
       setStreamUrl(url)
     } catch (e) {
       console.error(e)
+    }
+  }
+
+  const handleRefine = async () => {
+    if (!transcript || transcript.length === 0 || isRefining) return
+    setIsRefining(true)
+    try {
+      const rawText = transcript.map(t => t.text.replace(/>>/g, '')).join(' ')
+      const refined = await api.reconstructTranscript(rawText)
+      setRefinedTranscript(refined)
+      setScriptMode('neural')
+      showToast('Neural Script Synthesized', 'success')
+    } catch (err) {
+      showToast('Reconstruction Anomaly', 'error')
+    } finally {
+      setIsRefining(false)
     }
   }
 
@@ -258,20 +278,32 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
           <div className="flex-1 overflow-hidden relative">
             {activeTab === 'learn' && (
               <div className="absolute inset-0 flex flex-col overflow-hidden">
-                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.01]">
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Reader Mode</p>
-                   <button 
-                     onClick={() => {
-                        const fullText = (transcript || []).map(t => t.text).join(' ')
-                        onAddVocab({ text: video.title, definition: fullText, type: 'Collection', videoTitle: video.title, date: new Date().toISOString(), skipAI: true })
-                        showToast(`Collection "${video.title}" saved!`)
-                     }}
-                     className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
-                   >
-                     <Library className="h-3.5 w-3.5" />
-                     Save as Collection
-                   </button>
-                 </div>
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.01]">
+                    <div className="flex items-center gap-4">
+                       <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{scriptMode === 'neural' ? 'Neural Mode' : 'Raw Mode'}</p>
+                       {transcript?.length > 0 && (
+                          <button 
+                            onClick={refinedTranscript ? () => setScriptMode(scriptMode === 'raw' ? 'neural' : 'raw') : handleRefine}
+                            disabled={isRefining}
+                            className={`p-1.5 rounded-lg transition-all border ${scriptMode === 'neural' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-muted hover:text-white'}`}
+                            title={refinedTranscript ? "Toggle Script Mode" : "Synthesize Neural Script"}
+                          >
+                             {isRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                          </button>
+                       )}
+                    </div>
+                    <button 
+                      onClick={() => {
+                         const content = scriptMode === 'neural' ? refinedTranscript : (transcript || []).map(t => t.text).join(' ')
+                         onAddVocab({ text: video.title, definition: content, type: 'Collection', videoTitle: video.title, date: new Date().toISOString(), skipAI: true })
+                         showToast(`Collection "${video.title}" saved!`)
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
+                    >
+                      <Library className="h-3.5 w-3.5" />
+                      Save as Collection
+                    </button>
+                  </div>
                  
                  <div className="flex-1 overflow-y-auto p-8 scrollbar-thin bg-black/20">
                     <div className="max-w-prose mx-auto">
@@ -282,20 +314,31 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                         </div>
                       ) : transcript?.length ? (
                         <div className="text-[13px] text-white/80 leading-[1.8] text-justify select-text space-y-4">
-                           <p>
-                             {transcript.map((line, i) => {
-                               const isActive = curTime >= line.start && curTime < (line.start + (line.duration || 3000));
-                               return (
-                                 <span 
-                                   key={i} 
-                                   className={`inline mr-1.5 transition-all cursor-pointer rounded-sm ${isActive ? 'bg-accent/40 text-white font-bold px-0.5' : 'hover:bg-white/10 hover:text-white'}`}
-                                   onClick={() => setSeekTo(line.start / 1000)}
-                                 >
-                                   {line.text}
-                                 </span>
-                               )
-                             })}
-                           </p>
+                           {scriptMode === 'neural' && refinedTranscript ? (
+                              <div className="prose prose-invert prose-sm max-w-none prose-p:leading-[1.8] prose-p:mb-6 select-text">
+                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{refinedTranscript}</ReactMarkdown>
+                              </div>
+                           ) : (
+                              <p>
+                                {transcript.map((line, i) => {
+                                  const isActive = curTime >= line.start && curTime < (line.start + (line.duration || 3000));
+                                  const cleanText = line.text.replace(/>>/g, '').trim();
+                                  if (!cleanText) return null;
+                                  const isSentenceEnd = /[.!?]$/.test(cleanText);
+                                  return (
+                                    <span key={i}>
+                                      <span 
+                                        className={`inline mr-1.5 transition-all cursor-text rounded-sm ${isActive ? 'bg-accent/40 text-white font-bold px-0.5' : 'hover:bg-white/10 hover:text-white'}`}
+                                        onClick={() => setSeekTo(line.start / 1000)}
+                                      >
+                                        {cleanText}
+                                      </span>
+                                      {isSentenceEnd && <><br /><br /></>}
+                                    </span>
+                                  )
+                                })}
+                              </p>
+                           )}
                         </div>
                       ) : (
                         <div className="h-full flex flex-col items-center justify-center pt-20 text-muted/40 gap-4">
