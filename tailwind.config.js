@@ -4,15 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        surface: '#1a1a1a',
-        'surface-2': '#222',
-        'surface-3': '#2a2a2a',
-        border: 'rgba(255,255,255,0.08)',
-        muted: '#888',
-        accent: '#3b82f6',          // blue-500
-        'accent-hover': '#2563eb',  // blue-600
-        success: '#22c55e',
-        danger: '#ef4444',
+        surface: 'var(--surface)',
+        'surface-2': 'var(--surface-2)',
+        'surface-3': 'var(--surface-3)',
+        border: 'var(--border)',
+        muted: 'var(--muted)',
+        accent: 'var(--accent)',
+        'accent-hover': 'var(--accent-hover)',
+        success: 'var(--success)',
+        danger: 'var(--danger)',
+        background: 'var(--background)',
+        text: 'var(--text)',
       },
     },
   },

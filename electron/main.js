@@ -489,6 +489,8 @@ function registerIpcHandlers() {
   ipcMain.handle('settings:getSavePath', () => readAppState().savePath || app.getPath('downloads'))
   safeHandle('settings:getAiKey', () => readAppState().aiApiKey || '')
   safeHandle('settings:setAiKey', (_e, key) => { writeAppState({ aiApiKey: key }); return key })
+  safeHandle('settings:getTheme', () => readAppState().theme || 'dark')
+  safeHandle('settings:setTheme', (_e, theme) => { writeAppState({ theme }); return theme })
   safeHandle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
 }
 

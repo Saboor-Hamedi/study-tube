@@ -31,12 +31,12 @@ const SettingsView = ({ api }) => {
   }
 
   return (
-    <div className="absolute inset-0 overflow-y-auto scrollbar-thin p-8 lg:p-12 bg-[#0a0a0a]">
+    <div className="absolute inset-0 overflow-y-auto scrollbar-thin p-8 lg:p-12 bg-background transition-colors duration-500">
        <div className="max-w-3xl mx-auto space-y-12">
           
           <header className="space-y-4">
-            <h1 className="text-4xl font-black text-white tracking-tight">System Settings</h1>
-            <p className="text-slate-400 text-sm max-w-xl leading-relaxed">
+            <h1 className="text-4xl font-black text-text tracking-tight">System Settings</h1>
+            <p className="text-muted text-sm max-w-xl leading-relaxed">
               Configure your AI intelligence and local storage. All settings are stored locally on your machine for maximum privacy.
             </p>
           </header>
@@ -44,20 +44,20 @@ const SettingsView = ({ api }) => {
           <div className="grid gap-8">
             
             {/* AI CONFIGURATION */}
-            <section className="bg-[#111] border border-white/5 rounded-3xl p-8 space-y-6 shadow-2xl">
+            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500 rounded-[5px]">
                <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-accent/10 rounded-xl text-accent">
+                 <div className="p-2.5 bg-accent/10 text-accent rounded-[5px]">
                    <Cpu className="h-5 w-5" />
                  </div>
                  <div>
-                   <h2 className="text-lg font-bold text-white">DeepSeek Intelligence</h2>
+                   <h2 className="text-lg font-bold text-text">DeepSeek Intelligence</h2>
                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Natural Language Processing</p>
                  </div>
                </div>
 
                <div className="space-y-4">
                  <div className="space-y-2">
-                   <label className="text-xs font-bold text-slate-400 flex items-center justify-between">
+                   <label className="text-xs font-bold text-muted flex items-center justify-between">
                      <span>DeepSeek API Key</span>
                      <a href="https://platform.deepseek.com/" target="_blank" className="text-accent flex items-center gap-1 hover:underline">
                        Get Key <ExternalLink className="h-3 w-3" />
@@ -72,7 +72,7 @@ const SettingsView = ({ api }) => {
                        value={apiKey}
                        onChange={e => setApiKey(e.target.value)}
                        placeholder="sk-..."
-                       className="w-full bg-black border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all"
+                       className="w-full bg-surface-2 border border-border py-4 pl-12 pr-4 text-sm text-text outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all rounded-[5px]"
                      />
                    </div>
                  </div>
@@ -80,9 +80,9 @@ const SettingsView = ({ api }) => {
                  <button 
                    onClick={handleSaveKey}
                    disabled={isSaving}
-                   className="w-full bg-white text-black font-black text-xs uppercase tracking-widest py-4 rounded-2xl hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+                   className="w-full bg-text text-background font-black text-xs uppercase tracking-widest py-4 hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-2 group disabled:opacity-50 rounded-[5px]"
                  >
-                   {isSaving ? (
+                   {isTyping ? (
                      <span className="animate-pulse">Saving...</span>
                    ) : (
                      <>
@@ -102,42 +102,36 @@ const SettingsView = ({ api }) => {
             </section>
 
             {/* STORAGE CONFIGURATION */}
-            <section className="bg-[#111] border border-white/5 rounded-3xl p-8 space-y-6 shadow-2xl">
+            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500 rounded-[5px]">
                <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-white/5 rounded-xl text-white/40">
+                 <div className="p-2.5 bg-accent/10 text-accent rounded-[5px]">
                    <Folder className="h-5 w-5" />
                  </div>
                  <div>
-                   <h2 className="text-lg font-bold text-white">Local Storage</h2>
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Library & Downloads</p>
+                   <h2 className="text-lg font-bold text-text">Dossier Storage</h2>
+                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Local Filesystem</p>
                  </div>
                </div>
 
                <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400">Download Directory</label>
+                    <label className="text-xs font-bold text-muted">Primary Export Directory</label>
                     <div className="flex gap-2">
-                       <div className="flex-1 bg-black border border-white/10 rounded-2xl py-4 px-6 text-[13px] text-slate-300 truncate">
-                         {savePath || 'Standard Downloads'}
-                       </div>
-                       <button 
-                         onClick={handlePickPath}
-                         className="px-6 bg-white/5 border border-white/10 rounded-2xl text-white hover:bg-white/10 transition-all font-bold text-[10px] uppercase tracking-widest"
-                       >
-                         Change
-                       </button>
+                      <div className="flex-1 bg-surface-2 border border-border py-3 px-4 text-xs text-text/60 truncate rounded-[5px]">
+                        {savePath || 'No directory established'}
+                      </div>
+                      <button 
+                        onClick={handlePickPath}
+                        className="px-6 bg-surface-3 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all rounded-[5px]"
+                      >
+                        Change
+                      </button>
                     </div>
                   </div>
                </div>
             </section>
 
           </div>
-
-          <footer className="pt-8 border-t border-white/5 flex items-center justify-between text-muted/20 text-[10px] font-bold uppercase tracking-[0.2em] italic">
-            <span>studyTube v1.2.0</span>
-            <span>Research Grade Dashboard</span>
-          </footer>
-
        </div>
     </div>
   )

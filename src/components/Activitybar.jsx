@@ -1,7 +1,7 @@
-import { Search, BookOpen, Settings, Sparkles, FileDown } from 'lucide-react'
+import { Search, BookOpen, Settings, Sparkles, FileDown, Sun, Moon } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-export default function Activitybar({ view, setView, onExport }) {
+export default function Activitybar({ view, setView, onExport, theme, onToggleTheme }) {
 
   const mainTabs = [
     { id: 'search', label: 'Discover', icon: Search },
@@ -19,7 +19,7 @@ export default function Activitybar({ view, setView, onExport }) {
       <button
         key={tab.id}
         onClick={() => setView(tab.id)}
-        className={`relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 group ${active ? 'bg-accent/10 text-accent' : 'text-muted/40 hover:bg-white/5 hover:text-white'}`}
+        className={`relative w-12 h-12 flex items-center justify-center rounded-[5px] transition-all duration-300 group ${active ? 'bg-accent/10 text-accent' : 'text-muted/40 hover:bg-surface-2 hover:text-text'}`}
       >
         <tab.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
         
@@ -27,12 +27,12 @@ export default function Activitybar({ view, setView, onExport }) {
         {active && (
           <motion.div 
             layoutId="sidebar-active" 
-            className="absolute left-0 top-2 w-0.5 h-8 bg-accent rounded-r-full" 
+            className="absolute left-0 top-2 w-0.5 h-8 bg-accent" 
           />
         )}
 
         {/* Tooltip */}
-        <div className="absolute left-14 px-3 py-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-md opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/10 ml-2">
+        <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-bold uppercase tracking-widest rounded-[5px] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-50">
           {tab.label}
         </div>
       </button>
@@ -40,19 +40,28 @@ export default function Activitybar({ view, setView, onExport }) {
   }
 
   return (
-    <div className="w-[68px] h-full shrink-0 bg-[#080808] border-r border-white/5 flex flex-col items-center pt-1 pb-6 relative z-30">
+    <div className="w-[68px] h-full shrink-0 bg-surface-3 border-r border-border flex flex-col items-center pt-1 pb-6 relative z-30 transition-colors duration-500">
       <div className="flex flex-col gap-6 w-full items-center">
         {mainTabs.map(renderTab)}
       </div>
 
       <div className="mt-auto flex flex-col gap-6 w-full items-center">
         <button
+          onClick={onToggleTheme}
+          className="relative w-12 h-12 flex items-center justify-center rounded-[5px] transition-all duration-300 group text-muted/40 hover:bg-accent/10 hover:text-accent border border-transparent hover:border-accent/20"
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-bold uppercase tracking-widest rounded-[5px] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-50">
+            {theme === 'dark' ? "Light Mode" : "Dark Mode"}
+          </div>
+        </button>
+
+        <button
           onClick={onExport}
-          title="Export Full Dossier"
-          className="relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 group text-muted/40 hover:bg-accent/10 hover:text-accent border border-transparent hover:border-accent/20"
+          className="relative w-12 h-12 flex items-center justify-center rounded-[5px] transition-all duration-300 group text-muted/40 hover:bg-accent/10 hover:text-accent border border-transparent hover:border-accent/20"
         >
           <FileDown className="h-5 w-5" />
-          <div className="absolute left-14 px-3 py-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-md opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/10 ml-2">
+          <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-bold uppercase tracking-widest rounded-[5px] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-50">
             Export Dossier
           </div>
         </button>

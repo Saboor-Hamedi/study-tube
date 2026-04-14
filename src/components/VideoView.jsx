@@ -163,18 +163,18 @@ export default function VideoView({
 
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0a]">
+    <div className="flex flex-col h-full bg-background">
       {/* Universal Standardized Header (Always Visible) */}
-      <div className="flex items-center justify-between px-8 py-3 border-b border-white/5 bg-[#0f0f0f] sticky top-0 z-50">
+      <div className="flex items-center justify-between px-8 py-3 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
         <div className="flex items-center gap-4">
           <div 
             onClick={() => preview && setPreview(null)}
-            className={`p-2 rounded-xl transition-all cursor-pointer ${preview ? 'bg-accent/10 text-accent hover:bg-accent hover:text-white' : (busy ? 'bg-accent/20 text-accent animate-pulse' : 'bg-white/5 text-muted')}`}
+            className={`p-2 transition-all cursor-pointer ${preview ? 'bg-accent/10 text-accent hover:bg-accent hover:text-white' : (busy ? 'bg-accent/20 text-accent animate-pulse' : 'bg-surface-2 text-muted')}`}
           >
             {preview ? <ChevronLeft className="h-4 w-4" /> : <Search className="h-4 w-4" />}
           </div>
           <div className="hidden sm:block">
-            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">{preview ? 'Video Analysis' : 'Research Discovery'}</h2>
+            <h2 className="text-[11px] font-black text-text uppercase tracking-[0.2em]">{preview ? 'Video Analysis' : 'Research Discovery'}</h2>
             <p className="text-[9px] text-muted font-bold uppercase tracking-widest">
               {preview ? videoViewSubtext : (busy ? 'Scanning YouTube...' : 'Ready for deep search')}
             </p>
@@ -189,7 +189,7 @@ export default function VideoView({
               onChange={doExternalSearch}
               onKeyDown={onEnter}
               placeholder={preview ? "Search for another video..." : "Paste URL or keyword to begin discovery..."}
-              className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-6 pr-12 text-[13px] text-white outline-none focus:border-accent/40 focus:bg-white/[0.07] transition-all"
+              className="w-full bg-surface-2 border border-border py-2.5 pl-6 pr-12 text-[13px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                {busy ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Search className="h-4 w-4 text-muted group-focus-within:text-accent" />}
@@ -198,15 +198,15 @@ export default function VideoView({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/5 p-1 rounded-lg">
+          <div className="flex items-center bg-surface-2 p-1">
             <button 
               onClick={() => setPreview(null)} 
-              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${!preview ? 'bg-white/10 text-white shadow-lg' : 'text-muted hover:text-white'}`}
+              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${!preview ? 'bg-surface-3 text-text shadow-lg' : 'text-muted hover:text-text'}`}
             >
               Discovery
             </button>
             <button 
-              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${preview ? 'bg-white/10 text-white shadow-lg' : 'text-muted/10 cursor-not-allowed'}`}
+              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${preview ? 'bg-surface-3 text-text shadow-lg' : 'text-muted/10 cursor-not-allowed'}`}
             >
               Analysis
             </button>
@@ -247,23 +247,28 @@ export default function VideoView({
                     className="flex flex-col gap-3 group cursor-pointer"
                     onClick={() => selectResult(item)}
                   >
-                    <div className="relative aspect-video rounded-lg overflow-hidden bg-white/5 border border-white/5 transition-all group-hover:border-accent/40">
-                      <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" />
-                      {item.duration && <span className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{item.duration}</span>}
+                    <div className="relative aspect-video overflow-hidden bg-surface-2 border border-border transition-all group-hover:border-accent/40">
+                      <img src={`https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-[10px] font-bold text-white tracking-widest">{item.duration}</div>
+                      <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors" />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-200 line-clamp-2 leading-tight group-hover:text-accent transition-colors">{item.title}</p>
-                      <p className="text-xs text-muted mt-1">{item.author}</p>
+                    <div className="space-y-1">
+                      <h3 className="text-[12px] font-bold text-text line-clamp-2 leading-snug group-hover:text-accent transition-colors">{item.title}</h3>
+                      <div className="flex items-center gap-2 text-[10px] text-muted font-medium uppercase tracking-wider">
+                        <span>Analysis Ready</span>
+                        <span className="w-1 h-1 bg-muted/20 rounded-full" />
+                        <span>High Fidelity</span>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
               </div>
             ) : !busy && (
               <div className="flex flex-col items-center justify-center py-40 text-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center">
-                  <Search className="h-6 w-6 text-muted/30" />
+                <div className="w-16 h-16 rounded-2xl bg-surface-2 border border-border flex items-center justify-center">
+                  <Search className="h-6 w-6 text-muted" />
                 </div>
-                <p className="text-sm text-muted/50 max-w-sm">Search for a video or paste a URL to begin.</p>
+                <p className="text-sm text-muted max-w-sm">Search for a video or paste a URL to begin.</p>
               </div>
             )}
           </div>

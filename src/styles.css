@@ -5,8 +5,39 @@
 @tailwind utilities;
 
 :root { 
-  color-scheme: dark; 
+  --surface: #101010;
+  --surface-2: #161616;
+  --surface-3: #1c1c1c;
+  --border: rgba(255,255,255,0.08);
+  --muted: #666;
   --accent: #3b82f6;
+  --accent-rgb: 59, 130, 246;
+  --accent-hover: #2563eb;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --background: #000000;
+  --text: #ffffff;
+  --glass: rgba(15, 15, 15, 0.7);
+  --selection: rgba(59, 130, 246, 0.3);
+  color-scheme: dark; 
+}
+
+[data-theme='light'] {
+  --surface: #ffffff;
+  --surface-2: #f9fafb;
+  --surface-3: #f3f4f6;
+  --border: rgba(0,0,0,0.08);
+  --muted: #64748b;
+  --accent: #2563eb;
+  --accent-rgb: 37, 99, 235;
+  --accent-hover: #1d4ed8;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --background: #f1f5f9;
+  --text: #000000;
+  --glass: rgba(255, 255, 255, 0.85);
+  --selection: rgba(37, 99, 235, 0.2);
+  color-scheme: light;
 }
 
 * { 
@@ -17,15 +48,16 @@ html, body, #app {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #000;
+  background: var(--background);
+  transition: background 0.5s ease;
 }
 
 body {
   font-family: 'Outfit', sans-serif;
-  background: #000;
-  color: #f8fafc;
+  background: var(--background);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
-  user-select: none; /* Default to none, allow specifically */
+  user-select: none;
 }
 
 .select-text {
@@ -37,7 +69,7 @@ body {
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { 
-  background: rgba(255,255,255,0.05); 
+  background: var(--border); 
   border-radius: 20px;
   transition: all 0.3s ease;
 }
@@ -49,17 +81,22 @@ body {
 /* Industrial Utility Classes */
 .custom-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: var(--border) transparent;
 }
 
 .glass-panel {
-  background: rgba(15, 15, 15, 0.7);
+  background: var(--glass);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+  background: linear-gradient(135deg, var(--text) 0%, var(--muted) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+::selection {
+  background: var(--selection);
+  color: inherit;
 }

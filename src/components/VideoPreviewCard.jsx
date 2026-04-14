@@ -76,7 +76,7 @@ function VideoPlayer({ videoId, onClose, seekTo }) {
             <motion.div 
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#0a0a0a] flex flex-col items-center justify-center gap-4 z-20"
+              className="absolute inset-0 bg-background flex flex-col items-center justify-center gap-4 z-20"
             >
               <Loader2 className="h-8 w-8 text-accent animate-spin" />
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent animate-pulse">Initializing Neural Stream...</p>
@@ -85,14 +85,14 @@ function VideoPlayer({ videoId, onClose, seekTo }) {
         </AnimatePresence>
       </div>
 
-      <div className="bg-[#111] px-5 py-2.5 flex items-center justify-between border-t border-white/10 select-none">
+      <div className="bg-surface-2 px-5 py-2.5 flex items-center justify-between border-t border-border select-none transition-colors duration-500">
         <div className="flex items-center gap-3">
            <div className={`h-1.5 w-1.5 rounded-full ${isReady ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 animate-pulse'}`} />
-           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">
+           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">
              {isReady ? 'High-Fidelity Research Link Operational' : 'Establishing Secure Link...'}
            </span>
         </div>
-        <button onClick={onClose} className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-red-400 transition-all flex items-center gap-2 group">
+        <button onClick={onClose} className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-red-400 transition-all flex items-center gap-2 group outline-none">
           <span className="opacity-40 group-hover:opacity-100">Terminate Stream</span>
           <X className="h-3.5 w-3.5" />
         </button>
@@ -217,7 +217,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 window.getSelection()?.removeAllRanges()
                 setSelection(null)
               }}
-              className="px-4 py-2 bg-accent text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-2xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
+              className="px-4 py-2 bg-accent text-white font-bold text-xs uppercase tracking-widest rounded-[5px] shadow-2xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
             >
               <Sparkles className="h-3 w-3" /> {selection.text.split(' ').length > 4 ? 'Save Selection' : 'Save Word'}
             </button>
@@ -230,7 +230,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
       <div className="flex flex-1 overflow-hidden lg:flex-row flex-col max-w-[1400px] w-full mx-auto p-4 lg:p-6 gap-6">
         {/* Left Side: Video & Transcript */}
         <div className="flex-1 min-w-0 flex flex-col gap-6">
-          <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-white/10 relative shadow-2xl group">
+          <div className="w-full aspect-video bg-black rounded-[5px] overflow-hidden border border-border relative shadow-2xl group transition-colors duration-500">
             {isStreamStarted ? (
               <VideoPlayer videoId={video.id} onClose={() => setIsStreamStarted(false)} seekTo={seekTo} />
             ) : (
@@ -239,7 +239,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center">
                   <button 
                     onClick={handlePlay} 
-                    className="h-10 w-10 bg-accent text-white rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-2xl group/btn"
+                    className="h-10 w-10 bg-accent text-white rounded-[5px] flex items-center justify-center hover:scale-110 transition-all shadow-2xl group/btn"
                   >
                     <Play className="h-4 w-4 fill-white ml-0.5 transition-transform group-hover/btn:scale-110" />
                   </button>
@@ -250,34 +250,34 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
 
           <div className="p-1 px-2 space-y-4">
              <div className="space-y-2">
-                <h1 className="text-xl lg:text-2xl font-bold text-white leading-snug tracking-tight selection:bg-accent/30 select-text cursor-text">{video.title}</h1>
+                <h1 className="text-xl lg:text-2xl font-bold text-text leading-snug tracking-tight selection:bg-accent/30 select-text cursor-text">{video.title}</h1>
                 <div className="flex items-center gap-3 select-text cursor-text">
-                   <span className="text-sm font-medium text-white/60">{video.author}</span>
-                   <span className="text-white/20">•</span>
-                   <span className="text-sm text-white/40">{video.views} views</span>
-                   <span className="text-white/20">•</span>
-                   <span className="text-xs text-muted/60 flex items-center gap-1"><Clock className="h-3 w-3"/> {fmtTime(video.durationSec || video.duration)}</span>
+                   <span className="text-sm font-medium text-muted">{video.author}</span>
+                   <span className="text-muted/20">•</span>
+                   <span className="text-sm text-muted">{video.views} views</span>
+                   <span className="text-muted/20">•</span>
+                   <span className="text-xs text-muted flex items-center gap-1"><Clock className="h-3 w-3"/> {fmtTime(video.durationSec || video.duration)}</span>
                 </div>
              </div>
              
              {video.description && (
-                <div className="p-4 bg-white/5 border border-white/5 rounded-2xl select-text cursor-text">
-                   <p className="text-xs text-muted/60 line-clamp-3 leading-relaxed">{video.description}</p>
+                <div className="p-4 bg-surface-2 border border-border rounded-[5px] select-text cursor-text transition-colors duration-500">
+                   <p className="text-xs text-muted leading-relaxed line-clamp-3">{video.description}</p>
                 </div>
              )}
           </div>
         </div>
 
         {/* Right Side: 3 Tabs (Cards) - COMPACTED */}
-        <div className="w-full lg:w-[480px] shrink-0 flex flex-col bg-[#111] border border-white/10 rounded-lg overflow-hidden shadow-2xl">
-          <div className="flex border-b border-white/10 bg-[#0a0a0a]">
+        <div className="w-full lg:w-[480px] shrink-0 flex flex-col bg-surface-2 border border-border overflow-hidden shadow-2xl transition-colors duration-500">
+          <div className="flex border-b border-border bg-surface-2 transition-colors duration-500">
             {[
               { id: 'learn', label: 'AI Tutor', icon: Sparkles },
               { id: 'chat', label: 'Research', icon: MessageCircle },
               { id: 'download', label: 'Download', icon: Download }
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 transition-all relative ${activeTab === tab.id ? 'text-accent bg-white/[0.02]' : 'text-muted/40 hover:text-white hover:bg-white/[0.01]'}`}>
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 transition-all relative ${activeTab === tab.id ? 'text-accent bg-surface-3' : 'text-muted/40 hover:text-text hover:bg-surface-3'}`}>
                 <tab.icon className="h-3.5 w-3.5" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">{tab.label}</span>
                 {activeTab === tab.id && <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent" />}
@@ -288,14 +288,14 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
           <div className="flex-1 overflow-hidden relative">
             {activeTab === 'learn' && (
               <div className="absolute inset-0 flex flex-col overflow-hidden">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.01]">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-2">
                     <div className="flex items-center gap-4">
                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{scriptMode === 'neural' ? 'Neural Mode' : 'Raw Mode'}</p>
                        {transcript?.length > 0 && (
                           <button 
                             onClick={refinedTranscript ? () => setScriptMode(scriptMode === 'raw' ? 'neural' : 'raw') : handleRefine}
                             disabled={isRefining}
-                            className={`p-1.5 rounded-lg transition-all border ${scriptMode === 'neural' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-muted hover:text-white'}`}
+                            className={`p-1.5 rounded-[5px] transition-all border ${scriptMode === 'neural' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-surface border-border text-muted hover:text-text'}`}
                             title={refinedTranscript ? "Toggle Script Mode" : "Synthesize Neural Script"}
                           >
                              {isRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -308,14 +308,14 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                          onAddVocab({ text: video.title, definition: content, type: 'Collection', videoTitle: video.title, date: new Date().toISOString(), skipAI: true })
                          showToast(`Collection "${video.title}" saved!`)
                       }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-[5px] text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
                     >
                       <Library className="h-3.5 w-3.5" />
                       Save as Collection
                     </button>
                   </div>
                  
-                 <div className="flex-1 overflow-y-auto p-8 scrollbar-thin bg-black/20">
+                 <div className="flex-1 overflow-y-auto p-8 scrollbar-thin bg-background">
                     <div className="max-w-prose mx-auto">
                       {loadingTranscript ? (
                         <div className="h-full flex flex-col items-center justify-center pt-20 text-accent gap-4">
@@ -323,9 +323,9 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                            <p className="text-[10px] uppercase font-black tracking-[0.2em] animate-pulse">Generating Script...</p>
                         </div>
                       ) : transcript?.length ? (
-                        <div className="text-[13px] text-white/80 leading-[1.8] text-justify select-text space-y-4">
+                        <div className="text-[13px] text-text leading-[1.8] text-justify select-text space-y-4">
                            {scriptMode === 'neural' && refinedTranscript ? (
-                              <div className="prose prose-invert prose-sm max-w-none prose-p:leading-[1.8] prose-p:mb-6 select-text">
+                              <div className="prose prose-sm max-w-none prose-p:leading-[1.8] prose-p:mb-6 select-text">
                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{refinedTranscript}</ReactMarkdown>
                               </div>
                            ) : (
@@ -338,7 +338,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                                   return (
                                     <span key={i}>
                                       <span 
-                                        className={`inline mr-1.5 transition-all cursor-text rounded-sm ${isActive ? 'bg-accent/40 text-white font-bold px-0.5' : 'hover:bg-white/10 hover:text-white'}`}
+                                        className={`inline mr-1.5 transition-all cursor-text rounded-sm ${isActive ? 'bg-accent/40 text-text font-bold px-0.5 shadow-[0_0_10px_rgba(var(--accent-rgb),0.3)]' : 'hover:bg-accent/10 hover:text-text'}`}
                                         onClick={() => setSeekTo(line.start / 1000)}
                                       >
                                         {cleanText}
@@ -366,21 +366,21 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
                   {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] p-4 rounded-xl text-[13px] ${m.role === 'user' ? 'bg-accent text-white' : 'bg-white/5 text-slate-300 border border-white/5'}`}>
+                      <div className={`max-w-[85%] p-4 text-[13px] rounded-[5px] ${m.role === 'user' ? 'bg-accent text-white' : 'bg-surface-2 text-text border border-border'}`}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="pt-4 border-t border-white/10 mt-4 relative">
+                <div className="pt-4 border-t border-border mt-4 relative">
                   <input value={chatInp} onChange={e => setChatInp(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                    placeholder="Ask about this video..." className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white outline-none focus:border-accent/50" disabled={isTyping} />
+                    placeholder="Ask about this video..." className="w-full bg-background border border-border rounded-[5px] px-4 py-3 pr-12 text-sm text-text outline-none focus:border-accent/50" disabled={isTyping} />
                   {isTyping ? (
-                    <button onClick={handleStop} className="absolute right-2 top-6 h-8 w-8 bg-red-500/20 text-red-500 rounded flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+                    <button onClick={handleStop} className="absolute right-2 top-6 h-8 w-8 bg-red-500/20 text-red-500 rounded-[5px] flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
                       <StopCircle className="h-4 w-4" />
                     </button>
                   ) : (
-                    <button onClick={sendMessage} className="absolute right-2 top-6 h-8 w-8 bg-accent text-white rounded flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                    <button onClick={sendMessage} className="absolute right-2 top-6 h-8 w-8 bg-accent text-white rounded-[5px] flex items-center justify-center hover:shadow-lg transition-all">
                       <MessageCircle className="h-4 w-4" />
                     </button>
                   )}
@@ -389,13 +389,13 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
             )}
 
             {activeTab === 'download' && (
-              <div className="absolute inset-0 overflow-y-auto p-6 space-y-6">
+              <div className="absolute inset-0 overflow-y-auto p-6 space-y-6 text-text">
                 <div className="space-y-3">
                   <h3 className="text-[9px] text-muted font-black uppercase tracking-[0.2em]">Quality Profile</h3>
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     {video.qualityOptions?.map(opt => (
                       <button key={opt.value} onClick={() => onQualityChange(opt.value)}
-                        className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${quality === opt.value ? 'bg-accent/10 border-accent text-white' : 'bg-transparent border-white/5 text-muted hover:border-white/20'}`}>
+                        className={`p-2.5 border rounded-[5px] flex items-center justify-between transition-all ${quality === opt.value ? 'bg-accent/10 border-accent text-accent font-bold' : 'bg-transparent border-border text-muted hover:border-accent/20'}`}>
                         <span>{opt.label}</span>
                         {quality === opt.value && <CheckCircle className="h-3 w-3 text-accent" />}
                       </button>
@@ -406,9 +406,9 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 <div className="space-y-3">
                   <div className="flex justify-between items-center px-1">
                     <h3 className="text-[9px] text-muted font-black uppercase tracking-[0.2em]">Destination</h3>
-                    <button onClick={onPickPath} className="text-[8px] text-accent uppercase font-black tracking-widest hover:text-white">Change</button>
+                    <button onClick={onPickPath} className="text-[8px] text-accent uppercase font-black tracking-widest hover:text-text transition-colors">Change</button>
                   </div>
-                  <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between text-[10px] text-slate-400">
+                  <div className="p-3 bg-surface-3 border border-border flex items-center justify-between text-[10px] text-muted rounded-[5px]">
                     <span className="truncate pr-4">{savePath || 'Select Folder'}</span>
                     <FolderOpen className="h-3.5 w-3.5 shrink-0 text-muted/40" />
                   </div>
@@ -416,19 +416,19 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
 
                 <div className="pt-2">
                   {downloading ? (
-                    <div className="space-y-3 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+                    <div className="space-y-3 bg-surface-2 p-4 border border-border rounded-[5px]">
                       <div className="flex justify-between text-[9px] font-black text-accent uppercase tracking-[0.2em]">
                         <span>System Acquisition</span>
                         <span>{Math.round(progress?.percent || 0)}%</span>
                       </div>
-                      <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-1 bg-surface-3 rounded-[5px] overflow-hidden">
                         <motion.div initial={{ width: 0 }} animate={{ width: `${progress?.percent || 0}%` }} className="h-full bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
                       </div>
-                      <button onClick={onCancel} className="w-full py-2.5 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 rounded-xl hover:bg-red-500 hover:text-white transition-all">Abort Acquisition</button>
+                      <button onClick={onCancel} className="w-full py-2.5 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white transition-all rounded-[5px]">Abort Acquisition</button>
                     </div>
                   ) : (
                     <button onClick={onDownload} disabled={!quality || !savePath}
-                      className="w-full py-3.5 bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-accent hover:text-white transition-all shadow-xl disabled:opacity-30">
+                      className="w-full py-3.5 bg-accent text-white font-black text-[10px] uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-xl disabled:opacity-30 rounded-[5px]">
                       <Download className="h-3 w-3 inline mr-2" /> Initialize Download
                     </button>
                   )}

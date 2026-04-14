@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   metadata: (url) => ipcRenderer.invoke('youtube:metadata', url),
   pickSavePath: () => ipcRenderer.invoke('fs:pickSavePath'),
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
+  getTheme: () => ipcRenderer.invoke('settings:getTheme'),
+  setTheme: (theme) => ipcRenderer.invoke('settings:setTheme', theme),
   loadVocab: () => ipcRenderer.invoke('vocab:load'),
   saveVocab: (list) => ipcRenderer.invoke('vocab:save', list),
   loadCollections: () => ipcRenderer.invoke('collections:load'),

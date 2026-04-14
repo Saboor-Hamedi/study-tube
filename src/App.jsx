@@ -25,6 +25,7 @@ export default function App() {
   const [videoTranscript, setVideoTranscript] = useState(null)
   const [loadingTranscript, setLoadingTranscript] = useState(false)
   const [toast, setToast] = useState(null)
+  const [theme, setTheme] = useState('dark')
   const api = window.youtubeAPI
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -34,10 +35,21 @@ export default function App() {
 
   useEffect(() => {
     if (api) {
+      if (api.getTheme) api.getTheme().then(setTheme).catch(() => {})
       api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
       api.loadCollections().then(list => setCollections(list || [])).catch(() => {})
     }
   }, [api])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    api.setTheme(next)
+  }
 
   const addVocab = async (item) => {
     const basicItem = { ...item, date: new Date().toISOString(), loading: !item.skipAI }
@@ -76,8 +88,8 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0f0f0f] text-[#e2e2e2] overflow-hidden font-sans">
-      <Activitybar view={view} setView={setView} onExport={handleGlobalExport} />
+    <div className="flex h-screen bg-background text-text overflow-hidden font-sans transition-colors duration-500">
+      <Activitybar view={view} setView={setView} onExport={handleGlobalExport} theme={theme} onToggleTheme={toggleTheme} />
       
       <main className="flex-1 relative overflow-hidden">
         {view === 'search' && (
@@ -137,17 +149,17 @@ export default function App() {
             initial={{ opacity: 0, x: 100, y: -20 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 100, scale: 0.95 }}
-            className="fixed top-8 right-8 z-[1000] px-6 py-4 bg-[#111] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 backdrop-blur-2xl"
+            className="fixed top-8 right-8 z-[1000] px-6 py-4 bg-surface-3 border border-border shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 backdrop-blur-2xl"
           >
-            <div className={`p-2 rounded-lg ${toast.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+            <div className={`p-2 ${toast.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
               {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
             </div>
-            <div className="flex flex-col pr-4 border-r border-white/5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/90">{toast.msg}</span>
-              <span className="text-[8px] font-bold uppercase tracking-tighter text-muted/30">System Notification</span>
+            <div className="flex flex-col pr-4 border-r border-border">
+              <span className="text-[10px] font-black uppercase tracking-widest text-text">{toast.msg}</span>
+              <span className="text-[8px] font-bold uppercase tracking-tighter text-muted">System Notification</span>
             </div>
-            <button onClick={() => setToast(null)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-              <X className="h-3.5 w-3.5 text-muted" />
+            <button onClick={() => setToast(null)} className="p-2 hover:bg-surface hover:text-text transition-colors">
+              <X className="h-3.5 w-3.5 text-muted hover:text-text" />
             </button>
           </motion.div>
         )}

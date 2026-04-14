@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   setSavePath: (p) => ipcRenderer.invoke('settings:setSavePath', p),
   getAiKey: () => ipcRenderer.invoke('settings:getAiKey'),
   setAiKey: (key) => ipcRenderer.invoke('settings:setAiKey', key),
+  getTheme: () => ipcRenderer.invoke('settings:getTheme'),
+  setTheme: (theme) => ipcRenderer.invoke('settings:setTheme', theme),
   loadVocab: () => ipcRenderer.invoke('vocab:load'),
   saveVocab: (list) => ipcRenderer.invoke('vocab:save', list),
   loadCollections: () => ipcRenderer.invoke('collections:load'),
