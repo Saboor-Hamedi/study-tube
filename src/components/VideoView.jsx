@@ -189,7 +189,7 @@ export default function VideoView({
               onChange={doExternalSearch}
               onKeyDown={onEnter}
               placeholder={preview ? "Search for another video..." : "Paste URL or keyword to begin discovery..."}
-              className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-6 pr-12 text-[13px] text-white outline-none focus:border-accent/40 focus:bg-white/[0.07] transition-all lowercase"
+              className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-6 pr-12 text-[13px] text-white outline-none focus:border-accent/40 focus:bg-white/[0.07] transition-all"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                {busy ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Search className="h-4 w-4 text-muted group-focus-within:text-accent" />}

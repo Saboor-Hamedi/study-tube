@@ -281,7 +281,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                            <p className="text-[10px] uppercase font-black tracking-[0.2em] animate-pulse">Generating Script...</p>
                         </div>
                       ) : transcript?.length ? (
-                        <div className="text-[13px] text-white/80 leading-[1.8] text-justify select-text lowercase space-y-4">
+                        <div className="text-[13px] text-white/80 leading-[1.8] text-justify select-text space-y-4">
                            <p>
                              {transcript.map((line, i) => {
                                const isActive = curTime >= line.start && curTime < (line.start + (line.duration || 3000));

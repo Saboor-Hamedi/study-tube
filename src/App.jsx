@@ -13,6 +13,9 @@ export default function App() {
   const [vocab, setVocab] = useState([])
   const [collections, setCollections] = useState([])
   const [selectedCollection, setSelectedCollection] = useState('all')
+  const [chatHistory, setChatHistory] = useState([
+    { role: 'assistant', content: 'hello. i am your studyTube research copilot. i can help you analyze saved words, suggest grammar rules, or create custom research cards. ask me anything.' }
+  ])
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('date')
   const [displayLimit, setDisplayLimit] = useState(10)
@@ -103,6 +106,8 @@ export default function App() {
               setCollections={setCollections}
               selectedCollection={selectedCollection}
               setSelectedCollection={setSelectedCollection}
+              messages={chatHistory}
+              setMessages={setChatHistory}
               setView={setView}
               api={api}
               showToast={showToast}

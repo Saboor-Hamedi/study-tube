@@ -7,10 +7,7 @@ import ReactMarkdown from 'react-markdown'
 import { DroppableFolder, DraggableCard } from '../vocabulary/DraggableCard'
 import Sidebar from '../Sidebar'
 
-export default function CopilotView({ vocab, setVocab, collections, setCollections, selectedCollection, setSelectedCollection, setView, api, showToast }) {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'hello. i am your studyTube research copilot. i can help you analyze saved words, suggest grammar rules, or create custom research cards. ask me anything.' }
-  ])
+export default function CopilotView({ vocab, setVocab, collections, setCollections, selectedCollection, setSelectedCollection, messages, setMessages, setView, api, showToast }) {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
@@ -76,24 +73,27 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
     setActiveDragMessage(null)
 
     if (over && active.data.current?.type === 'chat-message') {
-      const content = active.data.current.content
-      showToast('Processing research card...')
+      const item = active.data.current
+      const targetCollection = over.id === 'unorganized' ? '' : (over.id === 'all' ? '' : over.id)
       
-      try {
-        const entry = await api.explainWord({ text: content.substring(0, 50) })
-        const newVocab = [entry, ...vocab]
-        setVocab(newVocab)
-        api.saveVocab(newVocab)
-        showToast(`Saved to ${over.id}`)
-        
-        // Update collection if dropped on specific folder
-        if (over.id !== 'all' && over.id !== 'unorganized') {
-          const finalVocab = newVocab.map(v => v.date === entry.date ? { ...v, collection: over.id } : v)
-          setVocab(finalVocab)
-          api.saveVocab(finalVocab)
-        }
-      } catch (e) {
-        showToast('Card creation failed', 'error')
+      if (item.type === 'chat-message') {
+         // High-Fidelity Capture: Save the full AI insight directly
+         const rawLine = item.content.slice(0, 80).split('\n')[0]
+         // Strip markdown for clean title
+         const title = rawLine.replace(/[#*`~_\[\]()]/g, '').trim() + (item.content.length > 80 ? '...' : '')
+         
+         const newEntry = {
+           text: title,
+           definition: item.content,
+           collection: targetCollection,
+           date: new Date().toISOString(),
+           videoTitle: 'AI Research Insight',
+           loading: false
+         }
+         const newList = [newEntry, ...vocab]
+         setVocab(newList)
+         api.saveVocab(newList)
+         showToast(`Insight saved to ${over.id || 'unorganized'}`)
       }
     }
   }
@@ -124,10 +124,13 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
               setView('vocab')
             }}
             // Standard Handlers
-            handleCreateCollection={async (name) => {
-              const newList = [...collections, name]
+            handleCreateCollection={async () => {
+              if (!newCollectionName.trim()) return
+              const newList = [...collections, newCollectionName.trim()]
               setCollections(newList)
               await api.saveCollections(newList)
+              setNewCollectionName('')
+              setIsCreatingCollection(false)
               showToast('Folder established')
             }}
             setIsCreatingCollection={setIsCreatingCollection}

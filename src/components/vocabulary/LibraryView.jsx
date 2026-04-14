@@ -6,6 +6,7 @@ import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import CardReaderModal from './CardReaderModal'
 import { DroppableFolder, DraggableCard } from './DraggableCard'
 import Sidebar from '../Sidebar'
+import ReactMarkdown from 'react-markdown'
 
 const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
   if (!isOpen) return null
@@ -102,9 +103,14 @@ function LibraryView({
   const visible = filtered.slice(0, displayLimit)
 
   const handleUpdateItem = (updatedItem) => {
-    const newList = vocab.map(v => (v.date === updatedItem.date || v.text === updatedItem.text) ? updatedItem : v)
+    const newList = vocab.map(v => v.date === updatedItem.date ? updatedItem : v)
     setVocab(newList)
     api.saveVocab(newList)
+    
+    // Refresh modal view if it's currently showing this item
+    if (selectedCard?.date === updatedItem.date) {
+      setSelectedCard(updatedItem)
+    }
   }
 
   const handleDelete = () => {
@@ -171,7 +177,7 @@ function LibraryView({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search concepts, words, or research history..."
-                className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-6 pr-12 text-[13px] text-white outline-none focus:border-accent/40 focus:bg-white/[0.07] transition-all lowercase"
+                className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-6 pr-12 text-[13px] text-white outline-none focus:border-accent/40 focus:bg-white/[0.07] transition-all"
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                  <SearchIcon className="h-4 w-4 text-muted group-focus-within:text-accent" />
@@ -209,7 +215,7 @@ function LibraryView({
                       <div className="flex flex-col gap-4">
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex flex-col gap-1 min-h-[44px]">
-                            <h3 className="text-[16px] font-black text-white leading-tight lowercase line-clamp-2">{v.text}</h3>
+                            <h3 className="text-[16px] font-black text-white leading-tight line-clamp-2">{v.text}</h3>
                             {v.type && (
                               <span className="text-accent text-[11px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 20)}</span>
                             )}
@@ -225,34 +231,40 @@ function LibraryView({
                             <Loader2 className="h-3 w-3 animate-spin text-accent" />
                             <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
                           </div>
-                        ) : v.type === 'Collection' ? (
+                        ) : v.type === 'Collection' || v.videoTitle === 'AI Research Insight' ? (
                           <div className="space-y-3">
-                             <div className="relative group/script">
-                               <p className="text-[12px] text-white/40 leading-relaxed lowercase  line-clamp-[12] select-text">
-                                 {v.definition}
-                               </p>
-                               <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#080808] to-transparent pointer-events-none" />
+                             <div className="relative group/script overflow-hidden max-h-[180px]">
+                               <div className="prose prose-invert prose-xs text-[12px] text-white/50 leading-relaxed select-text">
+                                 <ReactMarkdown>
+                                   {v.definition}
+                                 </ReactMarkdown>
+                               </div>
+                               <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#0f0f0f] to-transparent pointer-events-none" />
                              </div>
                           </div>
                         ) : (
                           <div className="space-y-3">
                             <ul className="space-y-1.5">
                               {v.definition && (
-                                <li className="text-[13px] text-white/90 leading-snug flex gap-2 lowercase">
-                                  <span className="text-accent/60 font-black">•</span>
-                                  <span className="line-clamp-2">{v.definition}</span>
+                                <li className="text-[13px] text-white/90 leading-snug flex gap-2 overflow-hidden">
+                                  <span className="text-accent/60 font-black shrink-0">•</span>
+                                  <div className="prose prose-invert prose-xs max-w-none line-clamp-2">
+                                     <ReactMarkdown>
+                                       {v.definition}
+                                     </ReactMarkdown>
+                                  </div>
                                 </li>
                               )}
                               {!v.loading && (
                                 <>
                                   {v.synonyms && (
-                                    <li className="text-[12px] text-white/40 flex gap-2 italic lowercase">
+                                    <li className="text-[12px] text-white/40 flex gap-2 italic">
                                       <span className="font-bold opacity-30 shrink-0">syn:</span>
                                       <span className="line-clamp-1">{v.synonyms}</span>
                                     </li>
                                   )}
                                   {v.examples && v.examples.slice(0, 1).map((ex, idx) => (
-                                    <li key={idx} className="text-[12px] text-white/30 italic leading-snug border-l border-white/10 pl-2 line-clamp-1 lowercase">{ex}</li>
+                                    <li key={idx} className="text-[12px] text-white/30 italic leading-snug border-l border-white/10 pl-2 line-clamp-1">{ex}</li>
                                   ))}
                                 </>
                               )}
@@ -260,7 +272,7 @@ function LibraryView({
                             
                             <div className="flex items-center justify-between pt-1">
                               {(v.usage || v.grammar) ? (
-                                <div className="flex flex-wrap gap-x-2 text-[10px] text-white/10 font-bold lowercase tracking-normal">
+                                <div className="flex flex-wrap gap-x-2 text-[10px] text-white/10 font-bold tracking-normal">
                                   {v.usage && <span>{v.usage}</span>}
                                   {v.usage && v.grammar && <span className="opacity-10">|</span>}
                                   {v.grammar && <span className="italic">{v.grammar}</span>}

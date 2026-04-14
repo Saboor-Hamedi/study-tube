@@ -33,7 +33,7 @@ export const DroppableFolder = ({ id, active, onClick, children, onDelete }) => 
           )}
         </div>
         
-        <span className="text-[10px] uppercase tracking-wider truncate">
+        <span className="text-[10px] font-bold tracking-wider truncate">
           {children}
         </span>
       </button>

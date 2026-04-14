@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Library, FileText, Sparkles, Brain, ListChecks, Loader2, Quote, Languages, Star, RefreshCcw, Pencil } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, collections = [] }) => {
   const [summary, setSummary] = useState(null)
@@ -10,6 +11,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   
   const [isEditing, setIsEditing] = useState(false)
   const [editVal, setEditVal] = useState('')
+  const [titleEditVal, setTitleEditVal] = useState('')
 
   if (!isOpen || !item) return null
 
@@ -17,11 +19,12 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   
   const startEditing = () => {
     setEditVal(item.definition)
+    setTitleEditVal(item.text)
     setIsEditing(true)
   }
 
   const handleSaveEdit = () => {
-    onUpdate({ ...item, definition: editVal })
+    onUpdate({ ...item, text: titleEditVal, definition: editVal })
     setIsEditing(false)
     showToast('Changes saved to archive')
   }
@@ -134,7 +137,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                   <Library className="h-3.5 w-3.5 text-accent" />
                </div>
                <div className="flex items-baseline gap-3">
-                 <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] line-clamp-1">Research Analysis</h2>
+                 <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] line-clamp-1">Insight Analysis</h2>
                </div>
              </div>
              
@@ -189,17 +192,31 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                    {!isCollection && (
                       <div className="space-y-8">
                          <div className="space-y-2">
-                            <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight mb-8 lowercase select-text">{item.text}</h1>
+                                                         {isEditing ? (
+                               <input 
+                                 value={titleEditVal}
+                                 onChange={e => setTitleEditVal(e.target.value)}
+                                 className="w-full bg-accent/[0.05] border-b-2 border-accent text-3xl font-black text-white outline-none py-2 mb-8"
+                                 placeholder="Entry Title"
+                               />
+                             ) : (
+                               <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight mb-8 select-text">{item.text}</h1>
+                             )}
+
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent">Definition</p>
                             {isEditing ? (
                               <textarea
                                 value={editVal}
                                 onChange={e => setEditVal(e.target.value)}
-                                className="w-full bg-accent/[0.03] border border-accent/20 rounded-xl p-4 text-xl text-white font-light lowercase leading-relaxed focus:border-accent outline-none min-h-[120px] scrollbar-thin resize-none"
+                                className="w-full bg-accent/[0.03] border border-accent/20 rounded-xl p-4 text-xl text-white font-light leading-relaxed focus:border-accent outline-none min-h-[120px] scrollbar-thin resize-none"
                                 autoFocus
                               />
                             ) : (
-                              <p className="text-2xl text-white font-light lowercase leading-relaxed select-text whitespace-pre-wrap">{item.definition}</p>
+                              <div className="prose prose-invert prose-2xl max-w-none prose-p:leading-relaxed prose-strong:text-accent prose-strong:font-black select-text">
+                                <ReactMarkdown>
+                                  {item.definition}
+                                </ReactMarkdown>
+                              </div>
                             )}
                          </div>
                          
@@ -210,7 +227,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                                {item.examples.map((ex, i) => (
                                  <div key={i} className="flex gap-4 group">
                                    <Quote className="h-4 w-4 text-accent/20 shrink-0 mt-1" />
-                                   <p className="text-[16px] text-white/60  leading-relaxed lowercase select-text">{ex}</p>
+                                   <p className="text-[16px] text-white/60  leading-relaxed select-text">{ex}</p>
                                  </div>
                                ))}
                              </div>
@@ -222,13 +239,13 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                               {item.synonyms && (
                                  <div className="space-y-2">
                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">Synonyms</p>
-                                   <p className="text-sm text-white/40  lowercase select-text">{item.synonyms}</p>
+                                   <p className="text-sm text-white/40  select-text">{item.synonyms}</p>
                                  </div>
                               )}
                               {item.grammar && (
                                  <div className="space-y-2">
                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">Grammar</p>
-                                   <p className="text-sm text-white/40  lowercase select-text">{item.grammar}</p>
+                                   <p className="text-sm text-white/40  select-text">{item.grammar}</p>
                                  </div>
                               )}
                            </div>
@@ -246,9 +263,11 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                            autoFocus
                          />
                        ) : (
-                         <article className="text-[18px] text-white/80 leading-[2.1] text-justify select-text lowercase space-y-8 font-light tracking-wide">
-                            {renderScript(item.definition)}
-                         </article>
+                         <div className="prose prose-invert prose-lg max-w-none prose-p:leading-[2.1] prose-strong:text-accent prose-strong:font-black select-text font-light tracking-wide">
+                            <ReactMarkdown>
+                              {item.definition}
+                            </ReactMarkdown>
+                         </div>
                        )}
                      </div>
                    )}
