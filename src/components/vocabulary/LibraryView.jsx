@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { 
   DndContext, DragOverlay, defaultDropAnimationSideEffects, 
-  PointerSensor, useSensor, useSensors, rectIntersection 
+  PointerSensor, useSensor, useSensors, pointerWithin 
 } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import CardReaderModal from './CardReaderModal'
@@ -202,7 +202,7 @@ function LibraryView({
   return (
     <DndContext 
       sensors={sensors} 
-      collisionDetection={rectIntersection} 
+      collisionDetection={pointerWithin} 
       modifiers={[snapCenterToCursor]}
       onDragStart={(e) => setActiveDragItem(e.active.data.current)} 
       onDragEnd={handleDragEnd}
@@ -225,7 +225,7 @@ function LibraryView({
 
           <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
             <div className="max-w-[1400px] mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
                 {visible.map((v, i) => (
                   <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
                     {({ listeners, attributes }) => (
