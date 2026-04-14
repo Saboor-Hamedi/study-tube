@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "Premium AI-powered YouTube learning studio.",
+  "author": "StudyTube Team",
   "main": "electron/main.js",
   "scripts": {
     "dev": "npm run dev:electron",
@@ -11,13 +13,43 @@
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",
     "build": "vite build",
+    "win": "vite build && npx rimraf dist-electron && npx electron-builder --win",
+    "linux": "vite build && npx electron-builder --linux",
+    "build:all": "vite build && npx electron-builder --win --mac --linux",
     "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.studytube.app",
+    "productName": "StudyTube",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "data/**/*"
+    ],
+    "win": {
+      "icon": "electron/assets/icon.png",
+      "target": "nsis"
+    },
+    "mac": {
+      "icon": "electron/assets/icon.png",
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "electron/assets/icon.png"
+    }
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
     "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
     "postcss": "^8.5.9",
     "tailwindcss": "^3.4.17",
     "vite": "^8.0.4",

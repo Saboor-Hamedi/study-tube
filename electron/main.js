@@ -15,6 +15,11 @@ const isDev = !app.isPackaged
 // Remove the native menu bar immediately
 Menu.setApplicationMenu(null)
 
+const APP_ID = 'com.studytube.app'
+if (process.platform === 'win32') {
+  app.setAppUserModelId(APP_ID)
+}
+
 // taskId -> { abort() } — for cancel support
 const activeDownloads = new Map()
 
@@ -342,8 +347,8 @@ function registerIpcHandlers() {
     }
   })
 
-  ipcMain.handle('settings:getAiKey', () => readAppState().aiApiKey || '')
-  ipcMain.handle('settings:setAiKey', (_e, key) => writeAppState({ aiApiKey: key }))
+  // ipcMain.handle('settings:getAiKey', () => readAppState().aiApiKey || '')
+  // ipcMain.handle('settings:setAiKey', (_e, key) => writeAppState({ aiApiKey: key }))
 
   ipcMain.handle('ai:processTranscript', async (_e, { text, prompt }) => {
     const state = readAppState()
@@ -572,10 +577,13 @@ function registerIpcHandlers() {
 let mainWindow = null
 
 function createWindow() {
+  const iconPath = path.join(__dirname, 'assets', 'icon.png')
+  
   mainWindow = new BrowserWindow({
     width: 1280, height: 820, minWidth: 900, minHeight: 600,
     backgroundColor: '#0f0f0f',
     autoHideMenuBar: true,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

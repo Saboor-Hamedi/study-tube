@@ -1,16 +1,30 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Library, FileText, Sparkles, Brain, ListChecks, Loader2, Quote, Languages, Star, RefreshCcw } from 'lucide-react'
+import { X, Library, FileText, Sparkles, Brain, ListChecks, Loader2, Quote, Languages, Star, RefreshCcw, Pencil } from 'lucide-react'
 
 const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) => {
   const [summary, setSummary] = useState(null)
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [highlights, setHighlights] = useState([])
   const [isHighlighting, setIsHighlighting] = useState(false)
+  
+  const [isEditing, setIsEditing] = useState(false)
+  const [editVal, setEditVal] = useState('')
 
   if (!isOpen || !item) return null
 
   const isCollection = item.type === 'Collection'
+  
+  const startEditing = () => {
+    setEditVal(item.definition)
+    setIsEditing(true)
+  }
+
+  const handleSaveEdit = () => {
+    onUpdate({ ...item, definition: editVal })
+    setIsEditing(false)
+    showToast('Changes saved to archive')
+  }
   
   const handleGenerateSummary = async () => {
     if (isSummarizing) return
@@ -61,15 +75,40 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) =>
     }
   }
 
+  const toggleHighlight = (word) => {
+    const normalized = word.toLowerCase()
+    setHighlights(prev => 
+      prev.includes(normalized) 
+        ? prev.filter(h => h !== normalized) 
+        : [...prev, normalized]
+    )
+  }
+
   // Highlight words in script text
   const renderScript = (text) => {
     if (!highlights.length) return text
-    let coloredText = text
-    highlights.forEach(word => {
-      const regex = new RegExp(`\\b(${word})\\b`, 'gi')
-      coloredText = coloredText.replace(regex, '<span class="bg-accent/30 text-white font-bold px-1 rounded-sm underline decoration-accent/40">$1</span>')
-    })
-    return <span dangerouslySetInnerHTML={{ __html: coloredText }} />
+    
+    const regex = new RegExp(`\\b(${highlights.join('|')})\\b`, 'gi')
+    const parts = text.split(regex)
+
+    return (
+      <span>
+        {parts.map((part, i) => {
+          const isMatch = highlights.some(h => h.toLowerCase() === part.toLowerCase())
+          return isMatch ? (
+            <span 
+              key={i} 
+              onClick={() => toggleHighlight(part)}
+              className="text-accent font-black cursor-pointer hover:underline decoration-accent/30 transition-all"
+            >
+              {part}
+            </span>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        })}
+      </span>
+    )
   }
 
   return (
@@ -95,11 +134,36 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) =>
                   <Library className="h-3.5 w-3.5 text-accent" />
                </div>
                <div className="flex items-baseline gap-3">
-                 <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] line-clamp-1">{item.text}</h2>
+                 <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] line-clamp-1">Research Analysis</h2>
                </div>
              </div>
              
              <div className="flex items-center gap-2">
+                {!isEditing ? (
+                  <button 
+                    onClick={startEditing}
+                    className="p-1.5 bg-white/5 border border-white/10 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-all shadow-lg"
+                    title="Edit Information"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={handleSaveEdit}
+                      className="px-3 py-1.5 bg-accent text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+                    >
+                      Save
+                    </button>
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="px-3 py-1.5 bg-white/5 text-muted hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+                <div className="h-4 w-px bg-white/10 mx-1" />
                 <button 
                   onClick={() => {
                     const textToCopy = isCollection ? item.definition : `${item.text}\n${item.definition}`
@@ -125,11 +189,21 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) =>
                    {!isCollection && (
                       <div className="space-y-8">
                          <div className="space-y-2">
-                           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent">Definition</p>
-                           <p className="text-2xl text-white font-light lowercase leading-relaxed select-text">{item.definition}</p>
+                            <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight mb-8 lowercase select-text">{item.text}</h1>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent">Definition</p>
+                            {isEditing ? (
+                              <textarea
+                                value={editVal}
+                                onChange={e => setEditVal(e.target.value)}
+                                className="w-full bg-accent/[0.03] border border-accent/20 rounded-xl p-4 text-xl text-white font-light lowercase leading-relaxed focus:border-accent outline-none min-h-[120px] scrollbar-thin resize-none"
+                                autoFocus
+                              />
+                            ) : (
+                              <p className="text-2xl text-white font-light lowercase leading-relaxed select-text whitespace-pre-wrap">{item.definition}</p>
+                            )}
                          </div>
                          
-                         {item.examples?.length > 0 && (
+                         {item.examples?.length > 0 && !isEditing && (
                            <div className="space-y-4 pt-4 border-t border-white/5">
                              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">Example Usage</p>
                              <div className="grid gap-4">
@@ -143,27 +217,40 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) =>
                            </div>
                          )}
 
-                         <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
-                            {item.synonyms && (
-                               <div className="space-y-2">
-                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">Synonyms</p>
-                                 <p className="text-sm text-white/40  lowercase select-text">{item.synonyms}</p>
-                               </div>
-                            )}
-                            {item.grammar && (
-                               <div className="space-y-2">
-                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">Grammar</p>
-                                 <p className="text-sm text-white/40  lowercase select-text">{item.grammar}</p>
-                               </div>
-                            )}
-                         </div>
+                         {!isEditing && (
+                           <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
+                              {item.synonyms && (
+                                 <div className="space-y-2">
+                                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">Synonyms</p>
+                                   <p className="text-sm text-white/40  lowercase select-text">{item.synonyms}</p>
+                                 </div>
+                              )}
+                              {item.grammar && (
+                                 <div className="space-y-2">
+                                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">Grammar</p>
+                                   <p className="text-sm text-white/40  lowercase select-text">{item.grammar}</p>
+                                 </div>
+                              )}
+                           </div>
+                         )}
                       </div>
                    )}
 
                    {isCollection && (
-                     <article className="text-[18px] text-white/80 leading-[2.1] text-justify select-text lowercase space-y-8 font-light tracking-wide">
-                        {renderScript(item.definition)}
-                     </article>
+                     <div className="w-full">
+                       {isEditing ? (
+                         <textarea
+                           value={editVal}
+                           onChange={e => setEditVal(e.target.value)}
+                           className="w-full bg-accent/[0.03] border border-accent/20 rounded-xl p-8 text-[18px] text-white/80 leading-[2.1] text-justify select-text lowercase font-light tracking-wide focus:border-accent outline-none min-h-[400px] scrollbar-thin resize-none"
+                           autoFocus
+                         />
+                       ) : (
+                         <article className="text-[18px] text-white/80 leading-[2.1] text-justify select-text lowercase space-y-8 font-light tracking-wide">
+                            {renderScript(item.definition)}
+                         </article>
+                       )}
+                     </div>
                    )}
 
                    {(summary || item.summary) && (
@@ -221,13 +308,24 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) =>
                     </button>
                     
                     {isCollection && (
-                      <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 group hover:bg-white/10 transition-all disabled:opacity-50">
-                        {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-white/40" /> : <ListChecks className="h-4 w-4 text-white" />}
-                        <div className="text-left">
-                          <p className="text-[11px] font-bold text-white uppercase tracking-widest">Heatmap</p>
-                          <p className="text-[9px] text-white/40 uppercase">Find native words</p>
-                        </div>
-                      </button>
+                      <div className="flex flex-col gap-2">
+                        <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 group hover:bg-white/10 transition-all disabled:opacity-50">
+                          {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-white/40" /> : <ListChecks className="h-4 w-4 text-white" />}
+                          <div className="text-left">
+                            <p className="text-[11px] font-bold text-white uppercase tracking-widest">Heatmap</p>
+                            <p className="text-[9px] text-white/40 uppercase">Find native words</p>
+                          </div>
+                        </button>
+                        
+                        {highlights.length > 0 && (
+                          <button 
+                            onClick={() => setHighlights([])} 
+                            className="w-full py-2 text-[8px] font-black uppercase tracking-widest text-muted hover:text-red-400 transition-all"
+                          >
+                            Reset Heatmap
+                          </button>
+                        )}
+                      </div>
                     )}
 
                     <div className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-between">
