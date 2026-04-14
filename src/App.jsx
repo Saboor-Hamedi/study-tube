@@ -121,15 +121,20 @@ export default function App() {
       <AnimatePresence>
         {toast && (
           <motion.div 
-            initial={{ opacity: 0, y: 50, x: '-50%' }}
-            animate={{ opacity: 1, y: 0, x: '-50%' }}
-            exit={{ opacity: 0, y: 20, x: '-50%' }}
-            className="fixed bottom-8 left-1/2 z-[1000] px-6 py-3 bg-[#111] border border-white/10 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl"
+            initial={{ opacity: 0, x: 100, y: -20 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={{ opacity: 0, x: 100, scale: 0.95 }}
+            className="fixed top-8 right-8 z-[1000] px-6 py-4 bg-[#111] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 backdrop-blur-2xl"
           >
-            {toast.type === 'success' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}
-            <span className="text-xs font-bold uppercase tracking-widest text-white">{toast.msg}</span>
-            <button onClick={() => setToast(null)} className="ml-2 p-1 hover:bg-white/5 rounded">
-              <X className="h-3 w-3 text-muted" />
+            <div className={`p-2 rounded-lg ${toast.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+              {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+            </div>
+            <div className="flex flex-col pr-4 border-r border-white/5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/90">{toast.msg}</span>
+              <span className="text-[8px] font-bold uppercase tracking-tighter text-muted/30">System Notification</span>
+            </div>
+            <button onClick={() => setToast(null)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+              <X className="h-3.5 w-3.5 text-muted" />
             </button>
           </motion.div>
         )}
