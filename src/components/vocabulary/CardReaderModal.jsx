@@ -65,7 +65,7 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
                        ul: ({node, ...props}) => <ul className="list-disc pl-10 space-y-4 my-8 text-accent marker:text-accent" {...props} />,
                        li: ({node, ...props}) => <li className="text-white/80 leading-[1.8] pl-2 font-extralight" {...props} />,
                        p: ({node, ...props}) => <p className="mb-6 last:mb-0 text-white/80 leading-[1.8] font-extralight" {...props} />,
-                       strong: ({node, ...props}) => <strong className="text-accent font-black bg-accent/5 px-1" {...props} />,
+                       strong: ({node, ...props}) => <strong className="text-accent font-bold tracking-tight px-0.5 border-b border-accent/20 drop-shadow-[0_0_2px_rgba(var(--accent-rgb),0.4)]" {...props} />,
                        em: ({node, ...props}) => <em className="text-white/40 italic" {...props} />
                      }}
                    >
