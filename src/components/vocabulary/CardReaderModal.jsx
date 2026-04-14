@@ -263,10 +263,13 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                 </div>
              )}
 
-             <div className="mt-auto pt-6 flex items-center justify-between opacity-10 grayscale border-t border-white/5">
-                <span className="text-[8px] font-black uppercase tracking-widest text-muted">Shield Active</span>
-                <Brain className="h-3.5 w-3.5 text-accent" />
-             </div>
+             <button 
+               onClick={() => showToast('SHIELD PROTOCOL: Atomic Writes & AI Timeout Sensors standing by.', 'success')}
+               className="mt-auto pt-6 flex items-center justify-between group hover:opacity-100 transition-all border-t border-white/5 w-full text-left"
+             >
+                <span className="text-[8px] font-black uppercase tracking-widest text-muted group-hover:text-accent transition-colors">Shield Active</span>
+                <Brain className="h-3.5 w-3.5 text-accent animate-pulse grayscale group-hover:grayscale-0 transition-all" />
+             </button>
           </div>
         </motion.div>
       </div>

@@ -151,10 +151,13 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
               />
               
               {/* Shield Status Integration */}
-              <div className="absolute bottom-4 left-6 right-6 p-2.5 bg-accent/[0.03] border border-accent/10 rounded-xl flex items-center justify-between opacity-40 hover:opacity-100 transition-opacity">
-                 <span className="text-[8px] font-black uppercase tracking-widest text-muted">Shield Active</span>
-                 <Brain className="h-3 w-3 text-accent" />
-              </div>
+              <button 
+                onClick={() => showToast('SHIELD PROTOCOL: Atomic Writes & AI Timeout Sensors standing by.', 'success')}
+                className="absolute bottom-4 left-6 right-6 p-2.5 bg-accent/[0.03] border border-accent/10 rounded-xl flex items-center justify-between group hover:bg-accent/5 hover:border-accent/30 transition-all cursor-help"
+              >
+                 <span className="text-[8px] font-black uppercase tracking-widest text-muted group-hover:text-accent transition-colors">Shield Active</span>
+                 <Brain className="h-3 w-3 text-accent animate-pulse" />
+              </button>
           </div>
 
           {/* Main Chat Hub */}

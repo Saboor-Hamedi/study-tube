@@ -12,17 +12,27 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const isDev = !app.isPackaged
 
-// Remove the native menu bar immediately
-Menu.setApplicationMenu(null)
-
-const APP_ID = 'com.studytube.app'
-if (process.platform === 'win32') {
-  app.setAppUserModelId(APP_ID)
+// Shield Persistence: Atomic Save Protocol
+function atomicWriteJsonSync(filePath, data) {
+  const tempPath = `${filePath}.tmp`
+  try {
+    fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8')
+    fs.renameSync(tempPath, filePath)
+    console.log(`[SHIELD] Atomic write successful: ${path.basename(filePath)}`)
+    return true
+  } catch (err) {
+    console.error(`[CRITICAL] Atomic write failed: ${path.basename(filePath)}`, err)
+    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath)
+    return false
+  }
 }
 
-// taskId -> { abort() } — for cancel support
-const activeDownloads = new Map()
+// Remove the native menu bar immediately
+Menu.setApplicationMenu(null)
+const APP_ID = 'com.studytube.app'
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
 
+const activeDownloads = new Map()
 const DEFAULT_QUALITY_OPTIONS = [
   { label: '1080p', value: 'video:1080' },
   { label: '720p', value: 'video:720' },
@@ -32,12 +42,8 @@ const DEFAULT_QUALITY_OPTIONS = [
 ]
 
 // ─── State ──────────────────────────────────────────────────────────────────
-function getStateFilePath() {
-  return path.join(app.getPath('userData'), 'app-state.json')
-}
-function readAppState() {
-  try { return JSON.parse(fs.readFileSync(getStateFilePath(), 'utf-8')) } catch { return {} }
-}
+function getStateFilePath() { return path.join(app.getPath('userData'), 'app-state.json') }
+function readAppState() { try { return JSON.parse(fs.readFileSync(getStateFilePath(), 'utf-8')) } catch { return {} } }
 function writeAppState(patch) {
   const next = { ...readAppState(), ...patch }
   fs.mkdirSync(path.dirname(getStateFilePath()), { recursive: true })
@@ -46,22 +52,15 @@ function writeAppState(patch) {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-function sanitizeFileName(name) {
-  return name.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '').trim().slice(0, 200) || 'video'
-}
+function sanitizeFileName(name) { return name.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '').trim().slice(0, 200) || 'video' }
 function canonicalize(url) {
   const s = String(url || '').trim()
-  try {
-    if (ytdl.validateURL(s)) return `https://www.youtube.com/watch?v=${ytdl.getURLVideoID(s)}`
-  } catch {}
+  try { if (ytdl.validateURL(s)) return `https://www.youtube.com/watch?v=${ytdl.getURLVideoID(s)}` } catch {}
   return s
 }
-function sendToRenderer(wc, channel, data) {
-  if (!wc.isDestroyed()) wc.send(channel, data)
-}
+function sendToRenderer(wc, channel, data) { if (!wc.isDestroyed()) wc.send(channel, data) }
 function buildQualityOptions(heights) {
-  const opts = [...new Set(heights)].filter(Boolean).sort((a, b) => b - a).slice(0, 6)
-    .map(h => ({ label: `${h}p`, value: `video:${h}` }))
+  const opts = [...new Set(heights)].filter(Boolean).sort((a, b) => b - a).slice(0, 6).map(h => ({ label: `${h}p`, value: `video:${h}` }))
   opts.push({ label: 'MP3 (192kbps)', value: 'audio:mp3' })
   return opts
 }
@@ -70,18 +69,12 @@ function buildQualityOptions(heights) {
 async function fetchMetadata(url) {
   const info = await ytdl.getInfo(url)
   const details = info.videoDetails
+  const heights = info.formats.map(f => Number(f.height)).filter(h => Number.isFinite(h) && h > 0)
+  const thumbnail = [...(details.thumbnails ?? [])].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url || ''
+  const rawTitle = details.title || ''
+  const cleanTitle = (rawTitle === 'YouTube Video' || rawTitle === 'youtube video') ? '' : rawTitle
 
-  const heights = info.formats
-    .map(f => Number(f.height))
-    .filter(h => Number.isFinite(h) && h > 0)
-
-  const thumbnail =
-    [...(details.thumbnails ?? [])].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url || ''
-
-    const rawTitle = details.title || ''
-    const cleanTitle = (rawTitle === 'YouTube Video' || rawTitle === 'youtube video') ? '' : rawTitle
-
-    return {
+  return {
     id: details.videoId,
     title: cleanTitle,
     duration: Number(details.lengthSeconds) || 0,
@@ -93,7 +86,7 @@ async function fetchMetadata(url) {
   }
 }
 
-// ─── Download (ytdl-core + ffmpeg) ───────────────────────────────────────────
+// ─── Download ───────────────────────────────────────────
 async function downloadVideo({ webContents, taskId, url, format, savePath, safeTitle }) {
   const isAudio = format === 'audio:mp3'
   const targetH = Number(format.split(':')[1])
@@ -114,15 +107,11 @@ async function downloadVideo({ webContents, taskId, url, format, savePath, safeT
     }
   })
 
-  const checkAbort = () => {
-    if (aborted) throw new Error('CANCELLED')
-  }
-
+  const checkAbort = () => { if (aborted) throw new Error('CANCELLED') }
   const agent = ytdl.createAgent()
   const info = await ytdl.getInfo(url)
   checkAbort()
 
-  // ── Audio-only (MP3) ────────────────────────────────────────────────────
   if (isAudio) {
     const audioFmt = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' })
     const audioTmp = path.join(savePath, `${safeTitle}_a_${taskId.slice(0, 8)}.tmp`)
@@ -158,16 +147,12 @@ async function downloadVideo({ webContents, taskId, url, format, savePath, safeT
         activeDownloads.delete(taskId)
         code === 0 ? resolve() : reject(new Error(`ffmpeg exited with code ${code}`))
       })
-      proc.on('error', err => {
-        try { fs.unlinkSync(audioTmp) } catch {}
-        reject(err)
-      })
+      proc.on('error', err => { try { fs.unlinkSync(audioTmp) } catch {}; reject(err) })
     })
 
     return outPath
   }
 
-  // ── Video + Audio ────────────────────────────────────────────────────────
   let videoFormats = info.formats.filter(f => f.hasVideo && !f.hasAudio)
   if (Number.isFinite(targetH)) {
     const below = videoFormats.filter(f => (f.height ?? 0) <= targetH)
@@ -175,21 +160,14 @@ async function downloadVideo({ webContents, taskId, url, format, savePath, safeT
   }
   videoFormats.sort((a, b) => (b.height ?? 0) - (a.height ?? 0))
   const videoFmt = videoFormats[0]
-  if (!videoFmt) throw new Error('No video format found for this quality.')
+  if (!videoFmt) throw new Error('No video format found')
 
   const audioFmt = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' })
-
   const videoTmp = path.join(savePath, `${safeTitle}_v_${taskId.slice(0, 8)}.tmp`)
   const audioTmp = path.join(savePath, `${safeTitle}_a_${taskId.slice(0, 8)}.tmp`)
   const totalSize = (Number(videoFmt.contentLength) || 0) + (Number(audioFmt?.contentLength) || 0)
   let downloaded = 0
 
-  const cleanup = () => {
-    try { fs.unlinkSync(videoTmp) } catch {}
-    try { fs.unlinkSync(audioTmp) } catch {}
-  }
-
-  // Download video stream
   await new Promise((resolve, reject) => {
     const stream = ytdl.downloadFromInfo(info, { format: videoFmt, agent })
     activeStream1 = stream
@@ -208,7 +186,6 @@ async function downloadVideo({ webContents, taskId, url, format, savePath, safeT
 
   checkAbort()
 
-  // Download audio stream
   await new Promise((resolve, reject) => {
     const stream = ytdl.downloadFromInfo(info, { format: audioFmt, agent })
     activeStream2 = stream
@@ -228,28 +205,15 @@ async function downloadVideo({ webContents, taskId, url, format, savePath, safeT
   checkAbort()
   sendToRenderer(webContents, 'download:progress', { taskId, percent: 90, status: 'Merging streams…' })
 
-  // Merge with ffmpeg
   await new Promise((resolve, reject) => {
-    const proc = spawn(ffmpegPath, [
-      '-i', videoTmp,
-      '-i', audioTmp,
-      '-c:v', 'copy',
-      '-c:a', 'aac',
-      '-y',
-      outPath,
-    ])
+    const proc = spawn(ffmpegPath, ['-i', videoTmp, '-i', audioTmp, '-c:v', 'copy', '-c:a', 'aac', '-y', outPath])
     activeProc = proc
-    proc.stderr?.on('data', d => {
-      const line = d.toString()
-      const m = line.match(/time=(\d+:\d+:\d+)/)
-      if (m) sendToRenderer(webContents, 'download:progress', { taskId, percent: 95, status: 'Merging…' })
-    })
     proc.on('close', code => {
-      cleanup()
+      try { fs.unlinkSync(videoTmp); fs.unlinkSync(audioTmp) } catch {}
       activeDownloads.delete(taskId)
-      code === 0 ? resolve() : reject(new Error(`ffmpeg merge failed (code ${code})`))
+      code === 0 ? resolve() : reject(new Error(`ffmpeg merge failed`))
     })
-    proc.on('error', err => { cleanup(); reject(err) })
+    proc.on('error', err => { try { fs.unlinkSync(videoTmp); fs.unlinkSync(audioTmp) } catch {}; reject(err) })
   })
 
   return outPath
@@ -272,31 +236,19 @@ function registerIpcHandlers() {
   ipcMain.handle('youtube:metadata', async (_e, url) => {
     const canonical = canonicalize(url)
     if (!ytdl.validateURL(canonical)) throw new Error('Invalid YouTube URL')
-    try {
-      return await fetchMetadata(canonical)
-    } catch (e) {
+    try { return await fetchMetadata(canonical) } catch (e) {
       console.error('[metadata]', e.message)
-      try {
-        const videoId = ytdl.getURLVideoID(canonical)
-        return {
-          id: videoId, title: '', duration: 0,
-          thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-          url: canonical, author: '', views: 0,
-          qualityOptions: DEFAULT_QUALITY_OPTIONS,
-          metaError: e.message,
-        }
-      } catch { throw new Error('Could not load video. Check the URL.') }
+      const videoId = ytdl.getURLVideoID(canonical)
+      return { id: videoId, title: '', duration: 0, thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, url: canonical, author: '', views: 0, qualityOptions: DEFAULT_QUALITY_OPTIONS, metaError: e.message }
     }
   })
 
   ipcMain.handle('download:start', async (event, payload) => {
     const { taskId, url, format, savePath, title } = payload
-    if (!taskId || !url || !format || !savePath) throw new Error('Missing parameters.')
     const wc = event.sender
     const canonical = canonicalize(url)
     const safeTitle = sanitizeFileName(title || 'video')
     fs.mkdirSync(savePath, { recursive: true })
-
     try {
       const filePath = await downloadVideo({ webContents: wc, taskId, url: canonical, format, savePath, safeTitle })
       sendToRenderer(wc, 'download:done', { taskId, filePath })
@@ -304,22 +256,14 @@ function registerIpcHandlers() {
       return { taskId, filePath }
     } catch (e) {
       activeDownloads.delete(taskId)
-      if (e.message === 'CANCELLED') {
-        sendToRenderer(wc, 'download:cancelled', { taskId })
-        return { taskId, cancelled: true }
-      }
-      console.error('[download:start]', e.message)
+      if (e.message === 'CANCELLED') { sendToRenderer(wc, 'download:cancelled', { taskId }); return { taskId, cancelled: true } }
       throw new Error(e.message)
     }
   })
 
   ipcMain.handle('download:cancel', (_e, taskId) => {
     const entry = activeDownloads.get(taskId)
-    if (entry) {
-      entry.abort()
-      activeDownloads.delete(taskId)
-      return true
-    }
+    if (entry) { entry.abort(); activeDownloads.delete(taskId); return true }
     return false
   })
 
@@ -327,251 +271,126 @@ function registerIpcHandlers() {
     const canonical = canonicalize(url)
     try {
       const info = await ytdl.getInfo(canonical)
-      const fmts = info.formats.filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4')
-        .sort((a, b) => (b.height ?? 0) - (a.height ?? 0))
+      const fmts = info.formats.filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4').sort((a, b) => (b.height ?? 0) - (a.height ?? 0))
       const best = fmts.find(f => (f.height ?? 0) <= 720) || fmts[0]
       return best?.url || null
-    } catch (e) {
-      console.error('[getStreamUrl]', e.message)
-      return null
-    }
+    } catch (e) { console.error('[getStreamUrl]', e.message); return null }
   })
 
   ipcMain.handle('youtube:getTranscript', async (_e, videoId) => {
-    try {
-      const transcript = await YoutubeTranscript.fetchTranscript(videoId)
-      return transcript // Returns [{text, start, duration}]
-    } catch (e) {
-      console.error('[getTranscript]', e.message)
-      return null
-    }
+    try { return await YoutubeTranscript.fetchTranscript(videoId) } catch (e) { console.error('[getTranscript]', e.message); return null }
   })
 
-  // ipcMain.handle('settings:getAiKey', () => readAppState().aiApiKey || '')
-  // ipcMain.handle('settings:setAiKey', (_e, key) => writeAppState({ aiApiKey: key }))
-
-  ipcMain.handle('ai:processTranscript', async (_e, { text, prompt }) => {
-    const state = readAppState()
-    const apiKey = state.aiApiKey
-    if (!apiKey) throw new Error('No AI API Key found in settings.')
-    
-    console.log('[DeepSeek] Processing transcript summary...')
-    try {
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: 'You are an English teacher. Analyze the transcript for a language learner.' },
-            { role: 'user', content: `${prompt}\n\nTranscript:\n${text}` }
-          ],
-          temperature: 0.7
-        })
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`[DeepSeek] API Error: ${response.status} - ${errorText}`)
-        throw new Error(`AI Provider reported an error: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return data.choices?.[0]?.message?.content || 'No response from AI.'
-    } catch (e) {
-      console.error('[deepseek]', e.message)
-      throw new Error(`AI Analysis failed: ${e.message}`)
-    }
-  })
-
+  // ─── AI Operations ─────────────────────────────────────────────────────────
   let aiAbortController = null
-
   ipcMain.handle('ai:stop', () => {
-    if (aiAbortController) {
-      aiAbortController.abort()
-      aiAbortController = null
-      return true
-    }
+    if (aiAbortController) { aiAbortController.abort(); aiAbortController = null; return true }
     return false
   })
 
+  ipcMain.handle('ai:processTranscript', async (_e, { text, prompt }) => {
+    const apiKey = readAppState().aiApiKey
+    if (!apiKey) throw new Error('API Key found missing.')
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ role: 'system', content: 'English teacher. Analyze transcript.' }, { role: 'user', content: `${prompt}\n\nTranscript:\n${text}` }],
+          temperature: 0.7
+        })
+      })
+      const data = await response.json()
+      return data.choices?.[0]?.message?.content || 'No response from AI.'
+    } catch (e) { console.error('[processTranscript]', e.message); throw new Error(`AI Analysis failed: ${e.message}`) }
+  })
+
   ipcMain.handle('ai:chat', async (_e, { messages, context }) => {
-    const state = readAppState()
-    const apiKey = state.aiApiKey
-    if (!apiKey) throw new Error('No AI API Key found in settings. Click the Gear icon to add it.')
-    
+    const apiKey = readAppState().aiApiKey
+    if (!apiKey) throw new Error('API Key missing.')
     if (aiAbortController) aiAbortController.abort()
     aiAbortController = new AbortController()
-
-    console.log(`[DeepSeek] Chat request with ${messages.length} messages...`)
     try {
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         signal: aiAbortController.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({
           model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: `You are a friendly English Tutor. Help the user learn English through this video. Transcript Context: ${context}. Use Markdown (bold, lists, etc.) to make your explanations clear and educational.` },
-            ...messages
-          ],
+          messages: [{ role: 'system', content: `Friendly English Tutor. Context: ${context}` }, ...messages],
           temperature: 0.7
         })
       })
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`[DeepSeek] API Error: ${response.status} - ${errorText}`)
-        throw new Error(`AI Provider reported an error: ${response.status}`)
-      }
-
       const data = await response.json()
       aiAbortController = null
-      return data.choices?.[0]?.message?.content || 'No response from AI.'
+      return data.choices?.[0]?.message?.content || 'No response.'
     } catch (e) {
-      if (e.name === 'AbortError') {
-        console.log('[DeepSeek] AI Request aborted by user.')
-        return null // Return null to signify intentional cancel
-      }
-      console.error('[deepseek-chat]', e.message)
-      throw new Error(`AI Tutor is offline: ${e.message}`)
+      if (e.name === 'AbortError') return null
+      console.error('[ai:chat]', e.message)
+      throw new Error(`AI Tutor offline: ${e.message}`)
     }
   })
 
-  // ─── Vocabulary Persistence & AI Explanation ────────────────────────────────
+  // ─── Data Persistence ───────────────────────────────────────────────────────
   const dataDir = path.join(app.getAppPath(), 'data')
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
   const vocabPath = path.join(dataDir, 'library.json')
   const collectionsPath = path.join(dataDir, 'collections.json')
 
   ipcMain.handle('vocab:load', () => {
-    try {
-      if (fs.existsSync(vocabPath)) return JSON.parse(fs.readFileSync(vocabPath, 'utf8'))
-    } catch (e) { console.error('Failed to load vocab', e) }
+    try { if (fs.existsSync(vocabPath)) return JSON.parse(fs.readFileSync(vocabPath, 'utf8')) } catch (e) { console.error('Load vocab fail', e) }
     return []
   })
 
-  ipcMain.handle('vocab:save', (_e, list) => {
-    try {
-      fs.writeFileSync(vocabPath, JSON.stringify(list, null, 2))
-      return true
-    } catch (e) { console.error('Failed to save vocab', e); return false }
-  })
+  ipcMain.handle('vocab:save', (_e, list) => { return atomicWriteJsonSync(vocabPath, list) })
 
   ipcMain.handle('collections:load', () => {
-    try {
-      if (fs.existsSync(collectionsPath)) return JSON.parse(fs.readFileSync(collectionsPath, 'utf8'))
-    } catch (e) { console.error('Failed to load collections', e) }
+    try { if (fs.existsSync(collectionsPath)) return JSON.parse(fs.readFileSync(collectionsPath, 'utf8')) } catch (e) { console.error('Load collections fail', e) }
     return []
   })
 
-  ipcMain.handle('collections:save', (_e, list) => {
-    try {
-      fs.writeFileSync(collectionsPath, JSON.stringify(list, null, 2))
-      return true
-    } catch (e) { console.error('Failed to save collections', e); return false }
-  })
+  ipcMain.handle('collections:save', (_e, list) => { return atomicWriteJsonSync(collectionsPath, list) })
 
   ipcMain.handle('ai:explain', async (_e, { text, videoTitle }) => {
-    const state = readAppState()
-    const apiKey = state.aiApiKey
-    if (!apiKey) return { text, definition: 'No API Key', example: '' }
-
-    console.log(`[DeepSeek] Explaining: "${text}"`)
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 15000)
-
+    const apiKey = readAppState().aiApiKey
+    if (!apiKey) return { text, definition: 'No API Key' }
+    const ctrl = new AbortController()
+    const timeout = setTimeout(() => ctrl.abort(), 20000)
     try {
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
-        signal: controller.signal,
+        signal: ctrl.signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({
           model: 'deepseek-chat',
           messages: [
-            { 
-              content: `You are an English dictionary. Output data in a strict, short, and structured format.
-              STRICT RULE: PLAIN TEXT ONLY. No markdown, no filler, no bolding.
-              
-              EXAMPLES FOR FORMATTING:
-              Word: "Exuberant"
-              1. Classification: Adjective
-              2. Pronunciation: /ig-zoo-ber-uhnt/
-              3. Definition: Full of energy, excitement, and cheerfulness.
-              4. Grammar: Used to describe people or actions.
-              5. Usage: General
-              6. Synonyms: Energetic, enthusiastic, cheerful
-              7. Antonyms_Acronyms: Depressed, lethargic
-              8. Examples:
-              • The children were exuberant after winning.
-              • She gave an exuberant wave to the crowd.
-              • His exuberant personality lit up the room.
-
-              Word: "Analyze"
-              1. Classification: Verb
-              2. Pronunciation: /an-uh-lahyz/
-              3. Definition: To examine something in detail to explain it.
-              4. Grammar: Transitive verb; requires an object.
-              5. Usage: Academic
-              6. Synonyms: Examine, study, scrutinize
-              7. Antonyms_Acronyms: Ignore, neglect
-              8. Examples:
-              • We need to analyze the results before deciding.
-              • Scientists analyze soil samples for minerals.
-              • He analyzed the situation and made a choice.
-
-              TAKE THE WORD BELOW AND FOLLOW THIS EXACT 1-8 FORMAT:` 
-            },
+            { role: 'system', content: `Dictionary. 1-8 Format. Plain Text.` },
             { role: 'user', content: text }
           ]
         })
       })
       clearTimeout(timeout)
-      
       const data = await response.json()
-      let content = data.choices?.[0]?.message?.content || ''
-      
-      const getSection = (name) => {
-        // Highly defensive stop-condition: next number OR next recognized header
-        const headers = 'Classification|Pronunciation|Definition|Grammar|Usage|Synonyms|Antonyms_Acronyms|Examples';
-        // Lookahead for (Any whitespace or newline) + (Digit. OR any Header:?)
-        const lookahead = `(?=\\s*\\d\\.|\\n\\d\\.|\\s*(?:${headers}):?)`;
-        const regex = new RegExp(`(?:\\d\\.\\s*)?${name}:?\\s*([\\s\\S]*?)(?:${lookahead}|$)`, 'i')
-        let val = content.match(regex)?.[1]?.trim() || ''
-        return val.replace(/\*\*|__|\"|\[|\]|`/g, '').trim()
+      const content = data.choices?.[0]?.message?.content || ''
+      const getSection = (n) => {
+        const r = new RegExp(`(?:\\d\\.\\s*)?${n}:?\\s*([\\s\\S]*?)(?=\\s*\\d\\.|\\n\\d\\.|$|Classification|Definition)`, 'i')
+        return (content.match(r)?.[1] || '').replace(/\*\*|__|\"|`|\[|\]/g, '').trim()
       }
-
-      const updated = {
-        text: text.replace(/\*\*|__|\"|\[|\]|`/g, '').trim(),
+      return {
+        text: text.replace(/[**__"\[\]`]/g, '').trim(),
         videoTitle,
-        type: getSection('Classification').split(/[.,]/)[0].trim().substring(0, 15),
+        type: getSection('Classification').split(/[.,]/)[0].substring(0, 15),
         pronunciation: getSection('Pronunciation'),
         definition: getSection('Definition'),
         grammar: getSection('Grammar'),
         usage: getSection('Usage'),
         synonyms: getSection('Synonyms'),
         antonyms: getSection('Antonyms_Acronyms'),
-        examples: getSection('Examples').split('\n').map(s => s.replace(/•|\*|-/g, '').replace(/\"|\[|\]/g, '').trim()).filter(Boolean).slice(0,3),
+        examples: getSection('Examples').split('\n').map(s => s.replace(/•|\*|-|\[|\]|\"/g, '').trim()).filter(Boolean).slice(0,3),
         date: new Date().toISOString()
       }
-      return updated
-    } catch (e) {
-      clearTimeout(timeout)
-      console.error('AI Explain error:', e.name === 'AbortError' ? 'Timed out' : e.message)
-      return { 
-        text, 
-        videoTitle, 
-        definition: e.name === 'AbortError' ? 'AI timed out. Please try again.' : 'AI explanation unavailable.', 
-        example: '',
-        date: new Date().toISOString()
-      }
-    }
+    } catch (e) { clearTimeout(timeout); return { text, videoTitle, definition: 'AI analysis timed out. Retry.', date: new Date().toISOString() } }
   })
 
   ipcMain.handle('fs:pickSavePath', async () => {
@@ -588,23 +407,12 @@ function registerIpcHandlers() {
   ipcMain.handle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
 }
 
-// ─── Window ────────────────────────────────────────────────────────────────
 let mainWindow = null
-
 function createWindow() {
-  const iconPath = path.join(__dirname, 'assets', 'icon.png')
-  
   mainWindow = new BrowserWindow({
     width: 1280, height: 820, minWidth: 900, minHeight: 600,
-    backgroundColor: '#0f0f0f',
-    autoHideMenuBar: true,
-    icon: iconPath,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      webSecurity: false,
-    },
+    backgroundColor: '#0f0f0f', autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, webSecurity: false },
   })
   mainWindow.setMenu(null)
   if (isDev) mainWindow.loadURL('http://localhost:5173')
@@ -612,25 +420,15 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null })
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(null)
   registerIpcHandlers()
   createWindow()
-
-  // F12 / Ctrl+Shift+I toggles DevTools (closed by default)
   const toggleDevTools = () => {
     const win = BrowserWindow.getFocusedWindow()
     if (win) win.webContents.toggleDevTools()
   }
   globalShortcut.register('F12', toggleDevTools)
   globalShortcut.register('CommandOrControl+Shift+I', toggleDevTools)
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
 })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
