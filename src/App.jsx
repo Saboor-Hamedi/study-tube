@@ -62,9 +62,21 @@ export default function App() {
     }
   }
 
+  const handleGlobalExport = async () => {
+    if (vocab.length === 0) return
+    try {
+      const result = await api.exportDossier({ name: 'Full_Research_Archive', items: vocab })
+      if (result.success) {
+        showToast(`Full Dossier Exported: ${result.filePath.split(/[\\\/]/).pop()}`, 'success')
+      }
+    } catch (err) {
+      showToast('Global Export Protocol Failed', 'error')
+    }
+  }
+
   return (
     <div className="flex h-screen bg-[#0f0f0f] text-[#e2e2e2] overflow-hidden font-sans">
-      <Activitybar view={view} setView={setView} />
+      <Activitybar view={view} setView={setView} onExport={handleGlobalExport} />
       
       <main className="flex-1 relative overflow-hidden">
         {view === 'search' && (

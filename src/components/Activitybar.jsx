@@ -1,7 +1,7 @@
-import { Search, BookOpen, Settings, Sparkles } from 'lucide-react'
+import { Search, BookOpen, Settings, Sparkles, FileDown } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-export default function Activitybar({ view, setView }) {
+export default function Activitybar({ view, setView, onExport }) {
 
   const mainTabs = [
     { id: 'search', label: 'Discover', icon: Search },
@@ -46,6 +46,16 @@ export default function Activitybar({ view, setView }) {
       </div>
 
       <div className="mt-auto flex flex-col gap-6 w-full items-center">
+        <button
+          onClick={onExport}
+          title="Export Full Dossier"
+          className="relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 group text-muted/40 hover:bg-accent/10 hover:text-accent border border-transparent hover:border-accent/20"
+        >
+          <FileDown className="h-5 w-5" />
+          <div className="absolute left-14 px-3 py-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-md opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/10 ml-2">
+            Export Dossier
+          </div>
+        </button>
         {bottomTabs.map(renderTab)}
       </div>
     </div>

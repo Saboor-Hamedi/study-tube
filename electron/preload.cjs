@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   loadCollections: () => ipcRenderer.invoke('collections:load'),
   saveCollections: (list) => ipcRenderer.invoke('collections:save', list),
   explainWord: (data) => ipcRenderer.invoke('ai:explain', data),
+  exportDossier: (data) => ipcRenderer.invoke('library:export-dossier', data),
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
   cancelDownload: (taskId) => ipcRenderer.invoke('download:cancel', taskId),
   openFilePath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
