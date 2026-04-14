@@ -14,7 +14,7 @@ export default function App() {
   const [collections, setCollections] = useState([])
   const [selectedCollection, setSelectedCollection] = useState('all')
   const [chatHistory, setChatHistory] = useState([
-    { role: 'assistant', content: 'hello. i am your studyTube research copilot. i can help you analyze saved words, suggest grammar rules, or create custom research cards. ask me anything.' }
+    { role: 'assistant', content: 'Hello. I am your studyTube research copilot. I can help you analyze saved words, suggest grammar rules, or create custom research cards. Ask me anything.' }
   ])
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('date')

@@ -1,4 +1,4 @@
-import { Plus, Library, FileText, Maximize2 } from 'lucide-react'
+import { Plus, Library, FileText, Maximize2, Trash2 } from 'lucide-react'
 import { DroppableFolder } from './vocabulary/DraggableCard'
 import { useState } from 'react'
 
@@ -11,7 +11,8 @@ export default function Sidebar({
   isCreatingCollection,
   setIsCreatingCollection,
   newCollectionName,
-  setNewCollectionName
+  setNewCollectionName,
+  showTrash = false
 }) {
   return (
     <div className="w-56 border-r border-white/5 bg-[#080808] flex flex-col overflow-hidden">
@@ -24,7 +25,8 @@ export default function Sidebar({
           <div className="space-y-1">
             {[
               { id: 'all', name: 'All Research', icon: Library },
-              { id: 'unorganized', name: 'Unorganized', icon: FileText }
+              { id: 'unorganized', name: 'Unorganized', icon: FileText },
+              ...(showTrash ? [{ id: 'trash', name: 'Neural Trash', icon: Trash2 }] : [])
             ].map(item => (
               <DroppableFolder 
                 key={item.id}

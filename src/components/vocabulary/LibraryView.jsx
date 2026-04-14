@@ -72,6 +72,12 @@ function LibraryView({
                              (v.definition || '').toLowerCase().includes(q) ||
                              (v.videoTitle || '').toLowerCase().includes(q)
         
+        // Soft Delete Logic: If Trash is selected, show only archived items
+        if (selectedCollection === 'trash') return matchesSearch && v.archived
+        
+        // Otherwise, hide all archived items
+        if (v.archived) return false
+
         if (selectedCollection === 'all') return matchesSearch
         if (selectedCollection === 'unorganized') return matchesSearch && !v.collection
         return matchesSearch && v.collection === selectedCollection
@@ -115,11 +121,28 @@ function LibraryView({
 
   const handleDelete = () => {
     if (!itemToDelete) return
-    const next = vocab.filter(item => item.date !== itemToDelete.date)
-    setVocab(next)
-    api.saveVocab(next)
+    
+    let newList
+    if (selectedCollection === 'trash') {
+      // Permanent Purge
+      newList = vocab.filter(item => item.date !== itemToDelete.date)
+      showToast('Insight purged forever', 'success')
+    } else {
+      // Soft Delete
+      newList = vocab.map(item => item.date === itemToDelete.date ? { ...item, archived: true, originalCollection: item.collection } : item)
+      showToast('Insight moved to Neural Trash', 'success')
+    }
+    
+    setVocab(newList)
+    api.saveVocab(newList)
     setItemToDelete(null)
-    showToast('Entry purged from archive')
+  }
+
+  const handleRestore = (item) => {
+    const newList = vocab.map(v => v.date === item.date ? { ...v, archived: false } : v)
+    setVocab(newList)
+    api.saveVocab(newList)
+    showToast('Insight restored to archive')
   }
 
   const sensors = useSensors(
@@ -140,13 +163,24 @@ function LibraryView({
     if (!over) return
     
     const item = active.data.current
-    const targetCollection = over.id === 'unorganized' ? '' : (over.id === 'all' ? item.collection : over.id)
     
-    if (targetCollection !== item.collection) {
-      const newList = vocab.map(v => v.date === item.date ? { ...v, collection: targetCollection } : v)
+    if (over.id === 'trash') {
+      // Drag to Trash (Soft Delete)
+      const newList = vocab.map(v => v.date === item.date ? { ...v, archived: true } : v)
       setVocab(newList)
       api.saveVocab(newList)
-      showToast(`Moved to ${over.id}`)
+      showToast('Insight moved to Neural Trash')
+      return
+    }
+
+    const targetCollection = over.id === 'unorganized' ? '' : (over.id === 'all' ? item.collection : over.id)
+    
+    if (targetCollection !== item.collection || item.archived) {
+      // Move/Restore logic
+      const newList = vocab.map(v => v.date === item.date ? { ...v, collection: targetCollection, archived: false } : v)
+      setVocab(newList)
+      api.saveVocab(newList)
+      showToast(item.archived ? 'Insight restored' : `Moved to ${over.id}`)
     }
   }
 
@@ -204,6 +238,7 @@ function LibraryView({
             setIsCreatingCollection={setIsCreatingCollection}
             newCollectionName={newCollectionName}
             setNewCollectionName={setNewCollectionName}
+            showTrash={true}
           />
 
           <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
@@ -211,8 +246,8 @@ function LibraryView({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {visible.map((v, i) => (
                   <DraggableCard key={v.date || i} id={v.date || i} v={v}>
-                    <div className="group h-full bg-[#0f0f0f] border border-white/5 rounded-2xl p-6 hover:border-accent/30 hover:bg-[#121212] transition-all flex flex-col gap-4 shadow-xl">
-                      <div className="flex flex-col gap-4">
+                    <div className="group h-[260px] bg-[#0f0f0f] border border-white/5 rounded-2xl p-6 hover:border-accent/30 hover:bg-[#121212] transition-all flex flex-col justify-between shadow-xl overflow-hidden relative">
+                      <div className="flex flex-col gap-4 overflow-hidden">
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex flex-col gap-1 min-h-[44px]">
                             <h3 className="text-[16px] font-black text-white leading-tight line-clamp-2">{v.text}</h3>
@@ -226,62 +261,50 @@ function LibraryView({
                             </button>
                           </div>
                         </div>
-                        {v.loading ? (
-                          <div className="flex items-center gap-2 py-1 opacity-50">
-                            <Loader2 className="h-3 w-3 animate-spin text-accent" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
-                          </div>
-                        ) : v.type === 'Collection' || v.videoTitle === 'AI Research Insight' ? (
-                          <div className="space-y-3">
-                             <div className="relative group/script overflow-hidden max-h-[180px]">
-                               <div className="prose prose-invert prose-xs text-[12px] text-white/50 leading-relaxed select-text">
-                                 <ReactMarkdown>
-                                   {v.definition}
-                                 </ReactMarkdown>
-                               </div>
-                               <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#0f0f0f] to-transparent pointer-events-none" />
-                             </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <ul className="space-y-1.5">
-                              {v.definition && (
-                                <li className="text-[13px] text-white/90 leading-snug flex gap-2 overflow-hidden">
-                                  <span className="text-accent/60 font-black shrink-0">•</span>
-                                  <div className="prose prose-invert prose-xs max-w-none line-clamp-2">
-                                     <ReactMarkdown>
-                                       {v.definition}
-                                     </ReactMarkdown>
-                                  </div>
-                                </li>
-                              )}
-                              {!v.loading && (
-                                <>
-                                  {v.synonyms && (
-                                    <li className="text-[12px] text-white/40 flex gap-2 italic">
-                                      <span className="font-bold opacity-30 shrink-0">syn:</span>
-                                      <span className="line-clamp-1">{v.synonyms}</span>
-                                    </li>
-                                  )}
-                                  {v.examples && v.examples.slice(0, 1).map((ex, idx) => (
-                                    <li key={idx} className="text-[12px] text-white/30 italic leading-snug border-l border-white/10 pl-2 line-clamp-1">{ex}</li>
-                                  ))}
-                                </>
-                              )}
-                            </ul>
-                            
-                            <div className="flex items-center justify-between pt-1">
-                              {(v.usage || v.grammar) ? (
-                                <div className="flex flex-wrap gap-x-2 text-[10px] text-white/10 font-bold tracking-normal">
-                                  {v.usage && <span>{v.usage}</span>}
-                                  {v.usage && v.grammar && <span className="opacity-10">|</span>}
-                                  {v.grammar && <span className="italic">{v.grammar}</span>}
-                                </div>
-                              ) : <div />}
+
+                        {/* Content Area - Fixed Height Containment */}
+                        <div className="flex-1 overflow-hidden relative">
+                          {v.loading ? (
+                            <div className="flex items-center gap-2 py-1 opacity-50">
+                              <Loader2 className="h-3 w-3 animate-spin text-accent" />
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
                             </div>
-                          </div>
-                        )}
-                     </div>
+                          ) : v.archived || v.type === 'Collection' || v.videoTitle === 'AI Research Insight' ? (
+                             <div className="prose prose-invert prose-xs text-[12px] text-white/50 leading-relaxed select-text line-clamp-4">
+                               <ReactMarkdown>{v.definition}</ReactMarkdown>
+                             </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <ul className="space-y-1.5">
+                                {v.definition && (
+                                  <li className="text-[13px] text-white/90 leading-snug flex gap-2 overflow-hidden">
+                                    <span className="text-accent/60 font-black shrink-0">•</span>
+                                    <div className="prose prose-invert prose-xs max-w-none line-clamp-2">
+                                       <ReactMarkdown>{v.definition}</ReactMarkdown>
+                                    </div>
+                                  </li>
+                                )}
+                                {!v.loading && (
+                                  <>
+                                    {v.synonyms && (
+                                      <li className="text-[12px] text-white/40 flex gap-2 italic">
+                                        <span className="font-bold opacity-30 shrink-0">syn:</span>
+                                        <span className="line-clamp-1">{v.synonyms}</span>
+                                      </li>
+                                    )}
+                                    {v.examples && (
+                                      <li className="text-[12px] text-white/30 italic leading-snug border-l border-white/10 pl-2 line-clamp-1">
+                                        {v.examples[0]}
+                                      </li>
+                                    )}
+                                  </>
+                                )}
+                              </ul>
+                            </div>
+                          )}
+                          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0f0f0f] group-hover:from-[#121212] transition-colors to-transparent pointer-events-none" />
+                        </div>
+                      </div>
 
                     <div className="mt-auto pt-1.5 flex items-center justify-between gap-4 border-t border-white/[0.03]">
                       <div className="flex items-center gap-2">
@@ -291,25 +314,33 @@ function LibraryView({
                          </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                         {v.collection && (
-                          <button 
-                           onClick={(e) => {
-                             e.stopPropagation()
-                             handleUpdateItem({ ...v, collection: null })
-                             showToast(`Removed from ${v.collection}`)
-                           }}
-                           title="Remove from collection"
-                           className="p-1.5 hover:bg-white/5 text-muted/20 hover:text-accent rounded-lg transition-all"
-                          >
-                           <FolderMinus className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                         {v.archived ? (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleRestore(v) }}
+                              title="Restore Insight"
+                              className="p-1.5 hover:bg-accent/10 border border-transparent hover:border-accent/30 text-accent rounded-lg transition-all"
+                            >
+                              <RefreshCcw className="h-3.5 w-3.5" />
+                            </button>
+                         ) : v.collection && (
+                            <button 
+                             onClick={(e) => {
+                               e.stopPropagation()
+                               handleUpdateItem({ ...v, collection: null })
+                               showToast(`Removed from ${v.collection}`)
+                             }}
+                             title="Remove from collection"
+                             className="p-1.5 hover:bg-white/5 text-muted/20 hover:text-accent rounded-lg transition-all"
+                            >
+                             <FolderMinus className="h-3.5 w-3.5" />
+                            </button>
+                         )}
                          <button 
                           onClick={(e) => {
                             e.stopPropagation()
                             setItemToDelete(v)
                           }}
-                          className="p-1.5 hover:bg-red-500/10 text-muted/20 hover:text-red-500 rounded-lg transition-all"
+                          className={`p-1.5 rounded-lg transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -347,8 +378,10 @@ function LibraryView({
 
       <ConfirmationModal 
         isOpen={!!itemToDelete}
-        title="Confirm Purge"
-        message={`This research entry for "${itemToDelete?.text}" will be permanently removed from the archive.`}
+        title={selectedCollection === 'trash' ? "Purge Forever" : "Move to Trash"}
+        message={selectedCollection === 'trash' 
+          ? `This research insight for "${itemToDelete?.text}" will be permanently eradicated. This cannot be undone.`
+          : `This research insight will be moved to the Neural Trash. You can restore it later if needed.`}
         onConfirm={handleDelete}
         onCancel={() => setItemToDelete(null)}
       />
