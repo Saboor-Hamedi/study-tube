@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Send, Loader2, User, Bot, Plus, FolderPlus, Trash2, Library, FileText, ChevronRight, X, Maximize2, AlertCircle, Square, GripVertical } from 'lucide-react'
+import { Sparkles, Send, Loader2, User, Bot, Pencil, Trash2, Library, FileText, ChevronRight, X, Maximize2, AlertCircle, Square, GripVertical, Brain } from 'lucide-react'
 import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { DroppableFolder, DraggableCard } from '../vocabulary/DraggableCard'
 import Sidebar from '../Sidebar'
 
@@ -28,8 +29,12 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
     const userMsg = { role: 'user', content: input }
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
+    const currentInput = input
     setInput('')
     setIsTyping(true)
+
+    // Shield Logic: Timeout Protection (45s)
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Neural Response Timed Out')), 45000))
 
     try {
       const chatHistory = newMessages.map(m => ({
@@ -37,20 +42,23 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
         content: m.content
       }))
 
-      const responseText = await api.chatWithAI({ 
+      const chatPromise = api.chatWithAI({ 
         messages: chatHistory, 
         context: 'Global Research Copilot' 
       })
 
+      const responseText = await Promise.race([chatPromise, timeout])
+
       if (responseText) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: responseText
-        }])
+        const assistantMsg = { role: 'assistant', content: responseText }
+        setMessages(prev => [...prev, assistantMsg])
       }
     } catch (e) {
       if (e.message !== 'CANCELLED') {
-        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${e.message}` }])
+        const errorMsg = e.message === 'Neural Response Timed Out' ? 'AI response timed out. Service may be congested.' : `Connection anomaly: ${e.message}`
+        setMessages(prev => [...prev, { role: 'assistant', content: `[SYSTEM_ALERT] ${errorMsg}` }])
+        showToast(errorMsg, 'error')
+        setInput(currentInput) // Restore input on failure
       }
     } finally {
       setIsTyping(false)
@@ -60,6 +68,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
   const handleStop = async () => {
     await api.stopAI()
     setIsTyping(false)
+    showToast('Neural stream halted')
   }
 
   const sensors = useSensors(
@@ -76,24 +85,26 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
       const item = active.data.current
       const targetCollection = over.id === 'unorganized' ? '' : (over.id === 'all' ? '' : over.id)
       
-      if (item.type === 'chat-message') {
-         // High-Fidelity Capture: Save the full AI insight directly
-         const rawLine = item.content.slice(0, 80).split('\n')[0]
-         // Strip markdown for clean title
-         const title = rawLine.replace(/[#*`~_\[\]()]/g, '').trim() + (item.content.length > 80 ? '...' : '')
-         
-         const newEntry = {
-           text: title,
-           definition: item.content,
-           collection: targetCollection,
-           date: new Date().toISOString(),
-           videoTitle: 'AI Research Insight',
-           loading: false
-         }
-         const newList = [newEntry, ...vocab]
-         setVocab(newList)
-         api.saveVocab(newList)
-         showToast(`Insight saved to ${over.id || 'unorganized'}`)
+      try {
+          // Precise Title Capture: Strip Markdown and take first clean sentence
+          const cleanText = item.content.replace(/[#*`~_\[\]()]/g, '').trim()
+          const firstSentence = cleanText.split(/[.!?\n]/).filter(s => s.trim().length > 0)[0] || 'Neural Insight'
+          const finalTitle = firstSentence.length > 50 ? firstSentence.slice(0, 50) + '...' : firstSentence
+          
+          const newEntry = {
+            text: finalTitle,
+            definition: item.content,
+            collection: targetCollection,
+            date: new Date().toISOString(),
+            videoTitle: 'AI Research Insight',
+            loading: false
+          }
+          const newList = [newEntry, ...vocab]
+          setVocab(newList)
+          await api.saveVocab(newList)
+          showToast(`Insight archived in ${over.id || 'unorganized'}`)
+      } catch (err) {
+          showToast('Failed to archive research insight', 'error')
       }
     }
   }
@@ -116,28 +127,35 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
 
         <div className="flex-1 flex overflow-hidden">
           {/* Shared Unified Sidebar */}
-          <Sidebar 
-            collections={collections}
-            selectedCollection={selectedCollection}
-            setSelectedCollection={(id) => {
-              setSelectedCollection(id)
-              setView('vocab')
-            }}
-            // Standard Handlers
-            handleCreateCollection={async () => {
-              if (!newCollectionName.trim()) return
-              const newList = [...collections, newCollectionName.trim()]
-              setCollections(newList)
-              await api.saveCollections(newList)
-              setNewCollectionName('')
-              setIsCreatingCollection(false)
-              showToast('Folder established')
-            }}
-            setIsCreatingCollection={setIsCreatingCollection}
-            isCreatingCollection={isCreatingCollection}
-            newCollectionName={newCollectionName}
-            setNewCollectionName={setNewCollectionName}
-          />
+          <div className="relative flex flex-col h-full shrink-0">
+              <Sidebar 
+                collections={collections}
+                selectedCollection={selectedCollection}
+                setSelectedCollection={(id) => {
+                  setSelectedCollection(id)
+                  setView('vocab')
+                }}
+                handleCreateCollection={async () => {
+                  if (!newCollectionName.trim()) return
+                  const newList = [...collections, newCollectionName.trim()]
+                  setCollections(newList)
+                  await api.saveCollections(newList)
+                  setNewCollectionName('')
+                  setIsCreatingCollection(false)
+                  showToast('Folder established')
+                }}
+                setIsCreatingCollection={setIsCreatingCollection}
+                isCreatingCollection={isCreatingCollection}
+                newCollectionName={newCollectionName}
+                setNewCollectionName={setNewCollectionName}
+              />
+              
+              {/* Shield Status Integration */}
+              <div className="absolute bottom-4 left-6 right-6 p-2.5 bg-accent/[0.03] border border-accent/10 rounded-xl flex items-center justify-between opacity-40 hover:opacity-100 transition-opacity">
+                 <span className="text-[8px] font-black uppercase tracking-widest text-muted">Shield Active</span>
+                 <Brain className="h-3 w-3 text-accent" />
+              </div>
+          </div>
 
           {/* Main Chat Hub */}
           <div className="flex-1 flex flex-col relative overflow-hidden">
@@ -163,14 +181,14 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                         {({ listeners, attributes }) => (
                           <div className="group/msg relative text-[14px] leading-relaxed text-white/90 p-6 bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-none cursor-text select-text hover:border-accent/20 transition-all shadow-xl">
                             <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:rounded-xl prose-strong:text-accent prose-strong:font-black prose-ul:list-disc prose-ul:pl-4 relative z-10">
-                              <ReactMarkdown>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                 {m.content}
                               </ReactMarkdown>
                             </div>
                             
                             <div className="mt-6 pt-5 border-t border-white/5 flex items-center justify-between relative z-10">
                                <div className="flex items-center gap-2 text-[8px] font-black uppercase text-accent/40 tracking-[0.2em] opacity-40 group-hover/msg:opacity-100 transition-opacity">
-                                  <span>Drag to Save Research</span>
+                                  <span>Drag Handle to Archive Insight</span>
                                </div>
                                
                                <div 
@@ -184,7 +202,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                             </div>
                           </div>
                         )}
-                     </DraggableCard>
+                      </DraggableCard>
                   ) : (
                     <div className="text-[14px] leading-relaxed bg-accent/10 text-white p-5 rounded-2xl rounded-tr-none border border-accent/20 backdrop-blur-sm shadow-xl ml-auto">
                       {m.content}
@@ -202,7 +220,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
             {isTyping && (
               <div className="flex items-center gap-3 text-muted px-4 animate-pulse">
                  <Loader2 className="h-3 w-3 animate-spin" />
-                 <span className="text-[9px] font-black uppercase tracking-widest">processing neural response...</span>
+                 <span className="text-[9px] font-black uppercase tracking-widest">establishing neural bridge...</span>
               </div>
             )}
             <div ref={chatEndRef} />
@@ -210,12 +228,12 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
 
           {/* Input Dock (Full Width) */}
           <div className="absolute bottom-6 left-0 right-0 px-8 flex justify-center z-30">
-            <div className="w-full bg-[#151515] border border-white/10 rounded-2xl p-2.5 shadow-2xl flex items-center gap-4 focus-within:border-accent/30 transition-all backdrop-blur-2xl">
+            <div className="w-full max-w-4xl bg-[#151515] border border-white/10 rounded-2xl p-2.5 shadow-2xl flex items-center gap-4 focus-within:border-accent/30 transition-all backdrop-blur-3xl">
               <input 
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (isTyping ? handleStop() : handleSend())}
-                placeholder={isTyping ? "AI is generating..." : "Ask your assistant about linguistics or drag responses to folders..."}
+                placeholder={isTyping ? "AI is generating..." : "Conduct research or drag insights to your folders..."}
                 className="flex-1 bg-transparent px-5 py-3 text-[14px] text-white outline-none placeholder:text-muted/20"
                 disabled={isTyping}
               />
@@ -237,13 +255,13 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
 
       <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
         {activeDragMessage ? (
-          <div className="pointer-events-none flex items-center gap-2 bg-[#1a1a1a] border border-accent/40 rounded-xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-48 backdrop-blur-md">
+          <div className="pointer-events-none flex items-center gap-2 bg-[#1a1a1a] border border-accent/40 rounded-xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-56 backdrop-blur-md">
             <div className="shrink-0 p-1.5 bg-accent/20 rounded-lg">
-               <Sparkles className="h-3 w-3 text-accent" />
+               <Sparkles className="h-3.5 w-3.5 text-accent" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[9px] font-black text-white/90 uppercase tracking-widest truncate">Neural Research Unit</p>
-              <p className="text-[8px] text-accent/60 font-medium truncate uppercase tracking-tighter">Capture in progress...</p>
+              <p className="text-[9px] font-black text-white/90 uppercase tracking-widest truncate">Research Capture</p>
+              <p className="text-[8px] text-accent/60 font-medium truncate uppercase tracking-tighter">Archiving to persistent unit...</p>
             </div>
           </div>
         ) : null}
