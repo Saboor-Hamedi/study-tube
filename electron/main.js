@@ -16,9 +16,16 @@ const isDev = !app.isPackaged
 function atomicWriteJsonSync(filePath, data) {
   const tempPath = `${filePath}.tmp`
   try {
+    // Snapshot Engine: Multi-point recovery
+    if (fs.existsSync(filePath)) {
+      const snapshotDir = path.join(path.dirname(filePath), '.snapshots')
+      if (!fs.existsSync(snapshotDir)) fs.mkdirSync(snapshotDir, { recursive: true })
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+      fs.copyFileSync(filePath, path.join(snapshotDir, `${path.basename(filePath)}.${stamp}.bak`))
+    }
     fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8')
     fs.renameSync(tempPath, filePath)
-    console.log(`[SHIELD] Atomic write successful: ${path.basename(filePath)}`)
+    console.log(`[SENTRY] Snapshot & Atomic write successful: ${path.basename(filePath)}`)
     return true
   } catch (err) {
     console.error(`[CRITICAL] Atomic write failed: ${path.basename(filePath)}`, err)
@@ -221,7 +228,17 @@ async function downloadVideo({ webContents, taskId, url, format, savePath, safeT
 
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
 function registerIpcHandlers() {
-  ipcMain.handle('library:export-dossier', async (event, { name, items }) => {
+  const safeHandle = (channel, fn) => {
+    try {
+      ipcMain.removeHandler(channel)
+      ipcMain.handle(channel, async (...args) => {
+        try { return await fn(...args) } 
+        catch (e) { console.error(`[IPC FAIL] ${channel}:`, e.message); throw e }
+      })
+    } catch (e) { console.error(`[IPC REG FAIL] ${channel}:`, e.message) }
+  }
+
+  safeHandle('library:export-dossier', async (event, { name, items }) => {
     try {
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: `Export Research Dossier: ${name}`,
@@ -254,7 +271,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('youtube:search', async (_e, query) => {
+  safeHandle('youtube:search', async (_e, query) => {
     if (!query?.trim()) return []
     try {
       const r = await ytSearch(query)
@@ -435,10 +452,9 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle('settings:getSavePath', () => readAppState().savePath || app.getPath('downloads'))
-  ipcMain.handle('settings:setSavePath', (_e, p) => { writeAppState({ savePath: p }); return p })
-  ipcMain.handle('settings:getAiKey', () => readAppState().aiApiKey || '')
-  ipcMain.handle('settings:setAiKey', (_e, key) => { writeAppState({ aiApiKey: key }); return key })
-  ipcMain.handle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
+  safeHandle('settings:getAiKey', () => readAppState().aiApiKey || '')
+  safeHandle('settings:setAiKey', (_e, key) => { writeAppState({ aiApiKey: key }); return key })
+  safeHandle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
 }
 
 let mainWindow = null
@@ -456,14 +472,21 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  registerIpcHandlers()
-  createWindow()
-  const toggleDevTools = () => {
-    const win = BrowserWindow.getFocusedWindow()
-    if (win) win.webContents.toggleDevTools()
+  try {
+    console.log('[SYSTEM] Initializing Neural Sentry Handlers...')
+    registerIpcHandlers()
+    console.log('[SYSTEM] Launching Research Studio...')
+    createWindow()
+    
+    const toggleDevTools = () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.toggleDevTools()
+    }
+    globalShortcut.register('F12', toggleDevTools)
+    globalShortcut.register('CommandOrControl+Shift+I', toggleDevTools)
+  } catch (err) {
+    console.error('[CRITICAL STARTUP FAILURE]', err)
   }
-  globalShortcut.register('F12', toggleDevTools)
-  globalShortcut.register('CommandOrControl+Shift+I', toggleDevTools)
 })
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
