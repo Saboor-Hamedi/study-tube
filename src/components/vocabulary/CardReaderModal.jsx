@@ -56,7 +56,14 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
                   prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2
                   selection:bg-accent/40 select-text font-extralight tracking-wide">
                  {highlights.length > 0 ? renderContentWithHeatmap(item.definition) : (
-                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.definition}</ReactMarkdown>
+                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                     {item.definition?.includes('\n\n') 
+                       ? item.definition 
+                       : (item.definition || '')
+                          .replace(/\s+/g, ' ')
+                          .split(/(?<=[.!?])\s+(?=[A-Z])/)
+                          .join('\n\n')}
+                   </ReactMarkdown>
                  )}
               </div>
             )}

@@ -89,6 +89,7 @@ async function fetchMetadata(url) {
     url,
     author: details.author?.name || '',
     views: Number(details.viewCount) || 0,
+    description: details.description || '',
     qualityOptions: heights.length ? buildQualityOptions(heights) : DEFAULT_QUALITY_OPTIONS,
   }
 }
@@ -321,10 +322,23 @@ function registerIpcHandlers() {
     const canonical = canonicalize(url)
     try {
       const info = await ytdl.getInfo(canonical)
-      const fmts = info.formats.filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4').sort((a, b) => (b.height ?? 0) - (a.height ?? 0))
-      const best = fmts.find(f => (f.height ?? 0) <= 720) || fmts[0]
-      return best?.url || null
-    } catch (e) { console.error('[getStreamUrl]', e.message); return null }
+      // Prioritize combined formats (progressive) for direct <video> tag playback
+      const format = ytdl.chooseFormat(info.formats, { 
+        quality: 'highest', 
+        filter: f => f.hasVideo && f.hasAudio && f.container === 'mp4' 
+      })
+      return format?.url || null
+    } catch (e) { 
+      console.error('[getStreamUrl]', e.message)
+      // Fallback: try any format that has video and audio
+      try {
+        const info = await ytdl.getInfo(canonical)
+        const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo' })
+        return format?.url || null
+      } catch (inner) {
+        return null 
+      }
+    }
   })
 
   ipcMain.handle('youtube:getTranscript', async (_e, videoId) => {
