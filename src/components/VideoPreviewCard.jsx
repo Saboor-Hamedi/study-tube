@@ -201,7 +201,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
   }
 
   return (
-    <div className="flex-1 flex flex-col w-full bg-[#0a0a0a]" onMouseUp={captureSelection} onDoubleClick={captureSelection}>
+    <div className="flex-1 flex flex-col w-full bg-background transition-colors duration-500" onMouseUp={captureSelection} onDoubleClick={captureSelection}>
       <AnimatePresence>
         {selection && (
           <motion.div 
@@ -230,13 +230,13 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
       <div className="flex flex-1 overflow-hidden lg:flex-row flex-col max-w-[1400px] w-full mx-auto p-4 lg:p-6 gap-6">
         {/* Left Side: Video & Transcript */}
         <div className="flex-1 min-w-0 flex flex-col gap-6">
-          <div className="w-full aspect-video bg-black overflow-hidden border border-border relative shadow-2xl group transition-colors duration-500">
+          <div className="w-full aspect-video bg-surface-2 overflow-hidden border border-border relative shadow-2xl group transition-colors duration-500">
             {isStreamStarted ? (
               <VideoPlayer videoId={video.id} onClose={() => setIsStreamStarted(false)} seekTo={seekTo} />
             ) : (
               <>
-                <img src={video.thumbnail} alt="" className="w-full h-full object-cover opacity-60 transition-all duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center">
+                <img src={video.thumbnail} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-all duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent flex items-center justify-center">
                   <button 
                     onClick={handlePlay} 
                     className="h-10 w-10 bg-accent text-white  flex items-center justify-center hover:scale-110 transition-all shadow-2xl group/btn"

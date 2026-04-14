@@ -532,9 +532,31 @@ function createWindow() {
     width: 1280, height: 820, minWidth: 900, minHeight: 600,
     backgroundColor: '#0f0f0f', autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets/icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, webSecurity: false },
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      devTools: !app.isPackaged,
+      webSecurity: false
+    },
   })
-  mainWindow.setMenu(null)
+
+  // Smart DevTool Protocol: Disable shortcuts in production
+  if (app.isPackaged) {
+    mainWindow.removeMenu() 
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.webContents.closeDevTools()
+    })
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if ((input.control || input.meta) && input.shift && input.key.toLowerCase() === 'i') {
+        event.preventDefault()
+      }
+      if (input.key === 'F12') {
+        event.preventDefault()
+      }
+    })
+  }
+
   if (isDev) mainWindow.loadURL('http://localhost:5173')
   else mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   mainWindow.on('closed', () => { mainWindow = null })

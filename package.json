@@ -20,7 +20,9 @@
     "linux": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --linux",
     "build:linux": "npm run linux",
     "build:all": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win --mac --linux",
-    "publish": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win --mac --linux -p always",
+    "publish": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win --linux -p always",
+    "publish:win": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win -p always",
+    "publish:linux": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --linux -p always",
     "preview": "vite preview"
   },
   "build": {
