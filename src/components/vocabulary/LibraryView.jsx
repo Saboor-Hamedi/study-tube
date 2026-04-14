@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Loader2, Trash2, Search as SearchIcon, RefreshCcw, 
   Library, FileText, ChevronRight, X, Maximize2, 
-  AlertCircle, Plus, FolderMinus, Download, GripVertical 
+  AlertCircle, Plus, FolderMinus, Download, GripVertical, Download as DownloadIcon
 } from 'lucide-react'
 import { 
   DndContext, DragOverlay, defaultDropAnimationSideEffects, 
@@ -24,10 +24,10 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="w-full max-w-sm bg-surface border border-border p-6 shadow-[0_30px_100px_rgba(0,0,0,1)] space-y-6 "
+          className="w-full max-w-sm bg-surface border border-border p-6 shadow-[0_30px_100px_rgba(0,0,0,1)] space-y-6 rounded-[5px]"
         >
           <div className="flex items-start gap-4">
-             <div className="p-3 bg-red-500/10 text-red-500 ">
+             <div className="p-3 bg-red-500/10 text-red-500 rounded-[5px]">
                 <AlertCircle className="h-6 w-6" />
              </div>
              <div className="space-y-1">
@@ -187,12 +187,15 @@ function LibraryView({
     const { active, over } = event
     setActiveDragItem(null)
     if (over && active.data.current?.date) {
-      showToast(`Insight archived in ${over.id}`, 'success')
       const itemDate = active.data.current.date
       const targetCollection = over.id === 'unorganized' ? null : (over.id === 'all' ? null : over.id)
+      
+      if (active.data.current.collection === targetCollection) return
+
       const newVocab = vocab.map(v => v.date === itemDate ? { ...v, collection: targetCollection } : v)
       setVocab(newVocab)
       await api.saveVocab(newVocab)
+      showToast(`Insight migrated to ${over.id === 'unorganized' ? 'Unorganized' : (over.id === 'all' ? 'Root' : over.id)}`, 'success')
     }
   }
 
@@ -200,6 +203,7 @@ function LibraryView({
     <DndContext 
       sensors={sensors} 
       collisionDetection={rectIntersection} 
+      modifiers={[snapCenterToCursor]}
       onDragStart={(e) => setActiveDragItem(e.active.data.current)} 
       onDragEnd={handleDragEnd}
     >
@@ -225,7 +229,7 @@ function LibraryView({
                 {visible.map((v, i) => (
                   <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
                     {({ listeners, attributes }) => (
-                      <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative">
+                      <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative border border-transparent hover:border-border/20">
                         <div className="flex flex-col gap-4 overflow-hidden">
                           <div className="flex justify-between items-start gap-3">
                             <div className="flex flex-col gap-1 min-h-[44px]">
@@ -271,7 +275,7 @@ function LibraryView({
                                onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
                                className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
                              >
-                                <Download className="h-3.5 w-3.5" />
+                                <DownloadIcon className="h-3.5 w-3.5" />
                              </button>
                              {v.archived ? (
                                 <button 
@@ -293,14 +297,14 @@ function LibraryView({
                                 </button>
                              )}
                              <button 
-                              onClick={(i_e) => {
-                                i_e.stopPropagation()
-                                setItemToDelete(v)
-                              }}
-                              className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                               onClick={(i_e) => {
+                                 i_e.stopPropagation()
+                                 setItemToDelete(v)
+                               }}
+                               className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
+                             >
+                               <Trash2 className="h-3.5 w-3.5" />
+                             </button>
                           </div>
                         </div>
                       </div>
@@ -336,25 +340,24 @@ function LibraryView({
 
       <ConfirmationModal 
         isOpen={!!itemToDelete}
-        title={selectedCollection === 'trash' ? "Purge Forever" : "Move to Trash"}
-        message={selectedCollection === 'trash' 
-          ? `This research insight for "${itemToDelete?.text}" will be permanently eradicated. This cannot be undone.`
-          : `This research insight will be moved to the Neural Trash. You can restore it later if needed.`}
+        title={selectedCollection === 'trash' || itemToDelete?.archived ? 'Eradicate Research?' : 'Move to Trash?'}
+        message={selectedCollection === 'trash' || itemToDelete?.archived ? 'This action permanently dissolves the insight from the neural archive.' : 'The insight will be moved to the trash for later disposal.'}
         onConfirm={handleDelete}
         onCancel={() => setItemToDelete(null)}
       />
 
-      <DragOverlay 
-        modifiers={[snapCenterToCursor]}
-        className="pointer-events-none"
-        dropAnimation={null}
-      >
+      {/* Industrial Drag Overlay */}
+      <DragOverlay dropAnimation={null}>
         {activeDragItem ? (
-          <div className="flex items-center gap-1.5 bg-surface-3 border border-accent/30 p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.8)] w-32 pointer-events-none">
-            <div className="shrink-0 p-1 bg-accent/20">
-               <FileText className="h-2.5 w-2.5 text-accent" />
-            </div>
-            <p className="text-[9px] font-black text-text truncate lowercase tracking-tighter">{activeDragItem.text}</p>
+          <div className="w-[160px] bg-surface-2 border border-accent p-1.5 shadow-2xl opacity-90 scale-90 pointer-events-none rounded-[5px]">
+             <div className="flex items-center gap-1.5">
+                <div className="p-1 bg-accent/10 border border-accent/20 rounded-[3px]">
+                   <FileText className="h-3 w-3 text-accent" />
+                </div>
+                <div className="min-w-0">
+                   <h4 className="text-[9px] font-black text-text uppercase tracking-widest truncate">{activeDragItem.text}</h4>
+                </div>
+             </div>
           </div>
         ) : null}
       </DragOverlay>
@@ -362,4 +365,4 @@ function LibraryView({
   )
 }
 
-export default memo(LibraryView)
+export default LibraryView

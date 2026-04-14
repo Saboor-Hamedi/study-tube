@@ -7,7 +7,7 @@
     "date": "2026-04-14T08:58:33.397Z",
     "skipAI": true,
     "loading": false,
-    "collection": "pronoun"
+    "collection": null
   },
   {
     "text": "Talk anymore like we used todo. We don't love",
@@ -26,8 +26,7 @@
     "skipAI": true,
     "date": "2026-04-14T08:57:44.857Z",
     "loading": false,
-    "definition": "",
-    "archived": true
+    "definition": ""
   },
   {
     "text": "t talk anymore like we used todo. We don't love an",
