@@ -43,8 +43,8 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
               <textarea
                 value={editVal}
                 onChange={e => setEditVal(e.target.value)}
-                className="w-full bg-accent/[0.02] border border-accent/10 rounded-2xl p-10 text-xl text-white font-mono leading-relaxed focus:border-accent/40 outline-none min-h-[550px] scrollbar-thin resize-none shadow-2xl transition-all"
-                placeholder="Begin neural drafting..."
+                className="w-full bg-black/40 border border-white/5 rounded-2xl p-8 lg:p-12 text-[16px] text-white/90 leading-[1.8] font-extralight tracking-wide focus:border-accent/40 outline-none min-h-[600px] scrollbar-thin resize-none shadow-inner transition-all selection:bg-accent/40"
+                placeholder="Initialize neural drafting..."
               />
             ) : (
               <div className="prose prose-invert max-w-none 
@@ -53,14 +53,25 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
                   prose-h3:text-lg prose-h3:font-bold prose-h3:text-accent prose-h3:mb-3 prose-h3:uppercase prose-h3:tracking-widest
                   prose-p:text-[16px] prose-p:leading-[1.8] prose-p:text-white/80 prose-p:mb-6
                   prose-strong:text-accent prose-strong:font-black prose-strong:bg-accent/5 prose-strong:px-1
-                  prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2
+                  prose-ol:list-decimal prose-ol:pl-8 prose-ol:space-y-4 prose-ol:text-accent
+                  prose-ul:list-disc prose-ul:pl-8 prose-ul:space-y-4 prose-ul:text-accent
+                  prose-li:text-white/80 prose-li:leading-relaxed prose-li:pl-2
                   selection:bg-accent/40 select-text font-extralight tracking-wide">
                  {highlights.length > 0 ? renderContentWithHeatmap(item.definition) : (
-                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                     {item.definition?.includes('\n\n') 
+                   <ReactMarkdown 
+                     remarkPlugins={[remarkGfm]}
+                     components={{
+                       ol: ({node, ...props}) => <ol className="list-decimal pl-10 space-y-4 my-8 text-accent marker:text-accent marker:font-black" {...props} />,
+                       ul: ({node, ...props}) => <ul className="list-disc pl-10 space-y-4 my-8 text-accent marker:text-accent" {...props} />,
+                       li: ({node, ...props}) => <li className="text-white/80 leading-[1.8] pl-2 font-extralight" {...props} />,
+                       p: ({node, ...props}) => <p className="mb-6 last:mb-0 text-white/80 leading-[1.8] font-extralight" {...props} />,
+                       strong: ({node, ...props}) => <strong className="text-accent font-black bg-accent/5 px-1" {...props} />,
+                       em: ({node, ...props}) => <em className="text-white/40 italic" {...props} />
+                     }}
+                   >
+                     {item.definition?.includes('\n') || /^(\d+\.|\s*[-*•])\s/m.test(item.definition || '')
                        ? item.definition 
                        : (item.definition || '')
-                          .replace(/\s+/g, ' ')
                           .split(/(?<=[.!?])\s+(?=[A-Z])/)
                           .join('\n\n')}
                    </ReactMarkdown>

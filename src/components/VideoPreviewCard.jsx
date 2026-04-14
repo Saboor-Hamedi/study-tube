@@ -304,7 +304,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                     </div>
                     <button 
                       onClick={() => {
-                         const content = scriptMode === 'neural' ? refinedTranscript : (transcript || []).map(t => t.text).join(' ')
+                         const content = scriptMode === 'neural' ? refinedTranscript : (transcript || []).map(t => t.text).join('\n\n')
                          onAddVocab({ text: video.title, definition: content, type: 'Collection', videoTitle: video.title, date: new Date().toISOString(), skipAI: true })
                          showToast(`Collection "${video.title}" saved!`)
                       }}
