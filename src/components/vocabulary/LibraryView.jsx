@@ -1,6 +1,6 @@
 import { useMemo, memo, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, Trash2, Search as SearchIcon, RefreshCcw, Library, FileText, ChevronRight, X, Maximize2, AlertCircle, Plus, FolderMinus } from 'lucide-react'
+import { Loader2, Trash2, Search as SearchIcon, RefreshCcw, Library, FileText, ChevronRight, X, Maximize2, AlertCircle, Plus, FolderMinus, Download } from 'lucide-react'
 import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import CardReaderModal from './CardReaderModal'
@@ -159,6 +159,17 @@ function LibraryView({
     // Refresh modal view if it's currently showing this item
     if (selectedCard?.date === updatedItem.date) {
       setSelectedCard(updatedItem)
+    }
+  }
+
+  const handleExportItem = async (item) => {
+    try {
+      const result = await api.exportDossier({ name: item.text, items: [item] })
+      if (result.success) {
+        showToast(`Unit Exported: ${item.text}`, 'success')
+      }
+    } catch (err) {
+      showToast('Unit Export Failed', 'error')
     }
   }
 
@@ -367,6 +378,13 @@ function LibraryView({
                          </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); handleExportItem(v) }}
+                           title="Export as Markdown"
+                           className="p-1.5 hover:bg-white/5 text-muted/20 hover:text-accent rounded-lg transition-all"
+                         >
+                            <Download className="h-3.5 w-3.5" />
+                         </button>
                          {v.archived ? (
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleRestore(v) }}

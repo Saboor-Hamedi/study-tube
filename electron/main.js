@@ -446,6 +446,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280, height: 820, minWidth: 900, minHeight: 600,
     backgroundColor: '#0f0f0f', autoHideMenuBar: true,
+    icon: path.join(__dirname, 'assets/icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, webSecurity: false },
   })
   mainWindow.setMenu(null)
