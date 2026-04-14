@@ -29,33 +29,54 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
         </div>
 
         {/* Neural Content Stream */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent flex items-center gap-2">
-               <FileText className="h-3 w-3" /> Analysis Stream
-            </p>
-            {isEditing && <span className="text-[9px] font-bold text-muted/30 uppercase tracking-widest">Markdown Supported</span>}
+        <div className="space-y-10">
+          
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent flex items-center gap-2">
+                 <FileText className="h-3 w-3" /> Analysis Stream
+              </p>
+              {isEditing && <span className="text-[9px] font-bold text-muted/30 uppercase tracking-widest">Markdown Supported</span>}
+            </div>
+
+            {isEditing ? (
+              <textarea
+                value={editVal}
+                onChange={e => setEditVal(e.target.value)}
+                className="w-full bg-accent/[0.02] border border-accent/10 rounded-2xl p-10 text-xl text-white font-mono leading-relaxed focus:border-accent/40 outline-none min-h-[550px] scrollbar-thin resize-none shadow-2xl transition-all"
+                placeholder="Begin neural drafting..."
+              />
+            ) : (
+              <div className="prose prose-invert max-w-none 
+                  prose-h1:text-2xl prose-h1:font-black prose-h1:text-white prose-h1:mb-6 prose-h1:tracking-tight
+                  prose-h2:text-xl prose-h2:font-black prose-h2:text-white/90 prose-h2:mb-4 prose-h2:border-l-2 prose-h2:border-accent prose-h2:pl-4
+                  prose-h3:text-lg prose-h3:font-bold prose-h3:text-accent prose-h3:mb-3 prose-h3:uppercase prose-h3:tracking-widest
+                  prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-p:mb-6
+                  prose-strong:text-accent prose-strong:font-black prose-strong:bg-accent/5 prose-strong:px-1
+                  prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2
+                  selection:bg-accent/40 select-text font-light tracking-wide">
+                 {highlights.length > 0 ? renderContentWithHeatmap(item.definition) : (
+                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.definition}</ReactMarkdown>
+                 )}
+              </div>
+            )}
           </div>
 
-          {isEditing ? (
-            <textarea
-              value={editVal}
-              onChange={e => setEditVal(e.target.value)}
-              className="w-full bg-accent/[0.02] border border-accent/10 rounded-2xl p-10 text-xl text-white font-mono leading-relaxed focus:border-accent/40 outline-none min-h-[550px] scrollbar-thin resize-none shadow-2xl transition-all"
-              placeholder="Begin neural drafting..."
-            />
-          ) : (
-            <div className="prose prose-invert max-w-none 
-                prose-h1:text-2xl prose-h1:font-black prose-h1:text-white prose-h1:mb-6 prose-h1:tracking-tight
-                prose-h2:text-xl prose-h2:font-black prose-h2:text-white/90 prose-h2:mb-4 prose-h2:border-l-2 prose-h2:border-accent prose-h2:pl-4
-                prose-h3:text-lg prose-h3:font-bold prose-h3:text-accent prose-h3:mb-3 prose-h3:uppercase prose-h3:tracking-widest
-                prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-p:mb-6
-                prose-strong:text-accent prose-strong:font-black prose-strong:bg-accent/5 prose-strong:px-1
-                prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2
-                selection:bg-accent/40 select-text font-light tracking-wide">
-               {highlights.length > 0 ? renderContentWithHeatmap(item.definition) : (
-                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.definition}</ReactMarkdown>
-               )}
+          {/* Synthesis Abstract (Positioned at bottom) */}
+          {item.summary && (
+            <div className="p-8 bg-accent/[0.02] border border-white/5 rounded-3xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 select-text cursor-text">
+               <div className="flex items-center gap-2 text-accent select-none">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-[11px] font-black uppercase tracking-[0.4em]">Final Neural Synthesis</span>
+               </div>
+               <div className="text-[15px] text-white/60 leading-relaxed font-light space-y-3 prose-p:mb-2 select-text cursor-text">
+                  {item.summary.split('\n').map((l, i) => (
+                    <p key={i} className="flex gap-4 select-text cursor-text">
+                      <span className="text-accent/30 font-black flex-shrink-0 select-none">/</span>
+                      {l.replace(/^[•\-\d\.]+\s*/, '')}
+                    </p>
+                  ))}
+               </div>
             </div>
           )}
         </div>
@@ -250,26 +271,6 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                 </div>
              </div>
 
-             {/* Shield Status / Summary Flow */}
-             {summary && (
-                <div className="p-4 bg-accent/5 rounded-2xl border border-accent/10 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                   <div className="flex items-center gap-2 text-accent">
-                      <Sparkles className="h-2.5 w-2.5" />
-                      <span className="text-[8px] font-black uppercase tracking-widest">Synthesis Cached</span>
-                   </div>
-                   <div className="text-[10px] text-white/60 leading-relaxed font-medium space-y-2">
-                      {summary.split('\n').slice(0, 3).map((l, i) => <p key={i}>• {l.replace(/^[•\-\d\.]+\s*/, '')}</p>)}
-                   </div>
-                </div>
-             )}
-
-             <button 
-               onClick={() => showToast('SHIELD PROTOCOL: Atomic Writes & AI Timeout Sensors standing by.', 'success')}
-               className="mt-auto pt-6 flex items-center justify-between group hover:opacity-100 transition-all border-t border-white/5 w-full text-left"
-             >
-                <span className="text-[8px] font-black uppercase tracking-widest text-muted group-hover:text-accent transition-colors">Shield Active</span>
-                <Brain className="h-3.5 w-3.5 text-accent animate-pulse grayscale group-hover:grayscale-0 transition-all" />
-             </button>
           </div>
         </motion.div>
       </div>
