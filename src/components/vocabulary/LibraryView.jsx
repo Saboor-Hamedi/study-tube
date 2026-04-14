@@ -1,4 +1,4 @@
-import { useMemo, memo, useState } from 'react'
+import { useMemo, memo, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, Trash2, Search as SearchIcon, RefreshCcw, Library, FileText, ChevronRight, X, Maximize2, AlertCircle, Plus, FolderMinus } from 'lucide-react'
 import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core'
@@ -64,13 +64,33 @@ function LibraryView({
   const [newCollectionName, setNewCollectionName] = useState('')
   const [activeDragItem, setActiveDragItem] = useState(null)
   
+  // High-Performance Search State
+  const [localSearch, setLocalSearch] = useState(searchQuery)
+
+  // Debounced Sync Hub
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(localSearch)
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [localSearch])
   const filtered = useMemo(() => {
     return vocab
       .filter(v => {
-        const q = searchQuery.toLowerCase()
-        const matchesSearch = (v.text || '').toLowerCase().includes(q) || 
-                             (v.definition || '').toLowerCase().includes(q) ||
-                             (v.videoTitle || '').toLowerCase().includes(q)
+        const q = searchQuery.toLowerCase().trim()
+        
+        // Accelerated Search Vector Check
+        if (q === '') {
+           if (selectedCollection === 'all') return !v.archived
+           if (selectedCollection === 'trash') return v.archived
+           if (selectedCollection === 'unorganized') return !v.archived && !v.collection
+           return !v.archived && v.collection === selectedCollection
+        }
+
+        const searchVector = v._searchIndex || (v.text + ' ' + (v.definition || '') + ' ' + (v.videoTitle || '')).toLowerCase()
+        if (!v._searchIndex) v._searchIndex = searchVector
+
+        const matchesSearch = searchVector.includes(q)
         
         // Soft Delete Logic: If Trash is selected, show only archived items
         if (selectedCollection === 'trash') return matchesSearch && v.archived
@@ -102,8 +122,31 @@ function LibraryView({
     const updated = collections.filter(c => c !== name)
     setCollections(updated)
     api.saveCollections(updated)
+
+    // Self-Healing Sync: Unlink all cards from the deleted collection
+    const healedVocab = vocab.map(v => v.collection === name ? { ...v, collection: '' } : v)
+    setVocab(healedVocab)
+    api.saveVocab(healedVocab)
+
     if (selectedCollection === name) setSelectedCollection('all')
-    showToast(`Collection "${name}" removed`)
+    showToast(`Collection "${name}" eradicated and units healed`, 'success')
+  }
+
+  const handleRenameCollection = (oldName, newName) => {
+    if (!newName.trim() || oldName === newName) return
+    
+    // Update Collections List
+    const updatedCollections = collections.map(c => c === oldName ? newName.trim() : c)
+    setCollections(updatedCollections)
+    api.saveCollections(updatedCollections)
+
+    // Self-Healing Sync: Ripple effect rename across all vocab cards
+    const syncedVocab = vocab.map(v => v.collection === oldName ? { ...v, collection: newName.trim() } : v)
+    setVocab(syncedVocab)
+    api.saveVocab(syncedVocab)
+
+    if (selectedCollection === oldName) setSelectedCollection(newName.trim())
+    showToast(`Neural Link: "${oldName}" renamed to "${newName.trim()}"`, 'success')
   }
 
   const visible = filtered.slice(0, displayLimit)
@@ -208,13 +251,22 @@ function LibraryView({
             <div className="relative group">
               <input 
                 type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                value={localSearch}
+                onChange={e => setLocalSearch(e.target.value)}
                 placeholder="Search concepts, words, or research history..."
                 className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-6 pr-12 text-[13px] text-white outline-none focus:border-accent/40 focus:bg-white/[0.07] transition-all"
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                 <SearchIcon className="h-4 w-4 text-muted group-focus-within:text-accent" />
+                 {localSearch ? (
+                    <button 
+                      onClick={() => setLocalSearch('')}
+                      className="p-1 hover:bg-white/10 rounded-full transition-all text-muted hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                 ) : (
+                    <SearchIcon className="h-4 w-4 text-muted group-focus-within:text-accent transition-colors" />
+                 )}
               </div>
             </div>
           </div>
@@ -233,6 +285,7 @@ function LibraryView({
             selectedCollection={selectedCollection}
             setSelectedCollection={setSelectedCollection}
             handleDeleteCollection={handleDeleteCollection}
+            handleRenameCollection={handleRenameCollection}
             handleCreateCollection={handleCreateCollection}
             isCreatingCollection={isCreatingCollection}
             setIsCreatingCollection={setIsCreatingCollection}

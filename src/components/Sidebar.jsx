@@ -1,4 +1,4 @@
-import { Plus, Library, FileText, Maximize2, Trash2 } from 'lucide-react'
+import { Plus, Library, FileText, Maximize2, Trash2, Pencil, Check } from 'lucide-react'
 import { DroppableFolder } from './vocabulary/DraggableCard'
 import { useState } from 'react'
 
@@ -7,6 +7,7 @@ export default function Sidebar({
   selectedCollection, 
   setSelectedCollection, 
   handleDeleteCollection, 
+  handleRenameCollection,
   handleCreateCollection,
   isCreatingCollection,
   setIsCreatingCollection,
@@ -14,6 +15,20 @@ export default function Sidebar({
   setNewCollectionName,
   showTrash = false
 }) {
+  const [renamingId, setRenamingId] = useState(null)
+  const [renamingValue, setRenamingValue] = useState('')
+
+  const startRename = (name) => {
+    setRenamingId(name)
+    setRenamingValue(name)
+  }
+
+  const submitRename = () => {
+    if (renamingValue.trim() && renamingValue !== renamingId) {
+      handleRenameCollection?.(renamingId, renamingValue.trim())
+    }
+    setRenamingId(null)
+  }
   return (
     <div className="w-56 border-r border-white/5 bg-[#080808] flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-8">
@@ -56,15 +71,44 @@ export default function Sidebar({
           
           <div className="space-y-1">
             {collections.map(c => (
-              <DroppableFolder 
-                key={c}
-                id={c}
-                active={selectedCollection === c}
-                onClick={() => setSelectedCollection?.(c)}
-                onDelete={handleDeleteCollection ? () => handleDeleteCollection(c) : null}
-              >
-                {c}
-              </DroppableFolder>
+              <div key={c} className="group/folder relative">
+                {renamingId === c ? (
+                  <div className="mx-1 p-1 bg-white/[0.03] border border-accent/20 rounded-[5px] flex items-center gap-1 overflow-hidden">
+                    <input 
+                      autoFocus
+                      value={renamingValue}
+                      onChange={e => setRenamingValue(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && submitRename()}
+                      onBlur={submitRename}
+                      className="flex-1 bg-transparent px-2 py-1 text-[10px] text-white outline-none"
+                    />
+                    <button onClick={submitRename} className="p-1 text-accent hover:bg-accent/10 rounded shrink-0">
+                       <Check className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <DroppableFolder 
+                      id={c}
+                      active={selectedCollection === c}
+                      onClick={() => setSelectedCollection?.(c)}
+                      onDelete={handleDeleteCollection ? () => handleDeleteCollection(c) : null}
+                    >
+                      {c}
+                    </DroppableFolder>
+                    
+                    {/* Inline Actions - Industrial Density */}
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/folder:opacity-100 transition-opacity">
+                       <button 
+                        onClick={(e) => { e.stopPropagation(); startRename(c) }}
+                        className="p-1 bg-white/5 hover:bg-accent text-muted hover:text-white rounded-[4px] transition-all"
+                       >
+                         <Pencil className="h-2.5 w-2.5" />
+                       </button>
+                    </div>
+                  </>
+                )}
+              </div>
             ))}
             
             {isCreatingCollection && (
