@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Library, FileText, Sparkles, Brain, ListChecks, Loader2, Quote, Languages, Star, RefreshCcw, Pencil } from 'lucide-react'
 
-const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) => {
+const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, collections = [] }) => {
   const [summary, setSummary] = useState(null)
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [highlights, setHighlights] = useState([])
@@ -334,6 +334,35 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate }) =>
                           <p className="text-lg font-black text-white px-2 mt-1 border-l-2 border-accent">B2-C1</p>
                        </div>
                        <Star className="h-4 w-4 text-accent opacity-40" />
+                    </div>
+
+                    <div className="space-y-4 pt-6 border-t border-white/5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">File to Archive</p>
+                      
+                      <div className="flex flex-wrap gap-2">
+                         <button 
+                           onClick={() => {
+                             onUpdate({ ...item, collection: '' })
+                             showToast('Moved to Unorganized')
+                           }}
+                           className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${!item.collection ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/5 text-muted hover:border-white/10 hover:text-white'}`}
+                         >
+                           Unorganized
+                         </button>
+
+                         {collections.map(c => (
+                           <button 
+                            key={c}
+                            onClick={() => {
+                              onUpdate({ ...item, collection: c })
+                              showToast(`Moved to ${c}`)
+                            }}
+                            className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${item.collection === c ? 'bg-accent/20 border-accent/40 text-accent' : 'bg-transparent border-white/5 text-muted hover:border-white/10 hover:text-white'}`}
+                           >
+                            {c}
+                           </button>
+                         ))}
+                      </div>
                     </div>
                  </div>
                  <div className="flex-1" />

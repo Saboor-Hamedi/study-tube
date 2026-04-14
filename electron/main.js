@@ -448,6 +448,7 @@ function registerIpcHandlers() {
   const dataDir = path.join(app.getAppPath(), 'data')
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
   const vocabPath = path.join(dataDir, 'library.json')
+  const collectionsPath = path.join(dataDir, 'collections.json')
 
   ipcMain.handle('vocab:load', () => {
     try {
@@ -461,6 +462,20 @@ function registerIpcHandlers() {
       fs.writeFileSync(vocabPath, JSON.stringify(list, null, 2))
       return true
     } catch (e) { console.error('Failed to save vocab', e); return false }
+  })
+
+  ipcMain.handle('collections:load', () => {
+    try {
+      if (fs.existsSync(collectionsPath)) return JSON.parse(fs.readFileSync(collectionsPath, 'utf8'))
+    } catch (e) { console.error('Failed to load collections', e) }
+    return []
+  })
+
+  ipcMain.handle('collections:save', (_e, list) => {
+    try {
+      fs.writeFileSync(collectionsPath, JSON.stringify(list, null, 2))
+      return true
+    } catch (e) { console.error('Failed to save collections', e); return false }
   })
 
   ipcMain.handle('ai:explain', async (_e, { text, videoTitle }) => {

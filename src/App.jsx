@@ -10,6 +10,7 @@ export default function App() {
   const [savePath, setSavePath] = useState('')
   const [view, setView] = useState('search') // 'search' | 'vocab' | 'settings'
   const [vocab, setVocab] = useState([])
+  const [collections, setCollections] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('date')
   const [displayLimit, setDisplayLimit] = useState(10)
@@ -27,7 +28,10 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (api) api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
+    if (api) {
+      api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
+      api.loadCollections().then(list => setCollections(list || [])).catch(() => {})
+    }
   }, [api])
 
   const addVocab = async (item) => {
@@ -76,6 +80,7 @@ export default function App() {
           <div className="absolute inset-0 overflow-y-auto scrollbar-thin">
             <LibraryView 
               vocab={vocab} setVocab={setVocab}
+              collections={collections} setCollections={setCollections}
               searchQuery={searchQuery} setSearchQuery={setSearchQuery}
               sortBy={sortBy} setSortBy={setSortBy}
               displayLimit={displayLimit} setDisplayLimit={setDisplayLimit}

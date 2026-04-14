@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   setAiKey: (key) => ipcRenderer.invoke('settings:setAiKey', key),
   loadVocab: () => ipcRenderer.invoke('vocab:load'),
   saveVocab: (list) => ipcRenderer.invoke('vocab:save', list),
+  loadCollections: () => ipcRenderer.invoke('collections:load'),
+  saveCollections: (list) => ipcRenderer.invoke('collections:save', list),
   explainWord: (data) => ipcRenderer.invoke('ai:explain', data),
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
   cancelDownload: (taskId) => ipcRenderer.invoke('download:cancel', taskId),
