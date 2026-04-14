@@ -25,7 +25,7 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
             <input 
               value={titleEditVal}
               onChange={e => setTitleEditVal(e.target.value)}
-              className="w-full bg-accent/5 border-b-2 border-accent text-[18px] font-black text-text outline-none py-2 transition-all rounded-[5px]"
+              className="w-full bg-accent/5 border-b-2 border-accent text-[18px] font-black text-text outline-none py-2 transition-all "
               placeholder="Designate research title..."
               autoFocus
             />
@@ -52,7 +52,7 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
               <textarea
                 value={editVal}
                 onChange={e => setEditVal(e.target.value)}
-                className="w-full bg-surface-2 border border-border p-8 lg:p-12 text-[16px] text-text leading-[1.8] font-extralight tracking-wide focus:border-accent/40 outline-none min-h-[600px] scrollbar-thin resize-none shadow-inner transition-all selection:bg-accent/40 rounded-[5px]"
+                className="w-full bg-surface-2 border border-border p-8 lg:p-12 text-[16px] text-text leading-[1.8] font-extralight tracking-wide focus:border-accent/40 outline-none min-h-[600px] scrollbar-thin resize-none shadow-inner transition-all selection:bg-accent/40 "
                 placeholder="Initialize neural drafting..."
               />
             ) : (
@@ -84,7 +84,7 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
 
           {/* Synthesis Abstract (Positioned at bottom) */}
           {item.summary && (
-            <div className="p-8 bg-accent/5 border border-border space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 select-text cursor-text rounded-[5px]">
+            <div className="p-8 bg-accent/5 border border-border space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 select-text cursor-text ">
                <div className="flex items-center gap-2 text-accent select-none">
                   <Sparkles className="h-4 w-4" />
                   <span className="text-[11px] font-black uppercase tracking-[0.4em]">Final Neural Synthesis</span>
@@ -204,7 +204,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
           initial={{ opacity: 0, scale: 0.98, y: 40 }} 
           animate={{ opacity: 1, scale: 1, y: 0 }} 
           exit={{ opacity: 0, scale: 0.98, y: 40 }} 
-          className={`relative h-full bg-surface border border-border shadow-2xl shadow-black/80 overflow-hidden flex flex-row transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMaximized ? 'w-full max-w-full rounded-none' : 'w-full max-w-7xl rounded-[5px]'}`}
+          className={`relative h-full bg-surface border border-border shadow-2xl shadow-black/80 overflow-hidden flex flex-row transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMaximized ? 'w-full max-w-full rounded-none' : 'w-full max-w-7xl '}`}
         >
           
           <ContentArea 
@@ -220,7 +220,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
              {/* Master Controls (Compact) */}
              <div className="flex items-center justify-between pb-5 border-b border-border">
                 <div className="flex items-center gap-2">
-                   <div className="p-2 bg-accent/10 border border-accent/20 rounded-[5px]">
+                   <div className="p-2 bg-accent/10 border border-accent/20 ">
                       <Library className="h-4 w-4 text-accent" />
                    </div>
                    <div className="flex flex-col">
@@ -229,10 +229,10 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                    </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                   <button onClick={() => setIsMaximized(!isMaximized)} className="p-2 bg-surface-2 hover:bg-accent hover:text-white text-muted transition-all border border-border rounded-[5px]">
+                   <button onClick={() => setIsMaximized(!isMaximized)} className="p-2 bg-surface-2 hover:bg-accent hover:text-white text-muted transition-all border border-border ">
                     {isMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                    </button>
-                   <button onClick={onClose} className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/10 rounded-[5px]">
+                   <button onClick={onClose} className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/10 ">
                     <X className="h-3.5 w-3.5" />
                    </button>
                 </div>
@@ -246,11 +246,11 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                 <div className="flex flex-col gap-2">
                     {isEditing ? (
                       <div className="flex gap-1.5">
-                        <button onClick={handleSaveEdit} className="flex-1 py-3 bg-accent text-white rounded-[5px] text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20">Commit</button>
-                        <button onClick={() => setIsEditing(false)} className="px-4 py-3 bg-surface-2 text-muted hover:bg-surface-3 hover:text-text rounded-[5px] text-[10px] font-black uppercase tracking-widest transition-all">Abort</button>
+                        <button onClick={handleSaveEdit} className="flex-1 py-3 bg-accent text-white  text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20">Commit</button>
+                        <button onClick={() => setIsEditing(false)} className="px-4 py-3 bg-surface-2 text-muted hover:bg-surface-3 hover:text-text  text-[10px] font-black uppercase tracking-widest transition-all">Abort</button>
                       </div>
                     ) : (
-                      <button onClick={startEditing} className="w-full py-3 bg-surface-2 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-text hover:text-background transition-all flex items-center justify-center gap-2 group rounded-[5px]">
+                      <button onClick={startEditing} className="w-full py-3 bg-surface-2 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-text hover:text-background transition-all flex items-center justify-center gap-2 group ">
                         <Pencil className="h-3.5 w-3.5 text-accent group-hover:text-background" /> Edit
                       </button>
                     )}
@@ -260,7 +260,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                         navigator.clipboard.writeText(`${item.text}\n\n${item.definition}`)
                         showToast('Copied')
                       }}
-                      className="w-full py-3 bg-surface-2 border border-border text-muted/50 text-[10px] font-black uppercase tracking-widest hover:bg-surface-3 hover:text-text transition-all flex items-center justify-center gap-2 rounded-[5px]"
+                      className="w-full py-3 bg-surface-2 border border-border text-muted/50 text-[10px] font-black uppercase tracking-widest hover:bg-surface-3 hover:text-text transition-all flex items-center justify-center gap-2 "
                     >
                       <Copy className="h-3.5 w-3.5" /> Copy
                     </button>
@@ -273,7 +273,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                    <Brain className="h-3 w-3" /> Logic
                 </p>
                 <div className="space-y-3">
-                   <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left relative rounded-[5px]">
+                   <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left relative ">
                      {isSummarizing ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Sparkles className="h-4 w-4 text-accent group-hover:text-white" />}
                      <div>
                        <p className="text-[10px] font-black text-text uppercase tracking-widest group-hover:text-white">Synthesis</p>
@@ -281,7 +281,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                      </div>
                    </button>
 
-                   <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="w-full p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left rounded-[5px]">
+                   <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="w-full p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left ">
                      {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-muted" /> : <ListChecks className="h-4 w-4 text-text" />}
                      <div>
                        <p className="text-[10px] font-black text-text uppercase tracking-widest">Heatmap</p>

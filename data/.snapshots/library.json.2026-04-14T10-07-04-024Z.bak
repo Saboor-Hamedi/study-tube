@@ -16,7 +16,7 @@
     "skipAI": true,
     "date": "2026-04-14T08:57:44.969Z",
     "loading": false,
-    "collection": null
+    "collection": "YouTube"
   },
   {
     "text": "Talk anymore like we used todo. We don't love an",
@@ -82,7 +82,7 @@
   {
     "text": "Explain what a noun is, which is one of the most fundamental",
     "definition": "## Nouns\n\nA **noun** is a part of speech that names a person, place, thing, animal, idea, or quality. It serves as the primary building block of a sentence, typically acting as the subject or object.\n\n### Types of Nouns\n\n| Type | Description | Examples |\n| :--- | :--- | :--- |\n| **Common Noun** | General names for people, places, or things. | city, man, book, dog |\n| **Proper Noun** | Specific names for people, places, or things (always capitalized). | London, Albert Einstein, Samsung |\n| **Concrete Noun** | Things that can be perceived by the five senses. | apple, rain, keyboard, flower |\n| **Abstract Noun** | Ideas, qualities, or conditions that cannot be touched. | freedom, love, courage, time |\n| **Countable Noun** | Items that can be counted as individual units. | chair/chairs, idea/ideas, bottle |\n| **Uncountable Noun** | Mass items or concepts that cannot be counted. | water, rice, information, air |\n| **Collective Noun** | Names for a group of people or things. | team, choir, flock, jury |\n| **Compound Noun** | Nouns made up of two or more words. | toothpaste, mother-in-law, bus stop |\n| **Possessive Noun** | Nouns that show ownership (usually with an apostrophe). | Sarah's, the dog's, the players' |\n\n---\n\n### Functions of Nouns in a Sentence\n\nNouns perform several critical roles in English grammar:\n\n* **Subject:** The person or thing performing the action.\n    * *The **teacher** explained the lesson.*\n* **Direct Object:** The person or thing receiving the action.\n    * *I bought a **car**.*\n* **Indirect Object:** To whom or for whom the action is done.\n    * *She gave **John** the book.*\n* **Object of a Preposition:** Follows a preposition to show relationship.\n    * *The cat sat on the **table**.*\n* **Subject Complement:** Renames the subject after a linking verb.\n    * *He is a **doctor**.*\n\n---\n\n### Singular and Plural Rules\n\nMost nouns become plural by adding **-s**, but there are several exceptions:\n\n1.  **Add -es:** For nouns ending in *-s, -x, -z, -ch, -sh* (e.g., *bus* $\\rightarrow$ *buses*).\n2.  **Change -y to -ies:** If a consonant precedes the *-y* (e.g., *city* $\\rightarrow$ *cities*).\n3.  **Irregular Plurals:** Nouns that change spelling completely (e.g., *child* $\\rightarrow$ *children*, *mouse* $\\rightarrow$ *mice*).\n4.  **No Change:** Some nouns are the same in both forms (e.g., *sheep*, *deer*, *series*).",
-    "collection": null,
+    "collection": "Noun",
     "date": "2026-04-14T05:10:50.365Z",
     "videoTitle": "AI Research Insight",
     "loading": false

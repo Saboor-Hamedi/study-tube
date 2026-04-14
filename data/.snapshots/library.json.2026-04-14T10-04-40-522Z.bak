@@ -15,8 +15,7 @@
     "timestamp": 0,
     "skipAI": true,
     "date": "2026-04-14T08:57:44.969Z",
-    "loading": false,
-    "collection": null
+    "loading": false
   },
   {
     "text": "Talk anymore like we used todo. We don't love an",
@@ -82,7 +81,7 @@
   {
     "text": "Explain what a noun is, which is one of the most fundamental",
     "definition": "## Nouns\n\nA **noun** is a part of speech that names a person, place, thing, animal, idea, or quality. It serves as the primary building block of a sentence, typically acting as the subject or object.\n\n### Types of Nouns\n\n| Type | Description | Examples |\n| :--- | :--- | :--- |\n| **Common Noun** | General names for people, places, or things. | city, man, book, dog |\n| **Proper Noun** | Specific names for people, places, or things (always capitalized). | London, Albert Einstein, Samsung |\n| **Concrete Noun** | Things that can be perceived by the five senses. | apple, rain, keyboard, flower |\n| **Abstract Noun** | Ideas, qualities, or conditions that cannot be touched. | freedom, love, courage, time |\n| **Countable Noun** | Items that can be counted as individual units. | chair/chairs, idea/ideas, bottle |\n| **Uncountable Noun** | Mass items or concepts that cannot be counted. | water, rice, information, air |\n| **Collective Noun** | Names for a group of people or things. | team, choir, flock, jury |\n| **Compound Noun** | Nouns made up of two or more words. | toothpaste, mother-in-law, bus stop |\n| **Possessive Noun** | Nouns that show ownership (usually with an apostrophe). | Sarah's, the dog's, the players' |\n\n---\n\n### Functions of Nouns in a Sentence\n\nNouns perform several critical roles in English grammar:\n\n* **Subject:** The person or thing performing the action.\n    * *The **teacher** explained the lesson.*\n* **Direct Object:** The person or thing receiving the action.\n    * *I bought a **car**.*\n* **Indirect Object:** To whom or for whom the action is done.\n    * *She gave **John** the book.*\n* **Object of a Preposition:** Follows a preposition to show relationship.\n    * *The cat sat on the **table**.*\n* **Subject Complement:** Renames the subject after a linking verb.\n    * *He is a **doctor**.*\n\n---\n\n### Singular and Plural Rules\n\nMost nouns become plural by adding **-s**, but there are several exceptions:\n\n1.  **Add -es:** For nouns ending in *-s, -x, -z, -ch, -sh* (e.g., *bus* $\\rightarrow$ *buses*).\n2.  **Change -y to -ies:** If a consonant precedes the *-y* (e.g., *city* $\\rightarrow$ *cities*).\n3.  **Irregular Plurals:** Nouns that change spelling completely (e.g., *child* $\\rightarrow$ *children*, *mouse* $\\rightarrow$ *mice*).\n4.  **No Change:** Some nouns are the same in both forms (e.g., *sheep*, *deer*, *series*).",
-    "collection": null,
+    "collection": "Noun",
     "date": "2026-04-14T05:10:50.365Z",
     "videoTitle": "AI Research Insight",
     "loading": false
@@ -96,7 +95,7 @@
     "skipAI": true,
     "loading": false,
     "summary": "The text is a simplified narrative adaptation of the early chapters of Daniel Defoe's 1719 novel \"Robinson Crusoe,\" used as an English language learning tool. The protagonist's name is omitted, but the details align with Crusoe's story. The first deep academic insight is that the text demonstrates lexical priming, where high-frequency vocabulary like \"good,\" \"happy,\" and \"scared\" is deliberately repeated across different contexts to reinforce acquisition and build learner confidence through familiar lexical chunks. The second insight is that the narrative employs controlled syntactic complexity, beginning with simple past tense declarative sentences and gradually introducing compound sentences and subordinate clauses, such as \"when\" and \"because,\" to scaffold grammatical understanding in a natural context. The third insight is the text's function as a cultural artifact; it presents a 17th-century colonial perspective, normalizing concepts like sea travel for trade, encounters with \"pirate ships,\" and the economic exploitation of Africa, which can be analyzed for ideological assumptions in simplified literature. The fourth insight is its use of narrative empathy to drive engagement; the first-person account of fear during storms, conflict with family, and desire for freedom creates an emotional through-line that aids in comprehension and retention more effectively than decontextualized sentences. The fifth insight is the pedagogical strategy of episodic structure; each clearly marked chapter introduces a new conflict and set of vocabulary, allowing for segmented learning and providing natural breaks for classroom discussion or comprehension checking, moving from \"family\" to \"storm\" to \"woman\" to \"lion.\"",
-    "collection": null
+    "collection": "YouTube"
   },
   {
     "text": "powerful",
@@ -114,7 +113,7 @@
       "The engine is very powerful.",
       "She gave a powerful speech."
     ],
-    "collection": null,
+    "collection": "YouTube",
     "summary": "- Possessing significant physical power or intensity\n- Exhibiting considerable might or energy\n- Characterized by forceful impact or effect\n- Demonstrating robust potency or vigor\n- Showing powerful influence or capacity",
     "archived": false,
     "originalCollection": "YT"
@@ -135,7 +134,7 @@
       "You should upload English learning videos regularly to grow your channel.",
       "She plans to upload English learning videos regularly every Tuesday."
     ],
-    "collection": null
+    "collection": "YouTube"
   },
   {
     "text": "Hello lovely students and welcome to the",

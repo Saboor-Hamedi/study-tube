@@ -217,7 +217,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 window.getSelection()?.removeAllRanges()
                 setSelection(null)
               }}
-              className="px-4 py-2 bg-accent text-white font-bold text-xs uppercase tracking-widest rounded-[5px] shadow-2xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
+              className="px-4 py-2 bg-accent text-white font-bold text-xs uppercase tracking-widest  shadow-2xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
             >
               <Sparkles className="h-3 w-3" /> {selection.text.split(' ').length > 4 ? 'Save Selection' : 'Save Word'}
             </button>
@@ -230,7 +230,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
       <div className="flex flex-1 overflow-hidden lg:flex-row flex-col max-w-[1400px] w-full mx-auto p-4 lg:p-6 gap-6">
         {/* Left Side: Video & Transcript */}
         <div className="flex-1 min-w-0 flex flex-col gap-6">
-          <div className="w-full aspect-video bg-black rounded-[5px] overflow-hidden border border-border relative shadow-2xl group transition-colors duration-500">
+          <div className="w-full aspect-video bg-black overflow-hidden border border-border relative shadow-2xl group transition-colors duration-500">
             {isStreamStarted ? (
               <VideoPlayer videoId={video.id} onClose={() => setIsStreamStarted(false)} seekTo={seekTo} />
             ) : (
@@ -239,7 +239,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center">
                   <button 
                     onClick={handlePlay} 
-                    className="h-10 w-10 bg-accent text-white rounded-[5px] flex items-center justify-center hover:scale-110 transition-all shadow-2xl group/btn"
+                    className="h-10 w-10 bg-accent text-white  flex items-center justify-center hover:scale-110 transition-all shadow-2xl group/btn"
                   >
                     <Play className="h-4 w-4 fill-white ml-0.5 transition-transform group-hover/btn:scale-110" />
                   </button>
@@ -261,7 +261,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
              </div>
              
              {video.description && (
-                <div className="p-4 bg-surface-2 border border-border rounded-[5px] select-text cursor-text transition-colors duration-500">
+                <div className="p-4 bg-surface-2 border border-border select-text cursor-text transition-colors duration-500">
                    <p className="text-xs text-muted leading-relaxed line-clamp-3">{video.description}</p>
                 </div>
              )}
@@ -295,7 +295,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                           <button 
                             onClick={refinedTranscript ? () => setScriptMode(scriptMode === 'raw' ? 'neural' : 'raw') : handleRefine}
                             disabled={isRefining}
-                            className={`p-1.5 rounded-[5px] transition-all border ${scriptMode === 'neural' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-surface border-border text-muted hover:text-text'}`}
+                            className={`p-1.5  transition-all border ${scriptMode === 'neural' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-surface border-border text-muted hover:text-text'}`}
                             title={refinedTranscript ? "Toggle Script Mode" : "Synthesize Neural Script"}
                           >
                              {isRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -308,7 +308,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                          onAddVocab({ text: video.title, definition: content, type: 'Collection', videoTitle: video.title, date: new Date().toISOString(), skipAI: true })
                          showToast(`Collection "${video.title}" saved!`)
                       }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-[5px] text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent  text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
                     >
                       <Library className="h-3.5 w-3.5" />
                       Save as Collection
@@ -366,7 +366,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
                   {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] p-4 text-[13px] rounded-[5px] ${m.role === 'user' ? 'bg-accent text-white' : 'bg-surface-2 text-text border border-border'}`}>
+                      <div className={`max-w-[85%] p-4 text-[13px]  ${m.role === 'user' ? 'bg-accent text-white' : 'bg-surface-2 text-text border border-border'}`}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                       </div>
                     </div>
@@ -374,13 +374,13 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                 </div>
                 <div className="pt-4 border-t border-border mt-4 relative">
                   <input value={chatInp} onChange={e => setChatInp(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                    placeholder="Ask about this video..." className="w-full bg-background border border-border rounded-[5px] px-4 py-3 pr-12 text-sm text-text outline-none focus:border-accent/50" disabled={isTyping} />
+                    placeholder="Ask about this video..." className="w-full bg-background border border-border  px-4 py-3 pr-12 text-sm text-text outline-none focus:border-accent/50" disabled={isTyping} />
                   {isTyping ? (
-                    <button onClick={handleStop} className="absolute right-2 top-6 h-8 w-8 bg-red-500/20 text-red-500 rounded-[5px] flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+                    <button onClick={handleStop} className="absolute right-2 top-6 h-8 w-8 bg-red-500/20 text-red-500  flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
                       <StopCircle className="h-4 w-4" />
                     </button>
                   ) : (
-                    <button onClick={sendMessage} className="absolute right-2 top-6 h-8 w-8 bg-accent text-white rounded-[5px] flex items-center justify-center hover:shadow-lg transition-all">
+                    <button onClick={sendMessage} className="absolute right-2 top-6 h-8 w-8 bg-accent text-white  flex items-center justify-center hover:shadow-lg transition-all">
                       <MessageCircle className="h-4 w-4" />
                     </button>
                   )}
@@ -395,7 +395,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     {video.qualityOptions?.map(opt => (
                       <button key={opt.value} onClick={() => onQualityChange(opt.value)}
-                        className={`p-2.5 border rounded-[5px] flex items-center justify-between transition-all ${quality === opt.value ? 'bg-accent/10 border-accent text-accent font-bold' : 'bg-transparent border-border text-muted hover:border-accent/20'}`}>
+                        className={`p-2.5 border  flex items-center justify-between transition-all ${quality === opt.value ? 'bg-accent/10 border-accent text-accent font-bold' : 'bg-transparent border-border text-muted hover:border-accent/20'}`}>
                         <span>{opt.label}</span>
                         {quality === opt.value && <CheckCircle className="h-3 w-3 text-accent" />}
                       </button>
@@ -408,7 +408,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
                     <h3 className="text-[9px] text-muted font-black uppercase tracking-[0.2em]">Destination</h3>
                     <button onClick={onPickPath} className="text-[8px] text-accent uppercase font-black tracking-widest hover:text-text transition-colors">Change</button>
                   </div>
-                  <div className="p-3 bg-surface-3 border border-border flex items-center justify-between text-[10px] text-muted rounded-[5px]">
+                  <div className="p-3 bg-surface-3 border border-border flex items-center justify-between text-[10px] text-muted ">
                     <span className="truncate pr-4">{savePath || 'Select Folder'}</span>
                     <FolderOpen className="h-3.5 w-3.5 shrink-0 text-muted/40" />
                   </div>
@@ -416,19 +416,19 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
 
                 <div className="pt-2">
                   {downloading ? (
-                    <div className="space-y-3 bg-surface-2 p-4 border border-border rounded-[5px]">
+                    <div className="space-y-3 bg-surface-2 p-4 border border-border ">
                       <div className="flex justify-between text-[9px] font-black text-accent uppercase tracking-[0.2em]">
                         <span>System Acquisition</span>
                         <span>{Math.round(progress?.percent || 0)}%</span>
                       </div>
-                      <div className="h-1 bg-surface-3 rounded-[5px] overflow-hidden">
+                      <div className="h-1 bg-surface-3  overflow-hidden">
                         <motion.div initial={{ width: 0 }} animate={{ width: `${progress?.percent || 0}%` }} className="h-full bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
                       </div>
-                      <button onClick={onCancel} className="w-full py-2.5 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white transition-all rounded-[5px]">Abort Acquisition</button>
+                      <button onClick={onCancel} className="w-full py-2.5 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white transition-all ">Abort Acquisition</button>
                     </div>
                   ) : (
                     <button onClick={onDownload} disabled={!quality || !savePath}
-                      className="w-full py-3.5 bg-accent text-white font-black text-[10px] uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-xl disabled:opacity-30 rounded-[5px]">
+                      className="w-full py-3.5 bg-accent text-white font-black text-[10px] uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-xl disabled:opacity-30 ">
                       <Download className="h-3 w-3 inline mr-2" /> Initialize Download
                     </button>
                   )}

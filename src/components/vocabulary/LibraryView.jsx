@@ -24,10 +24,10 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="w-full max-w-sm bg-surface border border-border p-8 shadow-[0_30px_100px_rgba(0,0,0,1)] space-y-8 rounded-[5px]"
+          className="w-full max-w-sm bg-surface border border-border p-6 shadow-[0_30px_100px_rgba(0,0,0,1)] space-y-6 "
         >
           <div className="flex items-start gap-4">
-             <div className="p-3 bg-red-500/10 text-red-500 rounded-[5px]">
+             <div className="p-3 bg-red-500/10 text-red-500 ">
                 <AlertCircle className="h-6 w-6" />
              </div>
              <div className="space-y-1">
@@ -39,13 +39,13 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
           <div className="flex flex-col gap-2">
              <button 
               onClick={onConfirm}
-              className="w-full py-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-[5px] hover:bg-red-600 transition-all shadow-lg shadow-red-500/10"
+              className="w-full py-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em]  hover:bg-red-600 transition-all shadow-lg shadow-red-500/10"
              >
                 Confirm Delete
              </button>
              <button 
               onClick={onCancel}
-              className="w-full py-3 bg-surface-2 text-muted hover:text-text text-[10px] font-black uppercase tracking-[0.2em] rounded-[5px] transition-all"
+              className="w-full py-3 bg-surface-2 text-muted hover:text-text text-[10px] font-black uppercase tracking-[0.2em]  transition-all"
              >
                 Cancel
              </button>
@@ -187,12 +187,12 @@ function LibraryView({
     const { active, over } = event
     setActiveDragItem(null)
     if (over && active.data.current?.date) {
+      showToast(`Insight archived in ${over.id}`, 'success')
       const itemDate = active.data.current.date
       const targetCollection = over.id === 'unorganized' ? null : (over.id === 'all' ? null : over.id)
       const newVocab = vocab.map(v => v.date === itemDate ? { ...v, collection: targetCollection } : v)
       setVocab(newVocab)
       await api.saveVocab(newVocab)
-      showToast(`Unit archived in ${over.id}`)
     }
   }
 
@@ -225,7 +225,7 @@ function LibraryView({
                 {visible.map((v, i) => (
                   <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
                     {({ listeners, attributes }) => (
-                      <div className="group h-[260px] bg-surface border border-border p-6 hover:border-accent/30 hover:bg-surface-2 transition-all flex flex-col justify-between shadow-xl overflow-hidden relative rounded-[5px]">
+                      <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative">
                         <div className="flex flex-col gap-4 overflow-hidden">
                           <div className="flex justify-between items-start gap-3">
                             <div className="flex flex-col gap-1 min-h-[44px]">
@@ -238,7 +238,7 @@ function LibraryView({
                               <div {...listeners} {...attributes} className="p-1.5 bg-surface-3 border border-border hover:bg-accent text-muted hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
                                 <GripVertical className="h-3.5 w-3.5" />
                               </div>
-                              <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border hover:bg-accent text-muted hover:text-white transition-all shadow-lg rounded-[5px]">
+                              <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
                                 <Maximize2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
@@ -259,7 +259,7 @@ function LibraryView({
                           </div>
                         </div>
 
-                        <div className="mt-auto pt-1.5 flex items-center justify-between gap-4 border-t border-border/10">
+                        <div className="mt-auto pt-1.5 flex items-center justify-between gap-4">
                           <div className="flex items-center gap-2">
                              <div className="flex flex-col">
                                 <span className="text-[9px] text-muted font-bold uppercase tracking-tighter line-clamp-1 opacity-40">{v.videoTitle || 'Universal Knowledge'}</span>
@@ -269,14 +269,14 @@ function LibraryView({
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                              <button 
                                onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
-                               className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all rounded-[5px]"
+                               className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
                              >
                                 <Download className="h-3.5 w-3.5" />
                              </button>
                              {v.archived ? (
                                 <button 
                                   onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }}
-                                  className="p-1.5 hover:bg-accent/10 text-accent rounded-[5px] transition-all"
+                                  className="p-1.5 hover:bg-accent/10 text-accent  transition-all"
                                 >
                                   <RefreshCcw className="h-3.5 w-3.5" />
                                 </button>
@@ -287,7 +287,7 @@ function LibraryView({
                                    handleUpdateItem({ ...v, collection: null })
                                    showToast(`Removed from ${v.collection}`)
                                  }}
-                                 className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent rounded-[5px] transition-all"
+                                 className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent  transition-all"
                                 >
                                  <FolderMinus className="h-3.5 w-3.5" />
                                 </button>
@@ -297,7 +297,7 @@ function LibraryView({
                                 i_e.stopPropagation()
                                 setItemToDelete(v)
                               }}
-                              className={`p-1.5 rounded-[5px] transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
+                              className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -313,7 +313,7 @@ function LibraryView({
                 <div className="flex justify-center mt-12 py-10">
                   <button 
                     onClick={() => setDisplayLimit(p => p + 12)}
-                    className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl rounded-[5px]"
+                    className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl "
                   >
                     Load More Research Entries
                   </button>
@@ -350,7 +350,7 @@ function LibraryView({
         dropAnimation={null}
       >
         {activeDragItem ? (
-          <div className="flex items-center gap-1.5 bg-surface-3 border border-accent/30 p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.8)] w-32 pointer-events-none rounded-[5px]">
+          <div className="flex items-center gap-1.5 bg-surface-3 border border-accent/30 p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.8)] w-32 pointer-events-none">
             <div className="shrink-0 p-1 bg-accent/20">
                <FileText className="h-2.5 w-2.5 text-accent" />
             </div>

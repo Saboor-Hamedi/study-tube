@@ -102,7 +102,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
         {/* Header - Unified Standard */}
         <div className="flex items-center justify-between px-8 py-3 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
           <div className="flex items-center gap-4">
-            <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-[5px]">
+            <div className="p-2 bg-emerald-500/20 text-emerald-400 ">
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
@@ -144,7 +144,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                   className={`flex flex-col gap-4 ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div className={`flex items-start gap-6 max-w-full ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className={`shrink-0 p-1.5 rounded-[5px] border transition-all duration-300
+                    <div className={`shrink-0 p-1.5  border transition-all duration-300
                       ${m.role === 'user' 
                         ? 'bg-indigo-500/10 border-indigo-500/10' 
                         : 'bg-emerald-500/10 border-emerald-500/10'}`}>
@@ -162,13 +162,13 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                                   prose-p:text-text prose-p:leading-relaxed prose-p:mb-4
                                   prose-strong:text-accent prose-strong:font-black
                                   prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
-                                  prose-code:bg-surface-3 prose-code:p-1 prose-code:rounded-[5px] prose-code:text-accent
+                                  prose-code:bg-surface-3 prose-code:p-1 prose-code: prose-code:text-accent
                                   select-text cursor-text">
                                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                                 </div>
                                 
                                 <div className="mt-4 flex items-center gap-4 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                                   <div {...listeners} {...attributes} className="p-2 bg-surface-2 hover:bg-accent text-muted hover:text-text rounded-[5px] cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-border">
+                                   <div {...listeners} {...attributes} className="p-2 bg-surface-2 hover:bg-accent text-muted hover:text-text  cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-border">
                                       <GripVertical className="h-3 w-3" />
                                       <span className="text-[8px] font-black uppercase tracking-widest">Archive Insight</span>
                                    </div>
@@ -186,7 +186,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
               
               {isTyping && (
                 <div className="flex items-center gap-4 text-accent animate-pulse">
-                   <div className="p-2.5 bg-accent/10 rounded-[5px] border border-accent/20">
+                   <div className="p-2.5 bg-accent/10  border border-accent/20">
                       <Loader2 className="h-4 w-4 animate-spin" />
                    </div>
                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Synthesizing Neural Response...</span>
@@ -230,7 +230,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                 {/* Shield Pulse Indicator */}
                 <button 
                   onClick={() => showToast('SHIELD PROTOCOL: Neural State & Atomic Save active.', 'success')}
-                  className="absolute -top-10 right-4 flex items-center gap-3 py-1.5 px-3 bg-accent/[0.03] border border-accent/10 rounded-[5px] group hover:bg-accent/10 hover:border-accent/40 transition-all"
+                  className="absolute -top-10 right-4 flex items-center gap-3 py-1.5 px-3 bg-accent/[0.03] border border-accent/10  group hover:bg-accent/10 hover:border-accent/40 transition-all"
                 >
                    <span className="text-[7px] font-black uppercase tracking-[0.4em] text-muted group-hover:text-accent transition-colors">Shield Pulse Active</span>
                    <Brain className="h-3 w-3 text-accent animate-pulse" />
@@ -243,7 +243,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
 
       <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
         {activeDragMessage ? (
-          <div className="pointer-events-none flex items-center gap-3 bg-surface-3 border border-accent/40 rounded-[5px] py-3 px-6 shadow-2xl w-64 backdrop-blur-2xl">
+          <div className="pointer-events-none flex items-center gap-3 bg-surface-3 border border-accent/40  py-3 px-6 shadow-2xl w-64 backdrop-blur-2xl">
             <Sparkles className="h-4 w-4 text-accent animate-pulse" />
             <div className="overflow-hidden">
               <p className="text-[10px] font-black text-text uppercase tracking-widest truncate">Neural Extract</p>

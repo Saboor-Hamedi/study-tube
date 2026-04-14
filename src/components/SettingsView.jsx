@@ -11,8 +11,8 @@ const SettingsView = ({ api }) => {
     const loadSettings = async () => {
       const key = await api.getAiKey()
       const path = await api.getSavePath()
-      setApiKey(key)
-      setSavePath(path)
+      setApiKey(key || '')
+      setSavePath(path || '')
     }
     loadSettings()
   }, [api])
@@ -27,7 +27,10 @@ const SettingsView = ({ api }) => {
 
   const handlePickPath = async () => {
     const path = await api.pickSavePath()
-    if (path) setSavePath(path)
+    if (path) {
+      setSavePath(path)
+      await api.setSavePath(path)
+    }
   }
 
   return (
@@ -44,9 +47,9 @@ const SettingsView = ({ api }) => {
           <div className="grid gap-8">
             
             {/* AI CONFIGURATION */}
-            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500 rounded-[5px]">
+            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500">
                <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-accent/10 text-accent rounded-[5px]">
+                 <div className="p-2.5 bg-accent/10 text-accent">
                    <Cpu className="h-5 w-5" />
                  </div>
                  <div>
@@ -58,21 +61,21 @@ const SettingsView = ({ api }) => {
                <div className="space-y-4">
                  <div className="space-y-2">
                    <label className="text-xs font-bold text-muted flex items-center justify-between">
-                     <span>DeepSeek API Key</span>
-                     <a href="https://platform.deepseek.com/" target="_blank" className="text-accent flex items-center gap-1 hover:underline">
-                       Get Key <ExternalLink className="h-3 w-3" />
-                     </a>
+                     <span>API AUTHENTICATION KEY</span>
+                     <button className="text-[9px] text-accent hover:underline flex items-center gap-1">
+                       MANAGE KEYS <ExternalLink className="h-2.5 w-2.5" />
+                     </button>
                    </label>
                    <div className="relative group">
-                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors">
-                       <Key className="h-4 w-4" />
+                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/40 group-focus-within:text-accent transition-colors">
+                        <Key className="h-4 w-4" />
                      </div>
                      <input 
                        type="password"
                        value={apiKey}
                        onChange={e => setApiKey(e.target.value)}
                        placeholder="sk-..."
-                       className="w-full bg-surface-2 border border-border py-4 pl-12 pr-4 text-sm text-text outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all rounded-[5px]"
+                       className="w-full bg-surface-2 border border-border py-4 pl-12 pr-4 text-sm text-text outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all "
                      />
                    </div>
                  </div>
@@ -80,9 +83,9 @@ const SettingsView = ({ api }) => {
                  <button 
                    onClick={handleSaveKey}
                    disabled={isSaving}
-                   className="w-full bg-text text-background font-black text-xs uppercase tracking-widest py-4 hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-2 group disabled:opacity-50 rounded-[5px]"
+                   className="w-full bg-text text-background font-black text-xs uppercase tracking-widest py-4 hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-2 group disabled:opacity-50 "
                  >
-                   {isTyping ? (
+                   {isSaving ? (
                      <span className="animate-pulse">Saving...</span>
                    ) : (
                      <>
@@ -102,32 +105,33 @@ const SettingsView = ({ api }) => {
             </section>
 
             {/* STORAGE CONFIGURATION */}
-            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500 rounded-[5px]">
+            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500">
                <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-accent/10 text-accent rounded-[5px]">
+                 <div className="p-2.5 bg-accent/10 text-accent">
                    <Folder className="h-5 w-5" />
                  </div>
                  <div>
-                   <h2 className="text-lg font-bold text-text">Dossier Storage</h2>
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Local Filesystem</p>
+                   <h2 className="text-lg font-bold text-text">Storage Infrastructure</h2>
+                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Local Asset Management</p>
                  </div>
                </div>
 
                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted">Primary Export Directory</label>
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-surface-2 border border-border py-3 px-4 text-xs text-text/60 truncate rounded-[5px]">
-                        {savePath || 'No directory established'}
+                 <div className="space-y-2">
+                   <label className="text-xs font-bold text-muted">DOWNLOAD DESTINATION</label>
+                   <div className="flex gap-2">
+                      <div className="flex-1 bg-surface-2 border border-border px-4 py-3 flex items-center gap-3 ">
+                         <Folder className="h-4 w-4 text-muted/40" />
+                         <span className="text-sm text-text truncate">{savePath || 'Select destination path...'}</span>
                       </div>
                       <button 
                         onClick={handlePickPath}
-                        className="px-6 bg-surface-3 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all rounded-[5px]"
+                        className="px-6 bg-surface-3 border border-border text-xs font-bold text-text hover:bg-accent hover:text-white transition-all "
                       >
                         Change
                       </button>
-                    </div>
-                  </div>
+                   </div>
+                 </div>
                </div>
             </section>
 
