@@ -99,11 +99,16 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
   return (
     <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={(e) => setActiveDragMessage(e.active.data.current)} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-full bg-[#080808]">
-        {/* Minimal Header */}
-        <div className="flex items-center justify-between px-8 py-4 border-b border-white/5 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-4 w-4 text-accent" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Neural Hub</span>
+        {/* Header - Unified Standard */}
+        <div className="flex items-center justify-between px-8 py-3 border-b border-white/5 bg-[#0f0f0f] sticky top-0 z-50">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Neural Research Hub</h2>
+              <p className="text-[9px] text-muted font-bold uppercase tracking-widest">AI Synthesis active</p>
+            </div>
           </div>
         </div>
 
