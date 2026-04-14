@@ -1,6 +1,7 @@
 import Activitybar from './components/Activitybar'
 import VideoView from './components/VideoView'
 import LibraryView from './components/vocabulary/LibraryView'
+import CopilotView from './components/chat/CopilotView'
 import SettingsView from './components/SettingsView'
 import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
@@ -11,6 +12,7 @@ export default function App() {
   const [view, setView] = useState('search') // 'search' | 'vocab' | 'settings'
   const [vocab, setVocab] = useState([])
   const [collections, setCollections] = useState([])
+  const [selectedCollection, setSelectedCollection] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('date')
   const [displayLimit, setDisplayLimit] = useState(10)
@@ -81,9 +83,27 @@ export default function App() {
             <LibraryView 
               vocab={vocab} setVocab={setVocab}
               collections={collections} setCollections={setCollections}
+              selectedCollection={selectedCollection}
+              setSelectedCollection={setSelectedCollection}
               searchQuery={searchQuery} setSearchQuery={setSearchQuery}
               sortBy={sortBy} setSortBy={setSortBy}
               displayLimit={displayLimit} setDisplayLimit={setDisplayLimit}
+              api={api}
+              showToast={showToast}
+            />
+          </div>
+        )}
+
+        {view === 'copilot' && (
+          <div className="absolute inset-0">
+            <CopilotView 
+              vocab={vocab}
+              setVocab={setVocab}
+              collections={collections}
+              setCollections={setCollections}
+              selectedCollection={selectedCollection}
+              setSelectedCollection={setSelectedCollection}
+              setView={setView}
               api={api}
               showToast={showToast}
             />

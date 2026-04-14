@@ -1,11 +1,12 @@
-import { Search, BookOpen, Settings } from 'lucide-react'
+import { Search, BookOpen, Settings, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function Activitybar({ view, setView }) {
 
   const mainTabs = [
     { id: 'search', label: 'Discover', icon: Search },
-    { id: 'vocab', label: 'Library', icon: BookOpen }
+    { id: 'vocab', label: 'Library', icon: BookOpen },
+    { id: 'copilot', label: 'Research Assist', icon: Sparkles }
   ]
   
   const bottomTabs = [

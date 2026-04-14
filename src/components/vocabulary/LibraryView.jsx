@@ -5,6 +5,7 @@ import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import CardReaderModal from './CardReaderModal'
 import { DroppableFolder, DraggableCard } from './DraggableCard'
+import Sidebar from '../Sidebar'
 
 const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
   if (!isOpen) return null
@@ -47,10 +48,17 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
   )
 }
 
-const LibraryView = ({ vocab, setVocab, collections, setCollections, searchQuery, setSearchQuery, sortBy, setSortBy, displayLimit, setDisplayLimit, api, showToast }) => {
+function LibraryView({ 
+  vocab, setVocab, 
+  collections, setCollections,
+  selectedCollection, setSelectedCollection,
+  searchQuery, setSearchQuery, 
+  sortBy, setSortBy, 
+  displayLimit, setDisplayLimit, 
+  api, showToast 
+}) {
   const [selectedCard, setSelectedCard] = useState(null)
   const [itemToDelete, setItemToDelete] = useState(null)
-  const [selectedCollection, setSelectedCollection] = useState('all')
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
   const [activeDragItem, setActiveDragItem] = useState(null)
@@ -144,15 +152,15 @@ const LibraryView = ({ vocab, setVocab, collections, setCollections, searchQuery
       collisionDetection={pointerWithin}
     >
       <div className="flex flex-col h-full bg-[#0a0a0a]">
-        {/* Header */}
+        {/* Header - Unified Standard */}
         <div className="flex items-center justify-between px-8 py-3 border-b border-white/5 bg-[#0f0f0f] sticky top-0 z-50">
           <div className="flex items-center gap-4">
-            <div className="p-2 bg-white/5 text-muted rounded-xl">
+            <div className="p-2 bg-accent/20 text-accent rounded-xl">
               <Library className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Research Archive</h2>
-              <p className="text-[9px] text-muted font-bold uppercase tracking-widest">{filtered.length} entries indexed</p>
+              <p className="text-[9px] text-muted font-bold uppercase tracking-widest">{filtered.length} Units stored</p>
             </div>
           </div>
 
@@ -180,82 +188,17 @@ const LibraryView = ({ vocab, setVocab, collections, setCollections, searchQuery
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-        <div className="w-56 border-r border-white/5 bg-[#080808] flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-8">
-            {/* System Folders */}
-            <div className="space-y-4">
-               <div className="px-2">
-                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">System Root</p>
-               </div>
-               <div className="space-y-1">
-                  {[
-                    { id: 'all', name: 'All Research', icon: Library },
-                    { id: 'unorganized', name: 'Unorganized', icon: FileText }
-                  ].map(item => (
-                    <DroppableFolder 
-                     key={item.id}
-                     id={item.id}
-                     active={selectedCollection === item.id}
-                     onClick={() => setSelectedCollection(item.id)}
-                    >
-                      {item.name}
-                    </DroppableFolder>
-                  ))}
-               </div>
-            </div>
-
-            {/* User Collections */}
-            <div className="space-y-4">
-               <div className="flex items-center justify-between px-2">
-                  <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">Collections</p>
-                  <button 
-                   onClick={() => setIsCreatingCollection(true)}
-                   className="p-1 h-5 w-5 flex items-center justify-center bg-white/5 hover:bg-accent hover:text-white rounded-[5px] text-muted transition-all duration-300"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
-               </div>
-               
-               <div className="space-y-1">
-                  {collections.map(c => (
-                    <DroppableFolder 
-                     key={c}
-                     id={c}
-                     active={selectedCollection === c}
-                     onClick={() => setSelectedCollection(c)}
-                     onDelete={() => handleDeleteCollection(c)}
-                    >
-                      {c}
-                    </DroppableFolder>
-                  ))}
-                  
-                  {isCreatingCollection && (
-                    <div className="mx-1 mt-2 p-2 border border-accent/20 bg-accent/[0.02] rounded-[5px] animate-in fade-in zoom-in-95 duration-200">
-                      <input 
-                       autoFocus
-                       value={newCollectionName}
-                       onChange={e => setNewCollectionName(e.target.value)}
-                       onKeyDown={e => e.key === 'Enter' && handleCreateCollection()}
-                       placeholder="New folder..."
-                       className="w-full bg-black/40 border border-white/5 rounded-[4px] px-2 py-1.5 text-[10px] text-white outline-none focus:border-accent/30 transition-all placeholder:text-muted/20"
-                      />
-                      <div className="flex gap-1 mt-2">
-                         <button onClick={handleCreateCollection} className="flex-1 py-1 bg-accent text-white text-[9px] font-black uppercase rounded-[4px] tracking-widest hover:brightness-110 active:scale-95 transition-all">Add</button>
-                         <button onClick={() => setIsCreatingCollection(false)} className="px-3 py-1 bg-white/5 text-muted text-[9px] font-black uppercase rounded-[4px] tracking-widest hover:text-white transition-all">X</button>
-                      </div>
-                    </div>
-                  )}
-               </div>
-            </div>
-          </div>
-
-          <div className="p-4 border-t border-white/5 bg-black/20">
-            <div className="flex items-center gap-3 px-2 py-1 opacity-20">
-              <div className="h-1 w-1 rounded-full bg-accent animate-pulse" />
-              <span className="text-[8px] font-bold uppercase tracking-widest text-muted">Archive Encrypted</span>
-            </div>
-          </div>
-        </div>
+          <Sidebar 
+            collections={collections}
+            selectedCollection={selectedCollection}
+            setSelectedCollection={setSelectedCollection}
+            handleDeleteCollection={handleDeleteCollection}
+            handleCreateCollection={handleCreateCollection}
+            isCreatingCollection={isCreatingCollection}
+            setIsCreatingCollection={setIsCreatingCollection}
+            newCollectionName={newCollectionName}
+            setNewCollectionName={setNewCollectionName}
+          />
 
           <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
             <div className="max-w-[1400px] mx-auto">

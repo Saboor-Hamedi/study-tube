@@ -53,22 +53,30 @@ export const DroppableFolder = ({ id, active, onClick, children, onDelete }) => 
   )
 }
 
-export const DraggableCard = ({ id, children, v }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+export const DraggableCard = ({ id, children, v, useHandle = false }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: v.date || id,
     data: v
   })
 
-  // We only apply the transform if we aren't using a DragOverlay for the "moving" part
-  // However, often it's better to keep the card in place but dimmed
   const style = {
     opacity: isDragging ? 0.2 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab'
   }
 
+  // If useHandle is true, we DON'T apply listeners/attributes to the wrapper.
+  // The child is responsible for applying them to a handle element.
+  const dragProps = useHandle ? {} : { ...listeners, ...attributes }
+
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="h-full cursor-grab active:cursor-grabbing">
-      {children}
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...dragProps}
+      className={`h-full ${useHandle ? '' : 'cursor-grab active:cursor-grabbing'}`}
+    >
+      {typeof children === 'function' 
+        ? children({ listeners, attributes, isDragging }) 
+        : children}
     </div>
   )
 }
