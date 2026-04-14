@@ -1,0 +1,38 @@
+# Antigravity Operating Protocol: StudyTube Research Studio
+
+This document serves as the absolute source of truth for all architectural and design decisions. It must be read before every edit to ensure system robustness.
+
+## 1. The DRP Methodology (Direct / Robust / Precision)
+
+### [D] DIRECT
+- **Minimal Abstraction**: Use straightforward React state and props. Do not introduce complex Redux or Context unless state depth exceeds 4 levels.
+- **Clear IPC Flow**: All communication between the UI and Electron (Main) must be explicit through `window.youtubeAPI`.
+- **Flat File System**: Keep logic localized. Modularize only when components exceed 400 lines or serve multiple views.
+
+### [R] ROBUST
+- **State Persistence**: Every change to `vocab` or `collections` MUST trigger a `saveVocab()` or `saveCollections()` call immediately. The backend JSON is the source of truth.
+- **Unique ID Anchors**: Always use the `item.date` (ISO String) as the primary key. Never rely on the title for updates, as titles are user-editable.
+- **Error Shielding**: All AI-driven features (Synthesis, Heatmap, Chat) must be wrapped in `try/catch` with user-facing toast feedback for recovery.
+
+### [P] PRECISION
+- **Industrial Aesthetic**: Maintain the high-density, dark-mode terminal look (#080808 background, accent borders, monospaced drafting fonts).
+- **Typography Discipline**: Standard study title is 18px. Meta-labels are uppercase 9px. Content text is lg (18px) for readability.
+- **Interaction Fidelity**: Use motion (framer-motion) for transitions (standard 500-700ms) to ensure the UI feels alive but surgically professional.
+
+## 2. STRICT UI LOCK (Non-Negotiable)
+
+- **Layout Stability**: DO NOT alter the layout architecture under any circumstances unless explicitly requested. 
+    - Keep the Sidebar on the right in the Reader Modal.
+    - Keep the Sidebar on the left in the Library/Main views.
+- **Visual Constants**: Do not change paddings (p-6, p-10), font sizes (text-lg), or border styles (border-white/5) without a direct user command.
+- **Icon Integrity**: Use 4x4 (h-4 w-4) for sidebar icons.
+
+## 3. Core Module Mapping
+
+- **CopilotView.jsx**: Research bridge + D&D engine.
+- **LibraryView.jsx**: Global archive management.
+- **CardReaderModal.jsx**: The analytical deep-dive hub (Memoized for performance).
+- **VideoView.jsx**: Discovery and transcript capture entry point.
+
+---
+*Follow these rules to maintain the Industrial Robustness of the StudyTube Research Studio.*
