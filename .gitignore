@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 *-player-script.js
 dist-electron
+.builder-cache
+.env

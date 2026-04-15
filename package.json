@@ -1,6 +1,6 @@
 {
-  "name": "yt-downloader",
-  "version": "1.0.1",
+  "name": "StudyTube",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Premium AI-powered YouTube learning studio.",
@@ -13,16 +13,12 @@
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",
     "build": "vite build",
-    "win": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win",
-    "build:win": "npm run win",
-    "mac": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --mac",
-    "build:mac": "npm run mac",
-    "linux": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --linux",
-    "build:linux": "npm run linux",
-    "build:all": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win --mac --linux",
-    "publish": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win --linux -p always",
-    "publish:win": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --win -p always",
-    "publish:linux": "vite build && cross-env ELECTRON_BUILDER_CACHE=.builder-cache npx electron-builder --linux -p always",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux",
+    "build:all": "npm run build && electron-builder --win --mac --linux",
+    "publish:win": "npm run build && npx dotenv-cli -- electron-builder --win --publish always",
+    "publish:linux": "npm run build && npx dotenv-cli -- electron-builder --linux --publish always",
     "preview": "vite preview"
   },
   "build": {
@@ -38,16 +34,17 @@
       "package.json",
       "data/**/*"
     ],
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "Saboor-Hamedi",
-        "repo": "study-tube"
-      }
-    ],
     "win": {
       "icon": "electron/assets/icon.png",
-      "target": "nsis"
+      "target": "nsis",
+      "publish": [
+        {
+          "provider": "github",
+          "owner": "Saboor-Hamedi",
+          "repo": "study-tube",
+          "releaseType": "release"
+        }
+      ]
     },
     "mac": {
       "icon": "electron/assets/icon.png",
@@ -64,6 +61,7 @@
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "dotenv-cli": "^11.0.0",
     "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
     "postcss": "^8.5.9",

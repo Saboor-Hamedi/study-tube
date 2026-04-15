@@ -499,6 +499,13 @@ function registerIpcHandlers() {
   // ─── Auto-Updater ──────────────────────────────────────────────────────────
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.logger = console
+
+  // IMPORTANT: For Private Repos, we MUST send a token in the headers
+  // You should use a RESTRICTED (read-only) token here.
+  autoUpdater.requestHeaders = {
+    'Authorization': 'token INSERT_READ_ONLY_TOKEN_HERE'
+  }
 
   const sendUStatus = (status, info = null) => {
     if (mainWindow) sendToRenderer(mainWindow.webContents, 'update:status', { status, info })

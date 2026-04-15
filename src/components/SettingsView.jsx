@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Key, Folder, ShieldCheck, Cpu, ExternalLink, 
-  Save, RefreshCcw, Download, CheckCircle, AlertCircle, Rocket 
+  Save, RefreshCcw, Download, CheckCircle, AlertCircle, Rocket,
+  Activity, Zap, Database, Terminal
 } from 'lucide-react'
 
 const SettingsView = ({ api }) => {
@@ -11,10 +13,9 @@ const SettingsView = ({ api }) => {
   const [showStatus, setShowStatus] = useState(false)
 
   // Update State
-  const [updateStatus, setUpdateStatus] = useState('idle') // idle | checking | available | downloading | downloaded | error | not-available
+  const [updateStatus, setUpdateStatus] = useState('idle') 
   const [updateInfo, setUpdateInfo] = useState(null)
   const [updateProgress, setUpdateProgress] = useState(0)
-
   const [version, setVersion] = useState('0.0.0')
 
   useEffect(() => {
@@ -24,17 +25,14 @@ const SettingsView = ({ api }) => {
         const path = await api.getSavePath()
         setApiKey(key || '')
         setSavePath(path || '')
-        
-        // Dynamic Version Acquisition Protocol
         const ver = await api.getVersion?.()
         if (ver) setVersion(ver)
       } catch (err) {
-        console.warn('[IPC SYNC] Version acquisition deferred. Ensure system restart.', err)
+        console.warn('[IPC SYNC] Version deferred.', err)
       }
     }
     loadSettings()
 
-    // Listen to updates
     if (api?.updater?.onUpdateStatus) {
       const unsubs = api.updater.onUpdateStatus((data) => {
         setUpdateStatus(data.status)
@@ -63,193 +61,274 @@ const SettingsView = ({ api }) => {
     }
   }
 
-  const handleCheckUpdate = () => {
-    api?.updater?.check()
-  }
-
-  const handleInstallUpdate = () => {
-    api?.updater?.install()
-  }
+  const handleCheckUpdate = () => api?.updater?.check()
+  const handleInstallUpdate = () => api?.updater?.install()
 
   return (
-    <div className="absolute inset-0 overflow-y-auto scrollbar-thin p-8 lg:p-12 bg-background transition-colors duration-500">
-       <div className="max-w-3xl mx-auto space-y-12">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="absolute inset-0 overflow-y-auto scrollbar-thin scrollbar-stable p-6 lg:p-12 bg-background transition-colors duration-500 custom-scroll select-text"
+      style={{ scrollbarGutter: 'stable' }}
+    >
+       <div className="max-w-4xl mx-auto space-y-16 min-h-full pb-20">
           
-          <header className="space-y-4">
-            <h1 className="text-4xl font-black text-text tracking-tight flex items-baseline gap-3">
-              System Settings
-              <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 font-mono">V{version}</span>
-            </h1>
-            <p className="text-muted text-sm max-w-xl leading-relaxed">
-              Configure your AI intelligence, local storage, and system updates. All settings are stored locally on your machine for maximum privacy.
-            </p>
+          {/* PERSISTENT CORE HEADER */}
+          <header className="relative space-y-6 pt-8">
+            <div className="flex items-center gap-4 text-accent animate-pulse opacity-40">
+              <Activity className="h-4 w-4" />
+              <span className="text-[10px] font-black tracking-[0.3em] uppercase">System Calibration Active</span>
+            </div>
+            
+            <div className="space-y-2">
+              <h1 className="text-5xl font-black text-text tracking-tighter flex items-center gap-4">
+                Core Settings
+                <span className="text-[10px] bg-accent/10 border border-accent/20 text-accent px-3 py-1 font-mono tracking-widest uppercase">
+                  Shield_V{version}
+                </span>
+              </h1>
+              <p className="text-muted text-sm max-w-2xl leading-relaxed font-medium">
+                Manage the high-fidelity neural core, local repository clusters, and architectural versioning. 
+                All parameters remain isolated within your local environment.
+              </p>
+            </div>
+            
+            <div className="absolute top-0 right-0 opacity-[0.03] pointer-events-none">
+              <Terminal className="w-64 h-64 rotate-12 text-accent" />
+            </div>
           </header>
 
-          <div className="grid gap-8">
+          <div className="grid gap-10">
             
-            {/* AI CONFIGURATION */}
-            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500">
-               <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-accent/10 text-accent">
-                   <Cpu className="h-5 w-5" />
-                 </div>
-                 <div>
-                   <h2 className="text-lg font-bold text-text">DeepSeek Intelligence</h2>
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Natural Language Processing</p>
-                 </div>
+            {/* AI RESEARCH INTELLIGENCE */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="group relative bg-surface border-l-4 border-l-accent border border-border p-10 space-y-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] transition-all hover:bg-surface-2 overflow-hidden"
+            >
+               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Zap className="h-24 w-24 -rotate-12" />
                </div>
 
-               <div className="space-y-4">
-                 <div className="space-y-2">
-                   <label className="text-xs font-bold text-muted flex items-center justify-between">
-                     <span>API AUTHENTICATION KEY</span>
-                     <button className="text-[9px] text-accent hover:underline flex items-center gap-1">
-                       MANAGE KEYS <ExternalLink className="h-2.5 w-2.5" />
-                     </button>
-                   </label>
-                   <div className="relative group">
-                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/40 group-focus-within:text-accent transition-colors">
-                        <Key className="h-4 w-4" />
-                     </div>
-                     <input 
-                       type="password"
-                       value={apiKey}
-                       onChange={e => setApiKey(e.target.value)}
-                       placeholder="sk-..."
-                       className="w-full bg-surface-2 border border-border py-4 pl-12 pr-4 text-sm text-text outline-none focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all"
-                     />
+               <div className="flex items-center justify-between border-b border-border pb-6">
+                 <div className="flex items-center gap-5">
+                   <div className="p-3 bg-accent text-background rounded-sm">
+                     <Cpu className="h-6 w-6" />
+                   </div>
+                   <div>
+                     <h2 className="text-xl font-black text-text uppercase tracking-tight">Intelligence Node</h2>
+                     <p className="text-[10px] text-accent font-black uppercase tracking-[0.2em]">DeepSeek Neural Cluster</p>
                    </div>
                  </div>
-
-                 <button 
-                   onClick={handleSaveKey}
-                   disabled={isSaving}
-                   className="w-full bg-text text-background font-black text-xs uppercase tracking-widest py-4 hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
-                 >
-                   {isSaving ? (
-                     <span className="animate-pulse">Saving...</span>
-                   ) : (
-                     <>
-                        <Save className="h-4 w-4 transition-transform group-hover:scale-110" />
-                        Save AI Configuration
-                     </>
-                   )}
-                 </button>
-
-                 {showStatus && (
-                   <div className="flex items-center gap-2 text-green-500 text-[10px] font-bold uppercase tracking-widest justify-center animate-bounce">
-                     <ShieldCheck className="h-4 w-4" />
-                     Configuration Applied Successfully
-                   </div>
-                 )}
-               </div>
-            </section>
-
-            {/* STORAGE CONFIGURATION */}
-            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500">
-               <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-accent/10 text-accent">
-                   <Folder className="h-5 w-5" />
-                 </div>
-                 <div>
-                   <h2 className="text-lg font-bold text-text">Storage Infrastructure</h2>
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Local Asset Management</p>
-                 </div>
-               </div>
-
-               <div className="space-y-4">
-                 <div className="space-y-2">
-                   <label className="text-xs font-bold text-muted">DOWNLOAD DESTINATION</label>
-                   <div className="flex gap-2">
-                      <div className="flex-1 bg-surface-2 border border-border px-4 py-3 flex items-center gap-3">
-                         <Folder className="h-4 w-4 text-muted/40" />
-                         <span className="text-sm text-text truncate">{savePath || 'Select destination path...'}</span>
-                      </div>
-                      <button 
-                        onClick={handlePickPath}
-                        className="px-6 bg-surface-3 border border-border text-xs font-bold text-text hover:bg-accent hover:text-white transition-all"
-                      >
-                        Change
-                      </button>
-                   </div>
-                 </div>
-               </div>
-            </section>
-
-            {/* SYSTEM UPDATES */}
-            <section className="bg-surface border border-border p-8 space-y-6 shadow-2xl transition-colors duration-500">
-               <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-accent/10 text-accent">
-                   <RefreshCcw className="h-5 w-5" />
-                 </div>
-                 <div>
-                   <h2 className="text-lg font-bold text-text">Research Studio Updates</h2>
-                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Automated Version Control</p>
+                 <div className="text-right hidden sm:block">
+                   <span className="text-[10px] font-mono text-muted block italic">LATENCY_OPTIMIZED: 400ms</span>
+                   <span className="text-[10px] font-mono text-success block">STATUS: ONLINE</span>
                  </div>
                </div>
 
                <div className="space-y-6">
-                 <div className="flex items-center justify-between p-4 bg-surface-2 border border-border">
-                    <div className="space-y-1">
-                       <p className="text-xs font-bold text-text">
-                         {updateStatus === 'downloaded' ? 'Update Ready' : 
-                          updateStatus === 'available' ? 'New Version Detected' :
-                          updateStatus === 'downloading' ? `Downloading Patch... ${updateProgress}%` :
-                          updateStatus === 'checking' ? 'Querying GitHub...' :
-                          'System Up to Date'}
-                       </p>
-                       <p className="text-[10px] text-muted lowercase">
-                         {updateStatus === 'downloaded' ? 'Synthesized patch is ready for high-fidelity deployment.' :
-                          updateStatus === 'available' ? `Version ${updateInfo?.version || 'Unknown'} is available for extraction.` :
-                          updateStatus === 'downloading' ? 'Background acquisition in progress. Studio remain operational.' :
-                          'Current version check shows architectural parity with remote source.'}
-                       </p>
+                 <div className="space-y-3">
+                   <div className="flex items-center justify-between">
+                     <label className="text-[10px] font-black text-muted tracking-widest uppercase flex items-center gap-2">
+                       <Key className="h-3 w-3" /> API Authentication Key
+                     </label>
+                     <button className="text-[9px] text-accent font-black hover:tracking-widest transition-all flex items-center gap-1.5 uppercase">
+                       Vault Access <ExternalLink className="h-3 w-3" />
+                     </button>
+                   </div>
+                   
+                   <div className="relative">
+                     <input 
+                       type="password"
+                       value={apiKey}
+                       onChange={e => setApiKey(e.target.value)}
+                       placeholder="Enter high-fidelity auth token..."
+                       className="w-full bg-surface-3 border border-border py-5 px-6 text-sm text-text outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all font-mono placeholder:opacity-30"
+                     />
+                   </div>
+                 </div>
+
+                 <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                   <button 
+                     onClick={handleSaveKey}
+                     disabled={isSaving}
+                     className="flex-1 bg-text text-background font-black text-xs uppercase tracking-[0.15em] py-5 px-8 hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-3 relative overflow-hidden group disabled:opacity-50 active:scale-[0.98]"
+                   >
+                     <AnimatePresence mode="wait">
+                       {isSaving ? (
+                         <motion.div 
+                           key="saving"
+                           initial={{ opacity: 0 }}
+                           animate={{ opacity: 1 }}
+                           exit={{ opacity: 0 }}
+                           className="flex items-center gap-2"
+                         >
+                           <RefreshCcw className="h-4 w-4 animate-spin" /> Synchronizing...
+                         </motion.div>
+                       ) : (
+                         <motion.div 
+                           key="save"
+                           initial={{ opacity: 0 }}
+                           animate={{ opacity: 1 }}
+                           exit={{ opacity: 0 }}
+                           className="flex items-center gap-2"
+                         >
+                           <Save className="h-4 w-4" /> Hardening Configuration
+                         </motion.div>
+                       )}
+                     </AnimatePresence>
+                   </button>
+
+                   <AnimatePresence>
+                     {showStatus && (
+                       <motion.div 
+                         initial={{ opacity: 0, x: -10 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         exit={{ opacity: 0, scale: 0.9 }}
+                         className="flex items-center gap-3 px-6 py-4 bg-success/10 border border-success/20 text-success text-[10px] font-black uppercase tracking-widest"
+                       >
+                         <ShieldCheck className="h-5 w-5" />
+                         Protocol Stabilized
+                       </motion.div>
+                     )}
+                   </AnimatePresence>
+                 </div>
+               </div>
+            </motion.section>
+
+            {/* STORAGE ARCHITECTURE */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="group relative bg-surface border border-border p-10 space-y-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] transition-all hover:bg-surface-2"
+            >
+               <div className="flex items-center justify-between border-b border-border pb-6">
+                 <div className="flex items-center gap-5">
+                   <div className="p-3 bg-surface-3 text-text rounded-sm border border-border">
+                     <Database className="h-6 w-6" />
+                   </div>
+                   <div>
+                     <h2 className="text-xl font-black text-text uppercase tracking-tight">Repository Root</h2>
+                     <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em]">Asset Persistence Layer</p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="space-y-4">
+                 <div className="space-y-3">
+                   <label className="text-[10px] font-black text-muted tracking-widest uppercase">Target Extraction Path</label>
+                   <div className="flex flex-col sm:flex-row gap-0 border border-border group/input focus-within:border-accent/40 transition-colors">
+                      <div className="flex-1 bg-surface-3 px-6 py-5 flex items-center gap-4 min-w-0">
+                         <Folder className="h-4 w-4 text-accent/50 shrink-0" />
+                         <span className="text-xs text-text font-mono truncate tracking-tight">{savePath || 'Pending selection...'}</span>
+                      </div>
+                      <button 
+                        onClick={handlePickPath}
+                        className="px-10 py-5 bg-surface-2 border-l border-border text-[10px] font-black text-text uppercase tracking-widest hover:bg-accent hover:text-white transition-all shrink-0 active:bg-accent-hover"
+                      >
+                        Re-Route
+                      </button>
+                   </div>
+                 </div>
+               </div>
+            </motion.section>
+
+            {/* VERSION CONTROL CLUSTER */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="group relative bg-surface border border-border overflow-hidden"
+            >
+               <div className="p-10 space-y-8">
+                 <div className="flex items-center gap-5">
+                   <div className="p-3 bg-surface-3 text-text rounded-sm border border-border">
+                     <RefreshCcw className="h-6 w-6" />
+                   </div>
+                   <div>
+                     <h2 className="text-xl font-black text-text uppercase tracking-tight">Version Parity</h2>
+                     <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em]">Automated Patch Stream</p>
+                   </div>
+                 </div>
+
+                 <div className="grid sm:grid-cols-[1fr,auto] items-center gap-8 p-8 bg-surface-2 border border-border relative">
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <p className="text-sm font-black text-text uppercase tracking-tight">
+                            {updateStatus === 'downloaded' ? 'SYNTHESIS COMPLETE' : 
+                             updateStatus === 'available' ? 'REMOTE UPDATE DETECTED' :
+                             updateStatus === 'downloading' ? `STREAMING PATCH...` :
+                             updateStatus === 'checking' ? 'QUERYING REMOTE...' :
+                             'ARCHITECTURAL PARITY'}
+                          </p>
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
+                        </div>
+                        <p className="text-[10px] text-muted leading-relaxed uppercase tracking-wider font-semibold max-w-md">
+                          {updateStatus === 'downloaded' ? 'A new architectural layer is ready for high-fidelity deployment. Restart required.' :
+                           updateStatus === 'available' ? `Neural Shield Version ${updateInfo?.version || 'N/A'} is staged for extraction.` :
+                           updateStatus === 'downloading' ? 'Asynchronous acquisition from GitHub master cluster is currently active.' :
+                           'Current system environment matches the remote master release configuration.'}
+                        </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="w-full sm:w-auto">
                        {updateStatus === 'downloaded' ? (
                           <button 
                             onClick={handleInstallUpdate}
-                            className="px-6 py-2.5 bg-green-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-green-600 transition-all shadow-lg shadow-green-500/10 flex items-center gap-2"
+                            className="w-full sm:w-64 py-5 bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-green-600 transition-all shadow-[0_15px_30px_rgba(34,197,94,0.3)] flex items-center justify-center gap-3"
                           >
-                             <Rocket className="h-3.5 w-3.5" /> Launch Patch
+                             <Rocket className="h-4 w-4" /> Finalize Patch
                           </button>
                        ) : (
                           <button 
                             onClick={handleCheckUpdate}
                             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
-                            className="px-6 py-2.5 bg-surface-3 border border-border text-[10px] font-black text-text uppercase tracking-widest hover:bg-accent hover:text-white hover:border-accent transition-all disabled:opacity-50 flex items-center gap-2"
+                            className="w-full sm:w-64 py-5 bg-surface-3 border border-border text-[10px] font-black text-text uppercase tracking-[0.2em] hover:bg-accent hover:text-white hover:border-accent transition-all disabled:opacity-30 flex items-center justify-center gap-3"
                           >
-                             {updateStatus === 'checking' ? <RefreshCcw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="h-3.5 w-3.5" />}
-                             Check Updates
+                             <RefreshCcw className={`h-4 w-4 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
+                             Sync Status
                           </button>
                        )}
                     </div>
                  </div>
 
                  {updateStatus === 'downloading' && (
-                    <div className="space-y-2 px-1">
-                       <div className="h-1 bg-surface-3 overflow-hidden">
-                          <div 
-                            className="h-full bg-accent transition-all duration-300 shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" 
-                            style={{ width: `${updateProgress}%` }}
+                    <div className="space-y-3 px-1">
+                       <div className="flex justify-between items-center text-[9px] font-black text-accent tracking-[0.3em] uppercase">
+                         <span>Downlink Stream</span>
+                         <span>{updateProgress}%</span>
+                       </div>
+                       <div className="h-1 bg-surface-3 relative overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${updateProgress}%` }}
+                            className="h-full bg-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.8)]" 
                           />
                        </div>
                     </div>
                  )}
 
                  {updateStatus === 'error' && (
-                    <div className="flex items-center gap-2 p-3 bg-red-500/5 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-widest">
-                       <AlertCircle className="h-3.5 w-3.5" />
-                       Connection Anomaly: {updateInfo || 'GitHub Unreachable'}
-                    </div>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-4 p-5 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-[0.2em]"
+                    >
+                       <AlertCircle className="h-5 w-5" />
+                       Downlink Interrupted: {updateInfo || 'Cluster Timeout'}
+                    </motion.div>
                  )}
                </div>
-            </section>
+               
+               <div className="h-1 w-full bg-border mt-auto">
+                 <div className="h-full bg-accent w-1/3 opacity-20" />
+               </div>
+            </motion.section>
 
           </div>
        </div>
-    </div>
+    </motion.div>
   )
 }
 

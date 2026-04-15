@@ -140,7 +140,11 @@ export default function App() {
           </div>
         )}
 
-        {view === 'settings' && <SettingsView api={api} />}
+        {view === 'settings' && (
+          <div className="absolute inset-0">
+            <SettingsView api={api} />
+          </div>
+        )}
       </main>
 
       <AnimatePresence>
