@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   saveVocab: (list) => ipcRenderer.invoke('vocab:save', list),
   loadCollections: () => ipcRenderer.invoke('collections:load'),
   saveCollections: (list) => ipcRenderer.invoke('collections:save', list),
+  loadNotes: () => ipcRenderer.invoke('notes:load'),
+  saveNotes: (data) => ipcRenderer.invoke('notes:save', data),
   explainWord: (data) => ipcRenderer.invoke('ai:explain', data),
   exportDossier: (data) => ipcRenderer.invoke('library:export-dossier', data),
   reconstructTranscript: (text) => ipcRenderer.invoke('ai:reconstruct-transcript', text),

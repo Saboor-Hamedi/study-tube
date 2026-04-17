@@ -14,47 +14,8 @@ import CardReaderModal from './CardReaderModal'
 import { DroppableFolder, DraggableCard } from './DraggableCard'
 import Sidebar from '../Sidebar'
 import ReactMarkdown from 'react-markdown'
+import DeleteModal from '../DeleteModal'
 
-const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
-  if (!isOpen) return null
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="w-full max-w-sm bg-surface border border-border p-6 shadow-[0_30px_100px_rgba(0,0,0,1)] space-y-6 rounded-[5px]"
-        >
-          <div className="flex items-start gap-4">
-             <div className="p-3 bg-red-500/10 text-red-500 rounded-[5px]">
-                <AlertCircle className="h-6 w-6" />
-             </div>
-             <div className="space-y-1">
-                <h3 className="text-[13px] font-black text-text uppercase tracking-widest">{title}</h3>
-                <p className="text-[11px] text-muted leading-relaxed lowercase">{message}</p>
-             </div>
-          </div>
-          
-          <div className="flex flex-col gap-2">
-             <button 
-              onClick={onConfirm}
-              className="w-full py-3 bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em]  hover:bg-red-600 transition-all shadow-lg shadow-red-500/10 rounded-[5px]"
-             >
-                Confirm Delete
-             </button>
-             <button 
-              onClick={onCancel}
-              className="w-full py-3 bg-surface-2 text-muted hover:text-text text-[10px] font-black uppercase tracking-[0.2em]  transition-all rounded-[5px]"
-             >
-                Cancel
-             </button>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
-  )
-}
 
 function LibraryView({ 
   vocab, setVocab, 
@@ -338,12 +299,12 @@ function LibraryView({
         collections={collections}
       />
 
-      <ConfirmationModal 
+      <DeleteModal 
         isOpen={!!itemToDelete}
         title={selectedCollection === 'trash' || itemToDelete?.archived ? 'Eradicate Research?' : 'Move to Trash?'}
         message={selectedCollection === 'trash' || itemToDelete?.archived ? 'This action permanently dissolves the insight from the neural archive.' : 'The insight will be moved to the trash for later disposal.'}
         onConfirm={handleDelete}
-        onCancel={() => setItemToDelete(null)}
+        onClose={() => setItemToDelete(null)}
       />
 
       {/* Industrial Drag Overlay */}

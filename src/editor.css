@@ -1,0 +1,95 @@
+/* Editor.js Industrial Research Overrides - Hardened V4 (Zero-Ghost Mode) */
+
+/* Core Layout Stability */
+.ce-block__content {
+  max-width: 100% !important;
+  transition: all 0.2s ease;
+}
+
+.ce-toolbar__content {
+  max-width: 100% !important;
+  left: -44px !important;
+}
+
+.codex-editor {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Reducer: Kill Prose Margins that cause the "Huge Gap" */
+.prose :where(h1, h2, h3, h4, h5, h6, p, ul, ol):first-child {
+  margin-top: 0 !important;
+}
+
+/* Header Refinement */
+.ce-header {
+  padding: 0;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+  border-left: 3px solid var(--accent);
+  padding-left: 16px !important;
+  line-height: 1.25;
+  outline: none;
+}
+
+/* 
+   Style Native Editor.js placeholders without adding "Extra" content.
+   This avoids the "double text" or "ghost" issues.
+*/
+.ce-paragraph[data-placeholder]::before,
+.ce-header[data-placeholder]::before,
+.ce-paragraph[data-placeholder-active]::before {
+  color: var(--muted) !important;
+  opacity: 0.3 !important;
+  font-weight: 500 !important;
+}
+
+.ce-header[data-placeholder]::before {
+  color: var(--accent) !important;
+}
+
+/* Toolbox & Toolbar Overrides */
+.ce-toolbar__plus, .ce-toolbar__settings-btn {
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ce-toolbar__plus:hover, .ce-toolbar__settings-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ce-toolbox {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+/* Popovers & Modals */
+.ce-popover {
+  background: var(--surface-3) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6) !important;
+  color: var(--text) !important;
+}
+
+/* Inline Code & Markers */
+.cdx-marker {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-bottom: 1px solid var(--accent);
+}
+
+.editor-js-override {
+  user-select: text !important;
+}

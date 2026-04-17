@@ -3,6 +3,7 @@ import VideoView from './components/VideoView'
 import LibraryView from './components/vocabulary/LibraryView'
 import CopilotView from './components/chat/CopilotView'
 import SettingsView from './components/SettingsView'
+import EditorView from './components/EditorView'
 import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -139,7 +140,13 @@ export default function App() {
             />
           </div>
         )}
-
+      {/* open editor */}
+        {view === 'editor' && (
+          <div className="absolute inset-0">
+            <EditorView api={api} showToast={showToast} />
+          </div>
+        )}
+      {/* open setting  */}
         {view === 'settings' && (
           <div className="absolute inset-0">
             <SettingsView api={api} />

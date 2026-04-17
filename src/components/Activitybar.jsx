@@ -1,4 +1,4 @@
-import { Search, BookOpen, Settings, Sparkles, FileDown, Sun, Moon } from 'lucide-react'
+import { Search, BookOpen, Settings, Sparkles, FileDown, Sun, Moon, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function Activitybar({ view, setView, onExport, theme, onToggleTheme }) {
@@ -6,6 +6,7 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
   const mainTabs = [
     { id: 'search', label: 'Discover', icon: Search },
     { id: 'vocab', label: 'Library', icon: BookOpen },
+    { id: 'editor', label: 'Research Editor', icon: FileText },
     { id: 'copilot', label: 'Research Assist', icon: Sparkles }
   ]
   
@@ -40,7 +41,7 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
   }
 
   return (
-    <div className="w-[68px] h-full shrink-0 bg-surface-3 border-r border-border flex flex-col items-center pt-1 pb-6 relative z-30 transition-colors duration-500">
+    <div className="w-[68px] h-full shrink-0 bg-surface-3 border-r border-border flex flex-col items-center pt-1 pb-6 relative z-[100] transition-colors duration-500">
       <div className="flex flex-col gap-6 w-full items-center">
         {mainTabs.map(renderTab)}
       </div>

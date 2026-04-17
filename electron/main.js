@@ -440,6 +440,14 @@ function registerIpcHandlers() {
 
   ipcMain.handle('collections:save', (_e, list) => { return atomicWriteJsonSync(collectionsPath, list) })
 
+  const notesPath = path.join(dataDir, 'notes.json')
+  safeHandle('notes:load', () => {
+    try { if (fs.existsSync(notesPath)) return JSON.parse(fs.readFileSync(notesPath, 'utf8')) } catch (e) { console.error('Load notes fail', e) }
+    return {}
+  })
+
+  safeHandle('notes:save', (_e, data) => { return atomicWriteJsonSync(notesPath, data) })
+
   ipcMain.handle('ai:explain', async (_e, { text, videoTitle }) => {
     const apiKey = readAppState().aiApiKey
     if (!apiKey) return { text, definition: 'No API Key' }
