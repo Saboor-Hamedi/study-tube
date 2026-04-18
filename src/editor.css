@@ -8,7 +8,13 @@
 
 .ce-toolbar__content {
   max-width: 100% !important;
-  left: -44px !important;
+  left: -48px !important;
+}
+
+.ce-toolbar__actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px;
 }
 
 .codex-editor {
@@ -65,10 +71,8 @@
 
 /* Ensure the handle doesn't intercept right-clicks meant for text */
 .ce-toolbar__actions {
-  pointer-events: none;
-}
-.ce-toolbar__actions > * {
-  pointer-events: auto;
+  /* Removed pointer-events: none to prevent empty-div artifacts */
+  background: transparent;
 }
 
 .ce-toolbar__plus:hover, .ce-toolbar__settings-btn:hover {
