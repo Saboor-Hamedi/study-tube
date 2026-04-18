@@ -9,6 +9,11 @@ import ffmpegPath from 'ffmpeg-static'
 import { YoutubeTranscript } from 'youtube-transcript/dist/youtube-transcript.esm.js'
 import pkgUpdater from 'electron-updater'
 const { autoUpdater } = pkgUpdater
+import { 
+  initDatabase, getNotes, saveNotes, 
+  getLibrary, saveLibrary, 
+  getCollections, saveCollections 
+} from './database.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -465,33 +470,30 @@ function registerIpcHandlers() {
     }
   })
 
-  // ─── Data Persistence ───────────────────────────────────────────────────────
-  const dataDir = path.join(app.getAppPath(), 'data')
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
-  const vocabPath = path.join(dataDir, 'library.json')
-  const collectionsPath = path.join(dataDir, 'collections.json')
-
+  // ─── Data Persistence (SQLite3 Powered) ──────────────────────────────────
   ipcMain.handle('vocab:load', () => {
-    try { if (fs.existsSync(vocabPath)) return JSON.parse(fs.readFileSync(vocabPath, 'utf8')) } catch (e) { console.error('Load vocab fail', e) }
-    return []
+    try { return getLibrary() } catch (e) { console.error('DB Load vocab fail', e); return [] }
   })
 
-  ipcMain.handle('vocab:save', (_e, list) => { return atomicWriteJsonSync(vocabPath, list) })
+  ipcMain.handle('vocab:save', (_e, list) => { 
+    try { saveLibrary(list); return true } catch (e) { console.error('DB Save vocab fail', e); return false }
+  })
 
   ipcMain.handle('collections:load', () => {
-    try { if (fs.existsSync(collectionsPath)) return JSON.parse(fs.readFileSync(collectionsPath, 'utf8')) } catch (e) { console.error('Load collections fail', e) }
-    return []
+    try { return getCollections() } catch (e) { console.error('DB Load collections fail', e); return [] }
   })
 
-  ipcMain.handle('collections:save', (_e, list) => { return atomicWriteJsonSync(collectionsPath, list) })
+  ipcMain.handle('collections:save', (_e, list) => { 
+    try { saveCollections(list); return true } catch (e) { console.error('DB Save collections fail', e); return false }
+  })
 
-  const notesPath = path.join(dataDir, 'notes.json')
   safeHandle('notes:load', () => {
-    try { if (fs.existsSync(notesPath)) return JSON.parse(fs.readFileSync(notesPath, 'utf8')) } catch (e) { console.error('Load notes fail', e) }
-    return {}
+    try { return getNotes() } catch (e) { console.error('DB Load notes fail', e); return { blocks: [] } }
   })
 
-  safeHandle('notes:save', (_e, data) => { return atomicWriteJsonSync(notesPath, data) })
+  safeHandle('notes:save', (_e, data) => { 
+    try { saveNotes(data); return true } catch (e) { console.error('DB Save notes fail', e); return false }
+  })
 
   ipcMain.handle('ai:explain', async (_e, { text, videoTitle }) => {
     const apiKey = readAppState().aiApiKey
@@ -663,6 +665,8 @@ app.on('web-contents-created', (event, contents) => {
 
 app.whenReady().then(() => {
   try {
+    console.log('[SYSTEM] Initializing Neural Database (SQLite3 + FTS5)...')
+    initDatabase()
     console.log('[SYSTEM] Initializing Neural Sentry Handlers...')
     registerIpcHandlers()
     console.log('[SYSTEM] Launching Research Studio...')

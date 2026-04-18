@@ -129,27 +129,6 @@ export default function EditorView({ api, showToast }) {
     return cleanup
   }, [handleNeuralRefine, api])
 
-  const handleSave = async () => {
-    if (!editorInstance.current) return
-    
-    // Safety Bridge Check
-    if (!api || typeof api.saveNotes !== 'function') {
-      showToast('API Bridge Error: Restart Required', 'error')
-      return
-    }
-
-    setIsSaving(true)
-    try {
-      const outputData = await editorInstance.current.save()
-      await api.saveNotes(outputData)
-      showToast('Research Notes Synchronized', 'success')
-    } catch (error) {
-      console.error('Saving failed: ', error)
-      showToast('Nexus Save Error', 'error')
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
   const handleClear = async () => {
     if (!editorInstance.current) return
@@ -202,21 +181,12 @@ export default function EditorView({ api, showToast }) {
           
           <button 
             onClick={handleNeuralRefine}
-            disabled={isRefining || isSaving}
-            className="flex items-center gap-2 px-4 py-2 border border-accent/30 text-accent text-[10px] font-black uppercase tracking-widest hover:bg-accent/10 disabled:opacity-50 transition-all rounded-sm"
+            disabled={isRefining}
+            className="flex items-center gap-2 px-6 py-2 bg-text text-background text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-50 transition-all rounded-sm"
             title="Refine Grammar & Flow"
           >
             {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
             {isRefining ? 'Refining...' : 'Neural Refine'}
-          </button>
-
-          <button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2 bg-text text-background text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-50 transition-all"
-          >
-            {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-            {isSaving ? 'Syncing...' : 'Save Draft'}
           </button>
         </div>
       </div>

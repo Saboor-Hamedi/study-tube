@@ -281,13 +281,24 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                      </div>
                    </button>
 
-                   <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="w-full p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left rounded-[5px]">
-                     {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-muted" /> : <ListChecks className="h-4 w-4 text-text" />}
-                     <div>
-                       <p className="text-[10px] font-black text-text uppercase tracking-widest">Heatmap</p>
-                       <p className="text-[9px] text-muted uppercase">Identify</p>
-                     </div>
-                   </button>
+                   <div className="flex gap-2">
+                     <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="flex-1 p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left rounded-[5px]">
+                       {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-muted" /> : <ListChecks className="h-4 w-4 text-text" />}
+                       <div>
+                         <p className="text-[10px] font-black text-text uppercase tracking-widest">Heatmap</p>
+                         <p className="text-[9px] text-muted uppercase">Identify</p>
+                       </div>
+                     </button>
+                     {highlights.length > 0 && (
+                       <button 
+                         onClick={() => { setHighlights([]); showToast('Heatmap Deactivated') }}
+                         className="px-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/10 rounded-[5px]"
+                         title="Clear Highlights"
+                       >
+                         <RefreshCcw className="h-3.5 w-3.5" />
+                       </button>
+                     )}
+                   </div>
                 </div>
              </div>
 

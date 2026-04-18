@@ -54,22 +54,22 @@ export default function App() {
 
   const addVocab = async (item) => {
     const basicItem = { ...item, date: new Date().toISOString(), loading: !item.skipAI }
-    setVocab(prev => {
-      const newList = [basicItem, ...prev]
-      const displayTitle = item.text.length > 30 ? item.text.slice(0, 30) + '...' : item.text
-      showToast(`Saved "${displayTitle}"`)
-      api.saveVocab(newList)
-      return newList
-    })
+    const newList = [basicItem, ...vocab]
+    
+    setVocab(newList)
+    await api.saveVocab(newList)
+    
+    const displayTitle = item.text.length > 30 ? item.text.slice(0, 30) + '...' : item.text
+    showToast(`Saved "${displayTitle}"`)
 
     if (item.skipAI) return
 
     try {
       const entry = await api.explainWord({ text: item.text, videoTitle: item.videoTitle })
       setVocab(prev => {
-        const newList = prev.map(v => v.text === item.text && v.loading ? { ...v, ...entry, loading: false } : v)
-        api.saveVocab(newList)
-        return newList
+        const enrichedList = prev.map(v => v.text === item.text && v.loading ? { ...v, ...entry, loading: false } : v)
+        api.saveVocab(enrichedList) // AI enrichment is a secondary async task, this is safer here but ideally we'd sequence it too
+        return enrichedList
       })
     } catch (e) {
       console.error('AI Enrichment failed', e)

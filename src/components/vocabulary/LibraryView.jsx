@@ -112,34 +112,60 @@ function LibraryView({
   }
 
   const handleCreateCollection = async () => {
-    if (!newCollectionName.trim() || collections.includes(newCollectionName.trim())) return
-    const newList = [...collections, newCollectionName.trim()]
+    const name = newCollectionName.trim()
+    if (!name || collections.includes(name)) return
+    
+    // Optimistic UI Update
+    const newList = [...collections, name]
     setCollections(newList)
-    await api.saveCollections(newList)
     setNewCollectionName('')
     setIsCreatingCollection(false)
     showToast('Collection established')
+    
+    try {
+      await api.saveCollections(newList)
+    } catch (err) {
+      console.error('Failed to persist collection', err)
+      showToast('Neural Bridge Error: Restart Required', 'error')
+    }
   }
 
   const handleDeleteCollection = async (name) => {
     const newList = collections.filter(c => c !== name)
     const newVocab = vocab.map(v => v.collection === name ? { ...v, collection: null } : v)
+    
+    // Optimistic UI Update
     setCollections(newList)
     setVocab(newVocab)
-    await api.saveCollections(newList)
-    await api.saveVocab(newVocab)
     if (selectedCollection === name) setSelectedCollection('all')
     showToast(`Collection "${name}" disbanded`)
+
+    try {
+      await api.saveCollections(newList)
+      await api.saveVocab(newVocab)
+    } catch (err) {
+      console.error('Failed to disband collection', err)
+      showToast('Nexus Synchrony Error: Restart Required', 'error')
+    }
   }
 
   const handleRenameCollection = async (oldName, newName) => {
     const newList = collections.map(c => c === oldName ? newName : c)
     const newVocab = vocab.map(v => v.collection === oldName ? { ...v, collection: newName } : v)
+    
+    // Optimistic UI Update
     setCollections(newList)
     setVocab(newVocab)
-    await api.saveCollections(newList)
-    await api.saveVocab(newVocab)
     if (selectedCollection === oldName) setSelectedCollection(newName)
+    showToast('Collection Re-designated', 'success')
+
+    try {
+      await api.saveCollections(newList)
+      await api.saveVocab(newVocab)
+    } catch (err) {
+      console.error('Failed to rename collection', err)
+      showToast('Neural Bridge Error', 'error')
+    }
   }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
@@ -154,9 +180,17 @@ function LibraryView({
       if (active.data.current.collection === targetCollection) return
 
       const newVocab = vocab.map(v => v.date === itemDate ? { ...v, collection: targetCollection } : v)
+      
+      // Optimistic UI Update
       setVocab(newVocab)
-      await api.saveVocab(newVocab)
       showToast(`Insight migrated to ${over.id === 'unorganized' ? 'Unorganized' : (over.id === 'all' ? 'Root' : over.id)}`, 'success')
+      
+      try {
+        await api.saveVocab(newVocab)
+      } catch (err) {
+        console.error('Failed to persist drag-migration', err)
+        showToast('Neural Archiving Failed', 'error')
+      }
     }
   }
 
@@ -233,112 +267,112 @@ function LibraryView({
             </div>
 
             <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
-            <div className="max-w-[1400px] mx-auto">
-              <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
-                {visible.map((v, i) => (
-                  <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
-                    {({ listeners, attributes }) => (
-                      <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative border border-transparent hover:border-border/20">
-                        <div className="flex flex-col gap-4 overflow-hidden">
-                          <div className="flex justify-between items-start gap-3">
-                            <div className="flex flex-col gap-1 min-h-[44px]">
-                              <h3 className="text-[14px] font-bold text-text leading-normal line-clamp-2">{v.text}</h3>
-                              {v.type && (
-                                <span className="text-accent text-[11px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 20)}</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                              <div {...listeners} {...attributes} className="p-1.5 bg-surface-3 border border-border hover:bg-accent text-muted hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
-                                <GripVertical className="h-3.5 w-3.5" />
+              <div className="max-w-[1400px] mx-auto">
+                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
+                  {visible.map((v, i) => (
+                    <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
+                      {({ listeners, attributes }) => (
+                        <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative border border-transparent hover:border-border/20">
+                          <div className="flex flex-col gap-4 overflow-hidden">
+                            <div className="flex justify-between items-start gap-3">
+                              <div className="flex flex-col gap-1 min-h-[44px]">
+                                <h3 className="text-[14px] font-bold text-text leading-normal line-clamp-2">{v.text}</h3>
+                                {v.type && (
+                                  <span className="text-accent text-[11px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 20)}</span>
+                                )}
                               </div>
-                              <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
-                                <Maximize2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex-1 overflow-hidden relative">
-                            {v.loading ? (
-                              <div className="flex items-center gap-2 py-1 opacity-50">
-                                <Loader2 className="h-3 w-3 animate-spin text-accent" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
-                              </div>
-                            ) : (
-                              <div className="prose prose-invert prose-xs text-[13px] text-text/70 leading-[1.6] select-text line-clamp-4">
-                                 <ReactMarkdown>{v.definition}</ReactMarkdown>
-                              </div>
-                            )}
-                            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-surface group-hover:from-surface-2 transition-colors to-transparent pointer-events-none" />
-                          </div>
-                        </div>
-
-                        <div className="mt-auto pt-1.5 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-2">
-                             <div className="flex flex-col">
-                                <span className="text-[9px] text-muted font-bold uppercase tracking-tighter line-clamp-1 opacity-40">{v.videoTitle || 'Universal Knowledge'}</span>
-                                <span className="text-[8px] text-muted/20 font-mono tracking-tighter uppercase">{new Date(v.date).toLocaleDateString()}</span>
-                             </div>
-                          </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <button 
-                               onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
-                               className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
-                             >
-                                <DownloadIcon className="h-3.5 w-3.5" />
-                             </button>
-                             {v.archived ? (
-                                <button 
-                                  onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }}
-                                  className="p-1.5 hover:bg-accent/10 text-accent  transition-all"
-                                >
-                                  <RefreshCcw className="h-3.5 w-3.5" />
+                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                <div {...listeners} {...attributes} className="p-1.5 bg-surface-3 border border-border hover:bg-accent text-muted hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
+                                  <GripVertical className="h-3.5 w-3.5" />
+                                </div>
+                                <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
+                                  <Maximize2 className="h-3.5 w-3.5" />
                                 </button>
-                             ) : v.collection && (
-                                <button 
+                              </div>
+                            </div>
+
+                            <div className="flex-1 overflow-hidden relative">
+                              {v.loading ? (
+                                <div className="flex items-center gap-2 py-1 opacity-50">
+                                  <Loader2 className="h-3 w-3 animate-spin text-accent" />
+                                  <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
+                                </div>
+                              ) : (
+                                <div className="prose prose-invert prose-xs text-[13px] text-text/70 leading-[1.6] select-text line-clamp-4">
+                                   <ReactMarkdown>{v.definition}</ReactMarkdown>
+                                </div>
+                              )}
+                              <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-surface group-hover:from-surface-2 transition-colors to-transparent pointer-events-none" />
+                            </div>
+                          </div>
+
+                          <div className="mt-auto pt-1.5 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                               <div className="flex flex-col">
+                                  <span className="text-[9px] text-muted font-bold uppercase tracking-tighter line-clamp-1 opacity-40">{v.videoTitle || 'Universal Knowledge'}</span>
+                                  <span className="text-[8px] text-muted/20 font-mono tracking-tighter uppercase">{new Date(v.date).toLocaleDateString()}</span>
+                               </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <button 
+                                 onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
+                                 className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
+                               >
+                                  <DownloadIcon className="h-3.5 w-3.5" />
+                               </button>
+                               {v.archived ? (
+                                  <button 
+                                    onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }}
+                                    className="p-1.5 hover:bg-accent/10 text-accent  transition-all"
+                                  >
+                                    <RefreshCcw className="h-3.5 w-3.5" />
+                                  </button>
+                               ) : v.collection && (
+                                  <button 
+                                   onClick={(i_e) => {
+                                     i_e.stopPropagation()
+                                     handleUpdateItem({ ...v, collection: null })
+                                     showToast(`Removed from ${v.collection}`)
+                                   }}
+                                   className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent  transition-all"
+                                  >
+                                   <FolderMinus className="h-3.5 w-3.5" />
+                                  </button>
+                               )}
+                               <button 
                                  onClick={(i_e) => {
                                    i_e.stopPropagation()
-                                   handleUpdateItem({ ...v, collection: null })
-                                   showToast(`Removed from ${v.collection}`)
+                                   setItemToDelete(v)
                                  }}
-                                 className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent  transition-all"
-                                >
-                                 <FolderMinus className="h-3.5 w-3.5" />
-                                </button>
-                             )}
-                             <button 
-                               onClick={(i_e) => {
-                                 i_e.stopPropagation()
-                                 setItemToDelete(v)
-                               }}
-                               className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
-                             >
-                               <Trash2 className="h-3.5 w-3.5" />
-                             </button>
+                                 className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
+                               >
+                                 <Trash2 className="h-3.5 w-3.5" />
+                               </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </DraggableCard>
-                ))}
-              </div>
-
-              {filtered.length > displayLimit && (
-                <div className="flex justify-center mt-12 py-10">
-                  <button 
-                    onClick={() => setDisplayLimit(p => p + 12)}
-                    className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl "
-                  >
-                    Load More Research Entries
-                  </button>
+                      )}
+                    </DraggableCard>
+                  ))}
                 </div>
-              )}
+
+                {filtered.length > displayLimit && (
+                  <div className="flex justify-center mt-12 py-10">
+                    <button 
+                      onClick={() => setDisplayLimit(p => p + 12)}
+                      className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl "
+                    >
+                      Load More Research Entries
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <CardReaderModal 
+      <CardReaderModal 
         isOpen={!!selectedCard} 
         item={selectedCard} 
         onClose={() => setSelectedCard(null)} 
@@ -356,7 +390,6 @@ function LibraryView({
         onClose={() => setItemToDelete(null)}
       />
 
-      {/* Industrial Drag Overlay */}
       <DragOverlay dropAnimation={null}>
         {activeDragItem ? (
           <div className="w-[160px] bg-surface-2 border border-accent p-1.5 shadow-2xl opacity-90 scale-90 pointer-events-none rounded-[5px]">
