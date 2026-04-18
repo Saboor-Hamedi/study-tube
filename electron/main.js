@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Notification, dialog, ipcMain, shell, Menu, globalShortcut } from 'electron'
+import { app, BrowserWindow, Notification, dialog, ipcMain, shell, Menu, MenuItem, globalShortcut } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -376,6 +376,50 @@ function registerIpcHandlers() {
     } catch (e) { throw new Error(`Reconstruction failed: ${e.message}`) }
   })
 
+  safeHandle('ai:refine', async (_e, { blocks }) => {
+    const apiKey = readAppState().aiApiKey
+    if (!apiKey) throw new Error('API Key missing.')
+    
+    // Concatenate text for analysis while keeping track of indices
+    const textToRefine = blocks.map((b, i) => `[ID:${i}] ${b.data.text || b.data.caption || ''}`).join('\n\n')
+
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'Professional research editor. Correct grammar/flow. Keep [ID:n] tags. Return only: [ID:n] Corrected text.' 
+            },
+            { role: 'user', content: textToRefine }
+          ],
+          temperature: 0.3
+        })
+      })
+      const data = await response.json()
+      const content = data.choices?.[0]?.message?.content || ''
+      
+      const refinedBlocks = JSON.parse(JSON.stringify(blocks))
+      const lines = content.split('\n')
+      
+      lines.forEach(line => {
+        const match = line.match(/\[ID:(\d+)\]\s*(.*)/i)
+        if (match) {
+          const idx = parseInt(match[1])
+          const text = match[2].trim()
+          if (refinedBlocks[idx]) {
+            if (refinedBlocks[idx].data.text !== undefined) refinedBlocks[idx].data.text = text
+            else if (refinedBlocks[idx].data.caption !== undefined) refinedBlocks[idx].data.caption = text
+          }
+        }
+      })
+      return refinedBlocks
+    } catch (e) { throw e }
+  })
+
   ipcMain.handle('ai:processTranscript', async (_e, { text, prompt }) => {
     const apiKey = readAppState().aiApiKey
     if (!apiKey) throw new Error('API Key found missing.')
@@ -399,6 +443,7 @@ function registerIpcHandlers() {
     if (!apiKey) throw new Error('API Key missing.')
     if (aiAbortController) aiAbortController.abort()
     aiAbortController = new AbortController()
+
     try {
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -574,8 +619,47 @@ function createWindow() {
 
   if (isDev) mainWindow.loadURL('http://localhost:5173')
   else mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+
   mainWindow.on('closed', () => { mainWindow = null })
 }
+
+// ─── Global Context Menu & Offline Spellcheck ───────────────────────────────
+app.on('web-contents-created', (event, contents) => {
+  contents.on('context-menu', (event, params) => {
+    const menu = new Menu()
+
+    // Add spelling suggestions (Offline)
+    if (params.misspelledWord) {
+      for (const suggestion of params.dictionarySuggestions) {
+        menu.append(new MenuItem({
+          label: suggestion,
+          click: () => contents.replaceMisspelling(suggestion)
+        }))
+      }
+      menu.append(new MenuItem({ type: 'separator' }))
+    }
+
+    // Standard Research Operations
+    if (params.editFlags.canCopy) menu.append(new MenuItem({ label: 'Copy Protocol', role: 'copy' }))
+    if (params.editFlags.canPaste) menu.append(new MenuItem({ label: 'Paste Data', role: 'paste' }))
+    if (params.editFlags.canCut) menu.append(new MenuItem({ label: 'Cut Block', role: 'cut' }))
+    
+    if (params.editFlags.canSelectAll) {
+      menu.append(new MenuItem({ type: 'separator' }))
+      menu.append(new MenuItem({ label: 'Select All Nodes', role: 'selectAll' }))
+    }
+
+    // Neural Polish (Shortcut to UI)
+    if (params.isEditable) {
+      menu.append(new MenuItem({ type: 'separator' }))
+      menu.append(new MenuItem({ label: 'Neural Forge: Polish Draft', click: () => {
+        sendToRenderer(contents, 'editor:refine-trigger')
+      }}))
+    }
+
+    menu.popup()
+  })
+})
 
 app.whenReady().then(() => {
   try {

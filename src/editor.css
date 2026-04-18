@@ -60,6 +60,15 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  z-index: 10;
+}
+
+/* Ensure the handle doesn't intercept right-clicks meant for text */
+.ce-toolbar__actions {
+  pointer-events: none;
+}
+.ce-toolbar__actions > * {
+  pointer-events: auto;
 }
 
 .ce-toolbar__plus:hover, .ce-toolbar__settings-btn:hover {

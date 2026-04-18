@@ -16,6 +16,7 @@ export default function EditorView({ api, showToast }) {
   const editorInstance = useRef(null)
   const isInitializingRef = useRef(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isRefining, setIsRefining] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
   const autoSaveTimer = useRef(null)
@@ -54,6 +55,12 @@ export default function EditorView({ api, showToast }) {
         data: (savedData && savedData.blocks) ? savedData : { blocks: [] }, 
         onReady: () => {
           setIsInitializing(false)
+          // Explicitly enable spellcheck on the contenteditable area
+          const holder = document.getElementById('editorjs')
+          if (holder) {
+            const editorBody = holder.querySelector('.ce-paragraph, .ce-header, [contenteditable="true"]')
+            if (editorBody) editorBody.setAttribute('spellcheck', 'true')
+          }
           console.log('[SYSTEM] Editor.js Interface Stabilized')
         },
         onChange: () => {
@@ -85,6 +92,42 @@ export default function EditorView({ api, showToast }) {
       }
     }
   }, [])
+
+  const handleNeuralRefine = async () => {
+    if (!editorInstance.current || isRefining) return
+    
+    if (!api || typeof api.refineNotes !== 'function') {
+      showToast('Neural Bridge Not Ready: Restart App', 'error')
+      return
+    }
+
+    setIsRefining(true)
+    showToast('Neural Forge: Analyzing grammar...', 'accent')
+    
+    try {
+      const currentData = await editorInstance.current.save()
+      const refinedBlocks = await api.refineNotes({ blocks: currentData.blocks })
+      
+      if (refinedBlocks && refinedBlocks.length > 0) {
+        editorInstance.current.render({ blocks: refinedBlocks })
+        await api.saveNotes({ blocks: refinedBlocks })
+        showToast('Draft Polished & Synchronized', 'success')
+      }
+    } catch (error) {
+      console.error('Refinement failed:', error)
+      showToast('Neural Forge Interrupted', 'error')
+    } finally {
+      setIsRefining(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!api || typeof api.onRefineTrigger !== 'function') return
+    const cleanup = api.onRefineTrigger(() => {
+      handleNeuralRefine()
+    })
+    return cleanup
+  }, [handleNeuralRefine, api])
 
   const handleSave = async () => {
     if (!editorInstance.current) return
@@ -157,6 +200,16 @@ export default function EditorView({ api, showToast }) {
             <Trash2 className="h-4 w-4" />
           </button>
           
+          <button 
+            onClick={handleNeuralRefine}
+            disabled={isRefining || isSaving}
+            className="flex items-center gap-2 px-4 py-2 border border-accent/30 text-accent text-[10px] font-black uppercase tracking-widest hover:bg-accent/10 disabled:opacity-50 transition-all rounded-sm"
+            title="Refine Grammar & Flow"
+          >
+            {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            {isRefining ? 'Refining...' : 'Neural Refine'}
+          </button>
+
           <button 
             onClick={handleSave}
             disabled={isSaving}

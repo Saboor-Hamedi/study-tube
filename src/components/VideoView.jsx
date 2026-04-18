@@ -165,34 +165,34 @@ export default function VideoView({
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Universal Standardized Header (Always Visible) */}
-      <div className="flex items-center justify-between px-8 py-3 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
+      <div className="flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
         <div className="flex items-center gap-4">
           <div 
             onClick={() => preview && setPreview(null)}
-            className={`p-2 transition-all cursor-pointer ${preview ? 'bg-accent/10 text-accent hover:bg-accent hover:text-white' : (busy ? 'bg-accent/20 text-accent animate-pulse' : 'bg-surface-2 text-muted')}`}
+            className={`p-1.5 transition-all cursor-pointer ${preview ? 'bg-accent/10 text-accent hover:bg-accent hover:text-white' : (busy ? 'bg-accent/20 text-accent animate-pulse' : 'bg-surface-2 text-muted')}`}
           >
-            {preview ? <ChevronLeft className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+            {preview ? <ChevronLeft className="h-3.5 w-3.5" /> : <Search className="h-3.5 w-3.5" />}
           </div>
           <div className="hidden sm:block">
-            <h2 className="text-[11px] font-black text-text uppercase tracking-[0.2em]">{preview ? 'Video Analysis' : 'Research Discovery'}</h2>
-            <p className="text-[9px] text-muted font-bold uppercase tracking-widest">
+            <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">{preview ? 'Video Analysis' : 'Research Discovery'}</h2>
+            <p className="text-[8px] text-muted font-bold uppercase tracking-widest leading-none">
               {preview ? videoViewSubtext : (busy ? 'Scanning YouTube...' : 'Ready for deep search')}
             </p>
           </div>
         </div>
 
-        <div className="flex-1 max-w-xl px-8">
+        <div className="flex-1 max-w-lg px-8">
           <div className="relative group">
             <input 
               type="text"
               value={query}
               onChange={doExternalSearch}
               onKeyDown={onEnter}
-              placeholder={preview ? "Search for another video..." : "Paste URL or keyword to begin discovery..."}
-              className="w-full bg-surface-2 border border-border py-2.5 pl-6 pr-12 text-[13px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
+              placeholder={preview ? "Search for another video..." : "Paste URL or keywords..."}
+              className="w-full bg-surface-2 border border-border py-2 px-6 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-               {busy ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Search className="h-4 w-4 text-muted group-focus-within:text-accent" />}
+               {busy ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" /> : <Search className="h-3.5 w-3.5 text-muted group-focus-within:text-accent" />}
             </div>
           </div>
         </div>

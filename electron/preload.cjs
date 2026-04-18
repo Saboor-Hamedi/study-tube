@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   explainWord: (data) => ipcRenderer.invoke('ai:explain', data),
   exportDossier: (data) => ipcRenderer.invoke('library:export-dossier', data),
   reconstructTranscript: (text) => ipcRenderer.invoke('ai:reconstruct-transcript', text),
+  refineNotes: (data) => ipcRenderer.invoke('ai:refine', data),
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
   cancelDownload: (taskId) => ipcRenderer.invoke('download:cancel', taskId),
   openFilePath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
@@ -52,4 +53,9 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
     return () => ipcRenderer.removeListener('download:cancelled', fn)
   },
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
+  onRefineTrigger: (cb) => {
+    const fn = () => cb()
+    ipcRenderer.on('editor:refine-trigger', fn)
+    return () => ipcRenderer.removeListener('editor:refine-trigger', fn)
+  }
 })
