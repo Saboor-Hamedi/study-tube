@@ -184,7 +184,55 @@ function LibraryView({
             showTrash={true}
           />
 
-          <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Universal Standardized Header */}
+            <div className="flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
+              <div className="flex items-center gap-4">
+                <div className="p-1.5 bg-accent/10 text-accent transition-all">
+                  <Library className="h-3.5 w-3.5" />
+                </div>
+                <div className="hidden sm:block">
+                  <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">Research Archive</h2>
+                  <p className="text-[8px] text-muted font-bold uppercase tracking-widest leading-none">
+                    Total Intelligence: {vocab.length} Units
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 max-w-lg px-8">
+                <div className="relative group">
+                  <input 
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search neural archive..."
+                    className="w-full bg-surface-2 border border-border py-2 px-6 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <SearchIcon className="h-3.5 w-3.5 text-muted group-focus-within:text-accent" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center bg-surface-2 p-1">
+                  <button 
+                    onClick={() => setSortBy('newest')}
+                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === 'newest' ? 'bg-surface-3 text-text shadow-lg' : 'text-muted hover:text-text'}`}
+                  >
+                    Newest
+                  </button>
+                  <button 
+                    onClick={() => setSortBy('alpha')}
+                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === 'alpha' ? 'bg-surface-3 text-text shadow-lg' : 'text-muted hover:text-text'}`}
+                  >
+                    Alpha
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
             <div className="max-w-[1400px] mx-auto">
               <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
                 {visible.map((v, i) => (
@@ -288,8 +336,9 @@ function LibraryView({
           </div>
         </div>
       </div>
+    </div>
 
-      <CardReaderModal 
+    <CardReaderModal 
         isOpen={!!selectedCard} 
         item={selectedCard} 
         onClose={() => setSelectedCard(null)} 
