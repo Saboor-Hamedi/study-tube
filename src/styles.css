@@ -101,4 +101,53 @@ body {
   color: inherit;
 }
 
+/* Floating Action Button */
+.fab-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  border: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  color: white;
+}
 
+.fab-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+}
+
+.fab-button:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* Industrial Modal System */
+.industrial-modal {
+  border-radius: 5px !important;
+  overflow: hidden !important;
+  transition: border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.industrial-modal.maximized {
+  border-radius: 0 !important;
+}
+
+/* Internal Surface Guarding */
+.industrial-surface-l { border-top-left-radius: 5px !important; border-bottom-left-radius: 5px !important; }
+.industrial-surface-r { border-top-right-radius: 5px !important; border-bottom-right-radius: 5px !important; }
+
+.maximized .industrial-surface-l,
+.maximized .industrial-surface-r {
+  border-radius: 0 !important;
+}
+
+/* End */

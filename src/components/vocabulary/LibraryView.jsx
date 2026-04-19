@@ -1,4 +1,4 @@
-import { useMemo, memo, useState, useEffect } from 'react'
+import { useMemo, memo, useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Loader2, Trash2, Search as SearchIcon, RefreshCcw, 
@@ -15,7 +15,7 @@ import { DroppableFolder, DraggableCard } from './DraggableCard'
 import Sidebar from '../Sidebar'
 import ReactMarkdown from 'react-markdown'
 import DeleteModal from '../DeleteModal'
-
+import InsightCaptureModal from './InsightCaptureModal'
 
 function LibraryView({ 
   vocab, setVocab, 
@@ -29,6 +29,27 @@ function LibraryView({
   const [selectedCard, setSelectedCard] = useState(null)
   const [itemToDelete, setItemToDelete] = useState(null)
   const [activeDragItem, setActiveDragItem] = useState(null)
+  const [isInsightCaptureModalOpen, setIsInsightCaptureModalOpen] = useState(false)
+  const searchInputRef = useRef(null)
+
+  // Tactical Keymap Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl + N: Neural Forge
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault()
+        setIsInsightCaptureModalOpen(true)
+      }
+      // Ctrl + F: Focus Matrix
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
 
@@ -57,7 +78,7 @@ function LibraryView({
       })
       .sort((a, b) => {
         if (sortBy === 'newest') return new Date(b.date) - new Date(a.date)
-        if (sortBy === 'oldest') return new Date(a.date) - new Date(b.date)
+        if (sortBy === 'oldest') return new Date(v.date) - new Date(a.date)
         if (sortBy === 'alpha') return a.text.localeCompare(b.text)
         return 0
       })
@@ -65,6 +86,28 @@ function LibraryView({
 
   const visible = filtered.slice(0, displayLimit)
 
+  /**
+   * Neural Prepend: Commits a new manual research node to the archive.
+   * Utilizes Optimistic UI pattern for instantaneous feedback.
+   */
+  const handleAddItem = async (item) => {
+    const newList = [item, ...vocab]
+    
+    // Optimistic UI Update
+    setVocab(newList)
+    showToast('Insight Forged Successfully')
+
+    try {
+      await api.saveVocab(newList)
+    } catch (err) {
+      console.error('Failed to persist new insight', err)
+      showToast('Archival Failure: Data not persistent', 'error')
+    }
+  }
+
+  /**
+   * State Sync: Updates existing research nodes with new AI-enriched data.
+   */
   const handleUpdateItem = async (updated) => {
     const newList = vocab.map(item => item.date === updated.date ? updated : item)
     setVocab(newList)
@@ -89,6 +132,9 @@ function LibraryView({
     }
   }
 
+  /**
+   * Confirmed Eradication: Finalizes the permanent removal of research data.
+   */
   const handleDelete = async () => {
     if (!itemToDelete) return
     let newList
@@ -111,6 +157,9 @@ function LibraryView({
     showToast('Insight restored to archive')
   }
 
+  /**
+   * Directory Genesis: Optimistically establishes a new neural research collection.
+   */
   const handleCreateCollection = async () => {
     const name = newCollectionName.trim()
     if (!name || collections.includes(name)) return
@@ -130,6 +179,9 @@ function LibraryView({
     }
   }
 
+  /**
+   * Neural Dissolution: Removes a collection and unlinks all associated insights.
+   */
   const handleDeleteCollection = async (name) => {
     const newList = collections.filter(c => c !== name)
     const newVocab = vocab.map(v => v.collection === name ? { ...v, collection: null } : v)
@@ -149,6 +201,9 @@ function LibraryView({
     }
   }
 
+  /**
+   * Lexical Re-designation: Globally renames an existing research collection.
+   */
   const handleRenameCollection = async (oldName, newName) => {
     const newList = collections.map(c => c === oldName ? newName : c)
     const newVocab = vocab.map(v => v.collection === oldName ? { ...v, collection: newName } : v)
@@ -170,6 +225,9 @@ function LibraryView({
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
+  /**
+   * Organizational Matrix: Handles the DndKit logic for migrating insights between collections.
+   */
   const handleDragEnd = async (event) => {
     const { active, over } = event
     setActiveDragItem(null)
@@ -192,6 +250,12 @@ function LibraryView({
         showToast('Neural Archiving Failed', 'error')
       }
     }
+  }
+
+
+  // Insight Modal function 
+  const handleInsightModal = () => {
+    setIsInsightCaptureModalOpen(true)
   }
 
   return (
@@ -236,10 +300,11 @@ function LibraryView({
               <div className="flex-1 max-w-lg px-8">
                 <div className="relative group">
                   <input 
+                    ref={searchInputRef}
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search neural archive..."
+                    placeholder="Search neural archive... (Ctrl+F)"
                     className="w-full bg-surface-2 border border-border py-2 px-6 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -366,6 +431,20 @@ function LibraryView({
                     </button>
                   </div>
                 )}
+
+                {/* Insight Capture Modal */}
+                <button className='fab-button' onClick={() => setIsInsightCaptureModalOpen(true)}>
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+
+                <InsightCaptureModal 
+                  isOpen={isInsightCaptureModalOpen}
+                  onClose={() => setIsInsightCaptureModalOpen(false)}
+                  showToast={showToast}
+                  api={api}
+                  onInsert={handleAddItem}
+                  collections={collections}
+                />
               </div>
             </div>
           </div>

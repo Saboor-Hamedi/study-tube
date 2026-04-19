@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { Search, Loader2, Tv2, Play, X, ChevronLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import VideoPreviewCard from './VideoPreviewCard'
@@ -23,6 +23,21 @@ export default function VideoView({
 }) {
   const api = window.youtubeAPI
   const [busy, setBusy] = useState(false)
+  const searchInputRef = useRef(null)
+
+  // Tactical Keymap Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl + F: Focus Matrix
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
   const [quality, setQuality] = useState('')
   const [progress, setProgress] = useState({})
   const [taskId, setTaskId] = useState(null)
@@ -184,11 +199,12 @@ export default function VideoView({
         <div className="flex-1 max-w-lg px-8">
           <div className="relative group">
             <input 
+              ref={searchInputRef}
               type="text"
               value={query}
               onChange={doExternalSearch}
               onKeyDown={onEnter}
-              placeholder={preview ? "Search for another video..." : "Paste URL or keywords..."}
+              placeholder={preview ? "Search for another video... (Ctrl+F)" : "Paste URL or keywords... (Ctrl+F)"}
               className="w-full bg-surface-2 border border-border py-2 px-6 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
