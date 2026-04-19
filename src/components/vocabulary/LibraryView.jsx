@@ -30,7 +30,60 @@ function LibraryView({
   const [itemToDelete, setItemToDelete] = useState(null)
   const [activeDragItem, setActiveDragItem] = useState(null)
   const [isInsightCaptureModalOpen, setIsInsightCaptureModalOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [searchHistory, setSearchHistory] = useState([])
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
   const searchInputRef = useRef(null)
+  const historyRef = useRef(null)
+
+  // Initial Load from SQLite
+  useEffect(() => {
+    const loadLog = async () => {
+      try {
+        const log = await api.getSearchLog()
+        setSearchHistory(log || [])
+      } catch (err) {
+        console.error('Failed to sync search intelligence', err)
+      }
+    }
+    loadLog()
+  }, [])
+
+  // Handle Neural FTS Search
+  useEffect(() => {
+    const search = async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([])
+        setIsSearching(false)
+        return
+      }
+      setIsSearching(true)
+      try {
+        const results = await api.searchLibraryFTS(searchQuery)
+        setSearchResults(results || [])
+      } catch (err) {
+        console.error('FTS Search Failure', err)
+      } finally {
+        setIsSearching(false)
+      }
+    }
+
+    const timer = setTimeout(search, 150) // Tactical Debounce
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Handle outside clicks to close history
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (historyRef.current && !historyRef.current.contains(e.target) && !searchInputRef.current?.contains(e.target)) {
+        setIsHistoryOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Tactical Keymap Listener
   useEffect(() => {
@@ -50,6 +103,44 @@ function LibraryView({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  /**
+   * History Management: Commits queries to the SQLite Search Log.
+   */
+  const commitToHistory = async (query) => {
+    const trimmed = query.trim()
+    if (!trimmed) return
+    try {
+      await api.addSearchLog(trimmed)
+      const log = await api.getSearchLog()
+      setSearchHistory(log)
+      setSelectedIndex(-1)
+    } catch (err) {
+      console.error('[FRONTEND ERROR] Persistence Failure', err)
+    }
+  }
+
+  const removeFromHistory = async (query) => {
+    try {
+      await api.deleteSearchLog(query)
+      const log = await api.getSearchLog()
+      setSearchHistory(log)
+      setSelectedIndex(-1)
+    } catch (err) {
+      console.error('[FRONTEND ERROR] Eradication Failure', err)
+    }
+  }
+
+  const clearHistory = async () => {
+    try {
+      await api.clearSearchLog()
+      setSearchHistory([])
+      setIsHistoryOpen(false)
+      setSelectedIndex(-1)
+    } catch (err) {
+      console.error('[FRONTEND ERROR] Chronology Purge Failure', err)
+    }
+  }
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
 
@@ -282,7 +373,7 @@ function LibraryView({
             showTrash={true}
           />
 
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col">
             {/* Universal Standardized Header */}
             <div className="flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
               <div className="flex items-center gap-4">
@@ -303,13 +394,162 @@ function LibraryView({
                     ref={searchInputRef}
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsHistoryOpen(true)}
+                    onKeyDown={(e) => {
+                      const items = searchQuery.trim() ? searchResults : searchHistory
+                      if (e.key === 'Enter') {
+                        if (isHistoryOpen && selectedIndex >= 0 && items[selectedIndex]) {
+                          const item = items[selectedIndex]
+                          setSearchQuery(typeof item === 'string' ? item : item.text)
+                          setIsHistoryOpen(false)
+                          setSelectedIndex(-1)
+                        } else {
+                          commitToHistory(searchQuery)
+                          setIsHistoryOpen(false)
+                        }
+                      }
+                      if (e.key === 'ArrowDown' && isHistoryOpen && items.length > 0) {
+                        e.preventDefault()
+                        setSelectedIndex(prev => (prev + 1) % items.length)
+                      }
+                      if (e.key === 'ArrowUp' && isHistoryOpen && items.length > 0) {
+                        e.preventDefault()
+                        setSelectedIndex(prev => (prev - 1 + items.length) % items.length)
+                      }
+                      if (e.key === 'Escape') {
+                        setIsHistoryOpen(false)
+                        setSelectedIndex(-1)
+                      }
+                    }}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      if (!isHistoryOpen) setIsHistoryOpen(true)
+                      setSelectedIndex(-1)
+                    }}
                     placeholder="Search neural archive... (Ctrl+F)"
-                    className="w-full bg-surface-2 border border-border py-2 px-6 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
+                    className="w-full bg-surface-2 border border-border py-2 px-10 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all placeholder:text-muted/20"
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <SearchIcon className="h-3.5 w-3.5 text-muted group-focus-within:text-accent" />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
+                    <SearchIcon className={`h-3.5 w-3.5 transition-colors ${isSearching ? 'text-accent animate-pulse' : 'text-muted group-focus-within:text-accent'}`} />
                   </div>
+                  
+                  {/* Tactical History/Search Log Dropdown */}
+                  <AnimatePresence>
+                    {isHistoryOpen && (
+                      <motion.div 
+                        ref={historyRef}
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="absolute inset-x-0 top-full bg-surface-3 border-x border-b border-border shadow-2xl z-[100] backdrop-blur-xl overflow-hidden rounded-b-[5px]"
+                      >
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-black/40">
+                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">
+                             {searchQuery.trim() ? 'Neural Discovery Results' : 'Search Discovery Log'}
+                           </span>
+                           <div className="flex items-center gap-4">
+                              {!searchQuery.trim() && searchHistory.length > 0 && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    clearHistory()
+                                  }}
+                                  className="text-[9px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors"
+                                >
+                                  Purge Logs
+                                </button>
+                              )}
+                              <button onClick={() => setIsHistoryOpen(false)} className="text-muted hover:text-text transition-colors">
+                                <X className="h-3 w-3" />
+                              </button>
+                           </div>
+                        </div>
+                        <div className="max-h-[380px] overflow-y-auto scrollbar-thin">
+                          {searchQuery.trim() ? (
+                            /* Mode: Discovery Results */
+                            searchResults.length === 0 ? (
+                              <div className="px-4 py-10 text-center">
+                                <SearchIcon className="h-6 w-6 text-muted/10 mx-auto mb-3" />
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted/20 italic">No direct matches in neural archive.</p>
+                              </div>
+                            ) : (
+                              searchResults.map((item, idx) => (
+                                <div 
+                                  key={item.id}
+                                  className={`group flex flex-col px-4 py-3 transition-all cursor-pointer border-b border-border/10 last:border-0 relative ${
+                                    selectedIndex === idx ? 'bg-accent/20' : 'hover:bg-white/[0.03]'
+                                  }`}
+                                  onClick={() => {
+                                    setSearchQuery(item.text)
+                                    setIsHistoryOpen(false)
+                                    setSelectedIndex(-1)
+                                  }}
+                                >
+                                  {selectedIndex === idx && (
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
+                                  )}
+                                  
+                                  <div className="flex items-center justify-between gap-3 mb-1">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                      <FileText className={`h-3 w-3 transition-colors ${selectedIndex === idx ? 'text-accent' : 'text-muted/30 group-hover:text-accent'}`} />
+                                      <span className={`text-[12px] truncate ${selectedIndex === idx ? 'text-text font-black' : 'text-text font-bold'}`}>{item.text}</span>
+                                    </div>
+                                    <span className="text-[8px] text-muted/40 uppercase tracking-tighter whitespace-nowrap">{item.videoTitle?.substring(0, 20)}...</span>
+                                  </div>
+                                  
+                                  <div className="pl-5 border-l border-border/20">
+                                    <p 
+                                      className="text-[10px] text-muted leading-relaxed line-clamp-2"
+                                      dangerouslySetInnerHTML={{ __html: item.definitionSnippet || 'No snippet available' }}
+                                    />
+                                  </div>
+                                </div>
+                              ))
+                            )
+                          ) : (
+                            /* Mode: Search History */
+                            searchHistory.length === 0 ? (
+                              <div className="px-4 py-6 text-center">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted/20 italic">Archive logs empty. Press [Enter] to commit intel.</p>
+                              </div>
+                            ) : (
+                              searchHistory.map((q, idx) => (
+                                <div 
+                                  key={idx}
+                                  className={`group flex items-center justify-between px-4 py-2.5 transition-all cursor-pointer border-b border-border/10 last:border-0 relative ${
+                                    selectedIndex === idx ? 'bg-accent/20' : 'hover:bg-white/[0.03]'
+                                  }`}
+                                  onClick={() => {
+                                    setSearchQuery(q)
+                                    setIsHistoryOpen(false)
+                                    setSelectedIndex(-1)
+                                  }}
+                                >
+                                  {selectedIndex === idx && (
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
+                                  )}
+                                  
+                                  <div className="flex items-center gap-3 overflow-hidden ml-1">
+                                    <RefreshCcw className={`h-3.5 w-3.5 transition-colors ${selectedIndex === idx ? 'text-accent' : 'text-muted/30 group-hover:text-accent'}`} />
+                                    <span className={`text-[11px] truncate ${selectedIndex === idx ? 'text-text font-black' : 'text-text/80 group-hover:text-text'}`}>{q}</span>
+                                  </div>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      removeFromHistory(q)
+                                    }}
+                                    className={`p-1 transition-all rounded-[3px] z-10 ${selectedIndex === idx ? 'bg-black/20 text-text/40 hover:text-red-500' : 'text-muted/20 hover:text-red-500'}`}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))
+                            )
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 

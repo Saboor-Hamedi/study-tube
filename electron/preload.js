@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   explainWord: (data) => ipcRenderer.invoke('ai:explain', data),
   chatWithAI: (data) => ipcRenderer.invoke('ai:chat', data),
   exportDossier: (data) => ipcRenderer.invoke('library:export-dossier', data),
+  getSearchLog: () => ipcRenderer.invoke('search:get-log'),
+  addSearchLog: (query) => ipcRenderer.invoke('search:add-log', query),
+  deleteSearchLog: (query) => ipcRenderer.invoke('search:delete-log', query),
+  clearSearchLog: () => ipcRenderer.invoke('search:clear-log'),
   onProgress: (callback) => {
     const listener = (_event, data) => callback(data)
     ipcRenderer.on('download:progress', listener)

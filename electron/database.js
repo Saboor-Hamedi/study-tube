@@ -38,6 +38,13 @@ export function initDatabase() {
     )
   `).run();
 
+  // 2b. High-Performance B-Tree Indexes
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_library_collection ON library(collection);
+    CREATE INDEX IF NOT EXISTS idx_library_date ON library(date);
+    CREATE INDEX IF NOT EXISTS idx_library_archived ON library(archived);
+  `);
+
   // 3. Collections Table
   db.prepare(`
     CREATE TABLE IF NOT EXISTS collections (
@@ -47,28 +54,39 @@ export function initDatabase() {
 
   // 4. FTS5 Virtual Table for Library Search
   try {
-    db.prepare(`
-      CREATE VIRTUAL TABLE IF NOT EXISTS library_fts USING fts5(
+    // Industrial Search: Library FTS5 Index with Porter Stemming
+    db.exec(`
+      DROP TABLE IF EXISTS library_fts;
+      CREATE VIRTUAL TABLE library_fts USING fts5(
         text, 
         definition, 
         videoTitle, 
         collection,
         content='library',
-        content_rowid='rowid'
-      )
-    `).run();
-    
-    // Create Triggers to keep FTS in sync
-    db.exec(`
-      CREATE TRIGGER IF NOT EXISTS library_ai AFTER INSERT ON library BEGIN
+        content_rowid='rowid',
+        tokenize="porter unicode61 remove_diacritics 1"
+      );
+      
+      -- Initial Indexing Migration
+      INSERT INTO library_fts(rowid, text, definition, videoTitle, collection)
+      SELECT rowid, text, definition, videoTitle, collection FROM library;
+
+      -- Sync Triggers (Recreated with table)
+      DROP TRIGGER IF EXISTS library_ai;
+      DROP TRIGGER IF EXISTS library_ad;
+      DROP TRIGGER IF EXISTS library_au;
+
+      CREATE TRIGGER library_ai AFTER INSERT ON library BEGIN
         INSERT INTO library_fts(rowid, text, definition, videoTitle, collection) 
         VALUES (new.rowid, new.text, new.definition, new.videoTitle, new.collection);
       END;
-      CREATE TRIGGER IF NOT EXISTS library_ad AFTER DELETE ON library BEGIN
+
+      CREATE TRIGGER library_ad AFTER DELETE ON library BEGIN
         INSERT INTO library_fts(library_fts, rowid, text, definition, videoTitle, collection) 
         VALUES('delete', old.rowid, old.text, old.definition, old.videoTitle, old.collection);
       END;
-      CREATE TRIGGER IF NOT EXISTS library_au AFTER UPDATE ON library BEGIN
+
+      CREATE TRIGGER library_au AFTER UPDATE ON library BEGIN
         INSERT INTO library_fts(library_fts, rowid, text, definition, videoTitle, collection) 
         VALUES('delete', old.rowid, old.text, old.definition, old.videoTitle, old.collection);
         INSERT INTO library_fts(rowid, text, definition, videoTitle, collection) 
@@ -78,6 +96,15 @@ export function initDatabase() {
   } catch (e) {
     console.warn('FTS5 Initialization Anomaly:', e.message);
   }
+
+  // 5. Search Log Table (Persistent History)
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS search_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      query TEXT UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
 }
 
 
@@ -142,6 +169,71 @@ export function saveCollections(names) {
     const insert = db.prepare('INSERT INTO collections (name) VALUES (?)');
     for (const name of names) insert.run(name);
   })();
+}
+
+/**
+ * Search Log API
+ */
+export function getSearchLog() {
+  try {
+    const rows = db.prepare('SELECT query FROM search_log ORDER BY created_at DESC LIMIT 10').all();
+    console.log(`[SQLITE] Fetched ${rows.length} search logs`);
+    return rows.map(r => r.query);
+  } catch (err) {
+    console.error('[SQLITE ERROR] Fetch Log Failure:', err.message);
+    return [];
+  }
+}
+
+export function addSearchLog(query) {
+  try {
+    console.log(`[SQLITE] Committing Query: "${query}"`);
+    // Insert or update timestamp if exists
+    db.prepare(`
+      INSERT INTO search_log (query, created_at) 
+      VALUES (?, CURRENT_TIMESTAMP)
+      ON CONFLICT(query) DO UPDATE SET created_at = CURRENT_TIMESTAMP
+    `).run(query);
+    console.log(`[SQLITE] Query Saved Successfully`);
+  } catch (err) {
+    console.error('[SYSTEM] Search Log Persistence Failure:', err.message);
+  }
+}
+
+export function deleteSearchLog(query) {
+  db.prepare('DELETE FROM search_log WHERE query = ?').run(query);
+}
+
+export function clearSearchLog() {
+  db.prepare('DELETE FROM search_log').run();
+}
+
+/**
+ * Neural FTS Search: Returns matches with highlights
+ */
+export function searchLibraryFTS(query) {
+  if (!query || query.trim().length === 0) return [];
+  try {
+    // Search across word, definition, and title using FTS5
+    // We use snippet() to get the highlighted context
+    const rows = db.prepare(`
+      SELECT 
+        l.id, 
+        l.text, 
+        l.videoTitle,
+        snippet(library_fts, 1, '<mark>', '</mark>', '...', 20) as definitionSnippet
+      FROM library l
+      JOIN library_fts ON l.rowid = library_fts.rowid
+      WHERE library_fts MATCH '"' || ? || '"*'
+      ORDER BY rank
+      LIMIT 10
+    `).all(query);
+
+    return rows;
+  } catch (err) {
+    console.error('[SQLITE FTS ERROR]:', err.message);
+    return [];
+  }
 }
 
 export default db;

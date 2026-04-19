@@ -12,7 +12,9 @@ const { autoUpdater } = pkgUpdater
 import { 
   initDatabase, getNotes, saveNotes, 
   getLibrary, saveLibrary, 
-  getCollections, saveCollections 
+  getCollections, saveCollections,
+  getSearchLog, addSearchLog, deleteSearchLog, clearSearchLog,
+  searchLibraryFTS
 } from './database.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -245,6 +247,27 @@ function registerIpcHandlers() {
       })
     } catch (e) { console.error(`[IPC REG FAIL] ${channel}:`, e.message) }
   }
+
+  safeHandle('search:get-log', async () => {
+    console.log('[IPC] Fetching Search Log...');
+    return getSearchLog();
+  })
+  safeHandle('search:add-log', async (event, query) => {
+    console.log(`[IPC] Received Query to Save: "${query}"`);
+    return addSearchLog(query);
+  })
+  safeHandle('search:delete-log', async (event, query) => {
+    console.log(`[IPC] Requested Deletion of: "${query}"`);
+    return deleteSearchLog(query);
+  })
+  safeHandle('search:clear-log', async () => {
+    console.log('[IPC] Purging All Search Logs...');
+    return clearSearchLog();
+  })
+
+  safeHandle('library:search-fts', async (event, query) => {
+    return searchLibraryFTS(query);
+  })
 
   safeHandle('library:export-dossier', async (event, { name, items }) => {
     try {
