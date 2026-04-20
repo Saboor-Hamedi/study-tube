@@ -1,6 +1,6 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Library, FileText, X, Folder, GripVertical as GripIcon } from 'lucide-react'
+import { Library, FileText, X, Folder, GripVertical as GripIcon, Trash2 } from 'lucide-react'
 import { memo } from 'react'
 
 export const DroppableFolder = memo(({ id, active, onClick, children, onDelete }) => {
@@ -25,23 +25,15 @@ export const DroppableFolder = memo(({ id, active, onClick, children, onDelete }
       >
         <div className={`transition-colors duration-200 ${isOver ? 'text-white' : active ? 'text-accent' : 'opacity-40 group-hover:opacity-100'}`}>
           {id === 'all' ? (
-            <Library className="h-3 w-3" />
-          ) : id === 'unorganized' ? (
-            <FileText className="h-3 w-3" />
+            <Library className="h-3.5 w-3.5" />
+          ) : id === 'trash' ? (
+            <Trash2 className="h-3.5 w-3.5" />
           ) : (
-            <Folder className="h-3 w-3" />
+            <Folder className="h-3.5 w-3.5" />
           )}
         </div>
         <span className={`text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1 ${isOver ? 'text-white' : ''}`}>{children}</span>
         
-        {onDelete && !isOver && (
-          <div
-            onClick={(e) => { e.stopPropagation(); onDelete() }}
-            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500 hover:text-white text-muted/20 transition-all "
-          >
-            <X className="h-2.5 w-2.5" />
-          </div>
-        )}
       </button>
     </div>
   )

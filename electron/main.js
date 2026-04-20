@@ -12,7 +12,8 @@ const { autoUpdater } = pkgUpdater
 import { 
   initDatabase, getNotes, saveNotes, 
   getLibrary, saveLibrary, 
-  getCollections, saveCollections,
+  getLibraryPage, getCollectionStats, saveVocabItem, deleteVocabItem,
+  getCollections, saveCollections, migrateCollection, disbandCollection,
   getSearchLog, addSearchLog, deleteSearchLog, clearSearchLog,
   searchLibraryFTS
 } from './database.js'
@@ -46,6 +47,16 @@ function atomicWriteJsonSync(filePath, data) {
 // Remove the native menu bar immediately
 Menu.setApplicationMenu(null)
 const APP_ID = 'com.studytube.app'
+
+app.whenReady().then(() => {
+  initDatabase()
+  try {
+    const stats = getCollectionStats()
+    console.log('[ARCHIVE AUDIT] Initial Density:', JSON.stringify(stats))
+  } catch (e) {
+    console.error('[ARCHIVE AUDIT] Initial Audit Failed', e)
+  }
+})
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
 
 const activeDownloads = new Map()
@@ -498,8 +509,24 @@ function registerIpcHandlers() {
     try { return getLibrary() } catch (e) { console.error('DB Load vocab fail', e); return [] }
   })
 
+  ipcMain.handle('vocab:load-page', (_e, criteria) => {
+    try { return getLibraryPage(criteria) } catch (e) { console.error('DB Load vocab page fail', e); return [] }
+  })
+
+  ipcMain.handle('vocab:get-stats', () => {
+    try { return getCollectionStats() } catch (e) { console.error('DB Get stats fail', e); return {} }
+  })
+
   ipcMain.handle('vocab:save', (_e, list) => { 
     try { saveLibrary(list); return true } catch (e) { console.error('DB Save vocab fail', e); return false }
+  })
+
+  ipcMain.handle('vocab:save-item', (_e, item) => {
+    try { saveVocabItem(item); return true } catch (e) { console.error('DB Save item fail', e); return false }
+  })
+
+  ipcMain.handle('vocab:delete-item', (_e, id) => {
+    try { deleteVocabItem(id); return true } catch (e) { console.error('DB Delete item fail', e); return false }
   })
 
   ipcMain.handle('collections:load', () => {
@@ -508,6 +535,14 @@ function registerIpcHandlers() {
 
   ipcMain.handle('collections:save', (_e, list) => { 
     try { saveCollections(list); return true } catch (e) { console.error('DB Save collections fail', e); return false }
+  })
+
+  ipcMain.handle('collections:migrate', (_e, oldName, newName) => {
+    try { migrateCollection(oldName, newName); return true } catch (e) { console.error('DB Migrate collections fail', e); return false }
+  })
+
+  ipcMain.handle('collections:disband', (_e, name) => {
+    try { disbandCollection(name); return true } catch (e) { console.error('DB Disband collections fail', e); return false }
   })
 
   safeHandle('notes:load', () => {

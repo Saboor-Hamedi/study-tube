@@ -122,13 +122,105 @@ export function saveNotes(data) {
 }
 
 /**
- * Library API
+ * Library API - Industrial Scale Optimized
  */
+export function getLibraryPage({ collection = 'all', sortBy = 'newest', limit = 12, offset = 0 }) {
+  let query = 'SELECT * FROM library';
+  const params = [];
+
+  // Filter Logic
+  if (collection === 'all') {
+    query += ' WHERE IFNULL(archived, 0) = 0';
+  } else if (collection === 'trash') {
+    query += ' WHERE archived = 1';
+  } else {
+    query += ' WHERE IFNULL(archived, 0) = 0 AND collection = ?';
+    params.push(collection);
+  }
+
+  // Sorting Logic
+  if (sortBy === 'alpha') {
+    query += ' ORDER BY text ASC';
+  } else {
+    query += ' ORDER BY date DESC';
+  }
+
+  // Pagination
+  query += ' LIMIT ? OFFSET ?';
+  params.push(limit, offset);
+
+  const rows = db.prepare(query).all(...params);
+  return rows.map(r => ({ ...r, archived: !!r.archived }));
+}
+
+export function getCollectionStats() {
+  try {
+    // Industrial Counting: Treat NULL as 0 (Unarchived)
+    const all = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 0').get().count;
+    const trash = db.prepare('SELECT COUNT(*) as count FROM library WHERE archived = 1').get().count;
+    
+    const collections = db.prepare(`
+      SELECT collection as name, COUNT(*) as count 
+      FROM library 
+      WHERE IFNULL(archived, 0) = 0 AND collection IS NOT NULL AND collection != ''
+      GROUP BY collection
+    `).all();
+
+    console.log(`[SQLITE STATS] Root:${all} Trash:${trash} Groups:${collections.length}`);
+    return { all, trash, collections };
+  } catch (err) {
+    console.error('[SQLITE STATS ERROR]', err.message);
+    return { all: 0, trash: 0, collections: [] };
+  }
+}
+
+export function saveVocabItem(item) {
+  const stmt = db.prepare(`
+    INSERT INTO library (id, text, definition, videoTitle, timestamp, date, archived, collection, type)
+    VALUES (@id, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type)
+    ON CONFLICT(id) DO UPDATE SET
+      text = excluded.text,
+      definition = excluded.definition,
+      videoTitle = excluded.videoTitle,
+      archived = excluded.archived,
+      collection = excluded.collection,
+      type = excluded.type,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+
+  stmt.run({
+    id: item.date || item.id || new Date().toISOString(),
+    text: item.text || '',
+    definition: item.definition || '',
+    videoTitle: item.videoTitle || 'Universal Knowledge',
+    timestamp: item.timestamp || 0,
+    date: item.date || new Date().toISOString(),
+    archived: item.archived ? 1 : 0,
+    collection: item.collection || null,
+    type: item.type || ''
+  });
+}
+
+export function migrateCollection(oldName, newName) {
+  db.prepare('UPDATE library SET collection = ? WHERE collection = ?').run(newName, oldName);
+  db.prepare('UPDATE collections SET name = ? WHERE name = ?').run(newName, oldName);
+}
+
+export function disbandCollection(name) {
+  db.prepare('UPDATE library SET collection = NULL WHERE collection = ?').run(name);
+  db.prepare('DELETE FROM collections WHERE name = ?').run(name);
+}
+
 export function getLibrary() {
   const rows = db.prepare('SELECT * FROM library ORDER BY date DESC').all();
   return rows.map(r => ({ ...r, archived: !!r.archived }));
 }
 
+export function deleteVocabItem(id) {
+  db.prepare('DELETE FROM library WHERE id = ?').run(id);
+}
+
+// Legacy support for smaller migrations, but we should move away from this
 export function saveLibrary(items) {
   db.transaction(() => {
     db.prepare('DELETE FROM library').run();
@@ -137,20 +229,16 @@ export function saveLibrary(items) {
       VALUES (@date, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type)
     `);
     for (const item of items) {
-      try {
-        insert.run({
-          text: item.text || '',
-          videoTitle: item.videoTitle || 'Universal Source',
-          timestamp: item.timestamp || 0,
-          date: item.date || new Date().toISOString(),
-          archived: item.archived ? 1 : 0,
-          collection: item.collection || null,
-          type: item.type || '',
-          definition: item.definition || ''
-        });
-      } catch (err) {
-        console.error('[SYSTEM] Row Persistence Failure:', err.message);
-      }
+      insert.run({
+        text: item.text || '',
+        videoTitle: item.videoTitle || 'Universal Source',
+        timestamp: item.timestamp || 0,
+        date: item.date || new Date().toISOString(),
+        archived: item.archived ? 1 : 0,
+        collection: item.collection || null,
+        type: item.type || '',
+        definition: item.definition || ''
+      });
     }
   })();
 }

@@ -13,7 +13,8 @@ export default function Sidebar({
   setIsCreatingCollection,
   newCollectionName,
   setNewCollectionName,
-  showTrash = false
+  showTrash = false,
+  stats
 }) {
   const [renamingId, setRenamingId] = useState(null)
   const [renamingValue, setRenamingValue] = useState('')
@@ -29,6 +30,15 @@ export default function Sidebar({
     }
     setRenamingId(null)
   }
+
+  const getCount = (id) => {
+    if (!stats) return '...';
+    if (id === 'all') return (stats.all || 0);
+    if (id === 'trash') return (stats.trash || 0);
+    const c = stats.collections?.find(c => c.name === id);
+    return c ? c.count : 0;
+  }
+
   return (
     <div className="w-52 border-r border-border bg-surface-2 flex flex-col overflow-hidden transition-colors duration-500">
       <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-6">
@@ -39,9 +49,8 @@ export default function Sidebar({
           </div>
           <div className="space-y-1">
             {[
-              { id: 'all', name: 'All Research', icon: Library },
-              { id: 'unorganized', name: 'Unorganized', icon: FileText },
-              ...(showTrash ? [{ id: 'trash', name: 'Neural Trash', icon: Trash2 }] : [])
+              { id: 'all', name: 'All Research' },
+              ...(showTrash ? [{ id: 'trash', name: 'Neural Trash' }] : [])
             ].map(item => (
               <DroppableFolder 
                 key={item.id}
@@ -49,7 +58,12 @@ export default function Sidebar({
                 active={selectedCollection === item.id}
                 onClick={() => setSelectedCollection?.(item.id)}
               >
-                {item.name}
+                <div className="flex items-center justify-between w-full pr-1">
+                  <span>{item.name}</span>
+                  <span className="text-[9px] font-black tabular-nums text-accent bg-accent/10 px-1.5 py-0.5 rounded-[3px] shadow-sm">
+                    {getCount(item.id)}
+                  </span>
+                </div>
               </DroppableFolder>
             ))}
           </div>
@@ -92,18 +106,28 @@ export default function Sidebar({
                       id={c}
                       active={selectedCollection === c}
                       onClick={() => setSelectedCollection?.(c)}
-                      onDelete={handleDeleteCollection ? () => handleDeleteCollection(c) : null}
                     >
-                      {c}
+                      <div className="flex items-center gap-2 w-full pr-1 overflow-hidden">
+                        <span className="truncate flex-1">{c}</span>
+                        <span className="text-[9px] font-black tabular-nums text-text/40 bg-surface-3 px-1.5 py-0.5 rounded-[3px] min-w-[16px] text-center shadow-inner group-hover/folder:opacity-0 transition-opacity">
+                          {getCount(c)}
+                        </span>
+                      </div>
                     </DroppableFolder>
                     
                     {/* Inline Actions - Industrial Density */}
-                    <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/folder:opacity-100 transition-opacity">
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/folder:opacity-100 transition-opacity bg-surface-2/95 backdrop-blur-md pl-1 pr-1 py-1 rounded-sm shadow-xl z-20">
                        <button 
                         onClick={(e) => { e.stopPropagation(); startRename(c) }}
-                        className="p-1 bg-surface-3 hover:bg-accent text-muted hover:text-white transition-all "
+                        className="p-1.5 hover:bg-accent/10 text-muted/40 hover:text-accent rounded-sm transition-all"
                        >
-                         <Pencil className="h-2.5 w-2.5" />
+                         <Pencil className="h-3 w-3" />
+                       </button>
+                       <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteCollection?.(c) }}
+                        className="p-1.5 hover:bg-red-500/10 text-muted/40 hover:text-red-500 rounded-sm transition-all"
+                       >
+                         <Trash2 className="h-3 w-3" />
                        </button>
                     </div>
                   </>

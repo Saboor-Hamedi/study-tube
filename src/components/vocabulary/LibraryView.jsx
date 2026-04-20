@@ -24,7 +24,8 @@ function LibraryView({
   selectedCollection, setSelectedCollection,
   sortBy, setSortBy,
   displayLimit, setDisplayLimit,
-  api, showToast
+  api, showToast,
+  syncStats, stats
 }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCard, setSelectedCard] = useState(null)
@@ -39,10 +40,34 @@ function LibraryView({
   const searchInputRef = useRef(null)
   const historyRef = useRef(null)
 
+  // Industrial State: Only holds the visible window of research
+  const [localVocab, setLocalVocab] = useState([])
+  const [loading, setLoading] = useState(true)
+
   // High-Performance Optimization: Defer the background filtering to keep typing fast
   const deferredSearchQuery = useDeferredValue(searchQuery)
 
-  // Initial Load from SQLite
+  // Neural Pagination: Fetch only what is visible - Optimized for 100k+ records
+  useEffect(() => {
+    const fetchPage = async () => {
+      setLoading(true)
+      try {
+        const page = await api.loadVocabPage({ 
+          collection: selectedCollection, 
+          sortBy, 
+          limit: displayLimit 
+        })
+        setLocalVocab(page)
+      } catch (err) {
+        console.error('Paginated fetch failure', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPage()
+  }, [selectedCollection, sortBy, displayLimit, api])
+
+  // Initial Load from SQLite search log
   useEffect(() => {
     const loadLog = async () => {
       try {
@@ -53,7 +78,7 @@ function LibraryView({
       }
     }
     loadLog()
-  }, [])
+  }, [api])
 
   // Handle Neural FTS Search
   useEffect(() => {
@@ -148,43 +173,8 @@ function LibraryView({
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
 
-  const filtered = useMemo(() => {
-    const q = deferredSearchQuery.toLowerCase().trim()
-    
-    // Step 1: Filter
-    const results = vocab.filter(v => {
-      // Fast path for empty search
-      if (q === '') {
-         if (selectedCollection === 'all') return !v.archived
-         if (selectedCollection === 'trash') return v.archived
-         if (selectedCollection === 'unorganized') return !v.archived && !v.collection
-         return !v.archived && v.collection === selectedCollection
-      }
+  const visible = localVocab
 
-      // Optimized Search Vector matching (no mutation inside filter)
-      const matchesSearch = (
-        v.text.toLowerCase().includes(q) || 
-        (v.definition && v.definition.toLowerCase().includes(q)) ||
-        (v.videoTitle && v.videoTitle.toLowerCase().includes(q))
-      )
-
-      if (selectedCollection === 'trash') return matchesSearch && v.archived
-      if (v.archived) return false
-      if (selectedCollection === 'unorganized') return matchesSearch && !v.collection
-      if (selectedCollection && selectedCollection !== 'all') return matchesSearch && v.collection === selectedCollection
-      return matchesSearch
-    })
-
-    // Step 2: Sort (Optimized Date Parsing)
-    return results.sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime()
-      if (sortBy === 'oldest') return new Date(a.date).getTime() - new Date(b.date).getTime()
-      if (sortBy === 'alpha') return a.text.localeCompare(b.text)
-      return 0
-    })
-  }, [vocab, selectedCollection, deferredSearchQuery, sortBy])
-
-  const visible = useMemo(() => filtered.slice(0, displayLimit), [filtered, displayLimit])
 
 
   /**
@@ -192,14 +182,16 @@ function LibraryView({
    * Utilizes Optimistic UI pattern for instantaneous feedback.
    */
   const handleAddItem = async (item) => {
-    const newList = [item, ...vocab]
-    
-    // Optimistic UI Update
-    setVocab(newList)
-    showToast('Insight Forged Successfully')
-
     try {
-      await api.saveVocab(newList)
+      await api.saveVocabItem(item)
+      
+      // Optimistic UI for local viewport flux
+      setLocalVocab(prev => [item, ...prev].slice(0, displayLimit))
+      
+      if (syncStats) syncStats()
+      if (setVocab) setVocab(prev => [item, ...prev])
+      
+      showToast('Insight Forged Successfully')
     } catch (err) {
       console.error('Failed to persist new insight', err)
       showToast('Archival Failure: Data not persistent', 'error')
@@ -207,13 +199,24 @@ function LibraryView({
   }
 
   /**
-   * State Sync: Updates existing research nodes with new AI-enriched data.
+   * Industrial Persistence: Atomic update of a single research node.
    */
   const handleUpdateItem = async (updated) => {
-    const newList = vocab.map(item => item.date === updated.date ? updated : item)
-    setVocab(newList)
-    await api.saveVocab(newList)
-    if (selectedCard?.date === updated.date) setSelectedCard(updated)
+    try {
+      await api.saveVocabItem(updated)
+      
+      // Update our visible "window" optimistically
+      setLocalVocab(prev => prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item))
+      
+      // Sync global state and industrial stats
+      if (syncStats) syncStats()
+      if (setVocab) setVocab(prev => prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item))
+      
+      if (selectedCard?.id === updated.id || selectedCard?.date === updated.date) setSelectedCard(updated)
+    } catch (err) {
+      console.error('Update failure', err)
+      showToast('Nexus Synchrony Failure: Update not persistent', 'error')
+    }
   }
 
   const handleExportItem = async (item) => {
@@ -234,21 +237,31 @@ function LibraryView({
   }
 
   /**
-   * Confirmed Eradication: Finalizes the permanent removal of research data.
+   * Confirmed Eradication: Atomic deletion or archival.
    */
   const handleDelete = async () => {
     if (!itemToDelete) return
-    let newList
-    if (selectedCollection === 'trash' || itemToDelete.archived) {
-      newList = vocab.filter(item => item.date !== itemToDelete.date)
-      showToast('Insight permanently eradicated', 'success')
-    } else {
-      newList = vocab.map(item => item.date === itemToDelete.date ? { ...item, archived: true } : item)
-      showToast('Insight moved to trash', 'success')
+    try {
+      const itemId = itemToDelete.id || itemToDelete.date
+      if (selectedCollection === 'trash' || itemToDelete.archived) {
+        await api.deleteVocabItem(itemId)
+        showToast('Insight permanently eradicated', 'success')
+      } else {
+        const archivedItem = { ...itemToDelete, archived: true }
+        await api.saveVocabItem(archivedItem)
+        showToast('Insight moved to trash', 'success')
+      }
+      
+      // Refresh visible page view + global counters
+      setLocalVocab(prev => prev.filter(item => (item.id || item.date) !== itemId))
+      if (syncStats) syncStats()
+      if (setVocab) setVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
+      
+      setItemToDelete(null)
+    } catch (err) {
+      console.error('System refusal: Delete failed', err)
+      showToast('Industrial Safety Lock: Delete aborted', 'error')
     }
-    setVocab(newList)
-    await api.saveVocab(newList)
-    setItemToDelete(null)
   }
 
   const handleRestore = async (item) => {
@@ -281,46 +294,40 @@ function LibraryView({
   }
 
   /**
-   * Neural Dissolution: Removes a collection and unlinks all associated insights.
+   * Neural Dissolution: Removes a collection and unlinks all associated insights natively in SQL.
    */
   const handleDeleteCollection = async (name) => {
-    const newList = collections.filter(c => c !== name)
-    const newVocab = vocab.map(v => v.collection === name ? { ...v, collection: null } : v)
-    
-    // Optimistic UI Update
-    setCollections(newList)
-    setVocab(newVocab)
-    if (selectedCollection === name) setSelectedCollection('all')
-    showToast(`Collection "${name}" disbanded`)
-
     try {
-      await api.saveCollections(newList)
-      await api.saveVocab(newVocab)
+      await api.disbandCollection(name)
+      
+      const newList = collections.filter(c => c !== name)
+      setCollections(newList)
+      if (selectedCollection === name) setSelectedCollection('all')
+      
+      if (syncStats) syncStats()
+      showToast(`Collection "${name}" disbanded`)
     } catch (err) {
       console.error('Failed to disband collection', err)
-      showToast('Nexus Synchrony Error: Restart Required', 'error')
+      showToast('Nexus Synchrony Error: Disband failed', 'error')
     }
   }
 
   /**
-   * Lexical Re-designation: Globally renames an existing research collection.
+   * Lexical Re-designation: Globally renames an existing research collection natively in SQL.
    */
   const handleRenameCollection = async (oldName, newName) => {
-    const newList = collections.map(c => c === oldName ? newName : c)
-    const newVocab = vocab.map(v => v.collection === oldName ? { ...v, collection: newName } : v)
-    
-    // Optimistic UI Update
-    setCollections(newList)
-    setVocab(newVocab)
-    if (selectedCollection === oldName) setSelectedCollection(newName)
-    showToast('Collection Re-designated', 'success')
-
     try {
-      await api.saveCollections(newList)
-      await api.saveVocab(newVocab)
+      await api.migrateCollection(oldName, newName)
+      
+      const newList = collections.map(c => c === oldName ? newName : c)
+      setCollections(newList)
+      if (selectedCollection === oldName) setSelectedCollection(newName)
+      
+      if (syncStats) syncStats()
+      showToast('Collection Re-designated', 'success')
     } catch (err) {
       console.error('Failed to rename collection', err)
-      showToast('Neural Bridge Error', 'error')
+      showToast('Neural Bridge Error: Rename failed', 'error')
     }
   }
 
@@ -333,19 +340,23 @@ function LibraryView({
     const { active, over } = event
     setActiveDragItem(null)
     if (over && active.data.current?.date) {
-      const itemDate = active.data.current.date
+      const item = active.data.current
+      const itemId = item.id || item.date
       const targetCollection = over.id === 'unorganized' ? null : (over.id === 'all' ? null : over.id)
       
-      if (active.data.current.collection === targetCollection) return
+      if (item.collection === targetCollection) return
 
-      const newVocab = vocab.map(v => v.date === itemDate ? { ...v, collection: targetCollection } : v)
-      
-      // Optimistic UI Update
-      setVocab(newVocab)
-      showToast(`Insight migrated to ${over.id === 'unorganized' ? 'Unorganized' : (over.id === 'all' ? 'Root' : over.id)}`, 'success')
-      
       try {
-        await api.saveVocab(newVocab)
+        const updated = { ...item, collection: targetCollection }
+        await api.saveVocabItem(updated)
+        
+        // Optimistic UI for local viewport
+        setLocalVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
+        
+        if (syncStats) syncStats()
+        if (setVocab) setVocab(prev => prev.map(v => (v.id || v.date) === itemId ? updated : v))
+        
+        showToast(`Insight migrated to ${over.id === 'unorganized' ? 'Unorganized' : (over.id === 'all' ? 'Root' : over.id)}`, 'success')
       } catch (err) {
         console.error('Failed to persist drag-migration', err)
         showToast('Neural Archiving Failed', 'error')
@@ -373,13 +384,14 @@ function LibraryView({
       newCollectionName={newCollectionName}
       setNewCollectionName={setNewCollectionName}
       showTrash={true}
+      stats={stats}
     />
-  ), [collections, selectedCollection, isCreatingCollection, newCollectionName])
+  ), [collections, selectedCollection, isCreatingCollection, newCollectionName, stats])
 
   const gridMemo = useMemo(() => (
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
       {visible.map((v, i) => (
-        <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
+        <DraggableCard key={(v.id || v.date) || i} id={(v.id || v.date) || i} v={v} useHandle={true}>
           {({ listeners, attributes }) => (
             <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative border border-transparent hover:border-border/20">
               <div className="flex flex-col gap-4 overflow-hidden">
@@ -681,7 +693,7 @@ function LibraryView({
               <div className="max-w-[1400px] mx-auto">
                 {gridMemo}
 
-                {filtered.length > displayLimit && (
+                {localVocab.length >= displayLimit && (
                   <div className="flex justify-center mt-12 py-10">
                     <button 
                       onClick={() => setDisplayLimit(p => p + 6)}

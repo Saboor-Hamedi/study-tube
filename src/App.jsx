@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Notification from './components/Notification'
 
 export default function App() {
+  const [vocabStats, setVocabStats] = useState(null)
   const [savePath, setSavePath] = useState('')
   const [view, setView] = useState('search') // 'search' | 'vocab' | 'settings'
   const [vocab, setVocab] = useState([])
@@ -17,7 +18,7 @@ export default function App() {
   const [chatHistory, setChatHistory] = useState([
     { role: 'assistant', content: 'Hello. I am your studyTube research copilot. I can help you analyze saved words, suggest grammar rules, or create custom research cards. Ask me anything.' }
   ])
-  const [sortBy, setSortBy] = useState('date')
+  const [sortBy, setSortBy] = useState('newest')
   const [displayLimit, setDisplayLimit] = useState(6)
   const [videoQuery, setVideoQuery] = useState('')
   const [videoResults, setVideoResults] = useState([])
@@ -33,13 +34,29 @@ export default function App() {
     setTimeout(() => setToast(null), 3000)
   }, [])
 
+  const syncStats = useCallback(async () => {
+    try {
+      const stats = await api.getLibraryStats()
+      console.log('[NEURAL DENSITY] Sync Triggered:', stats)
+      setVocabStats(stats)
+    } catch (err) {
+      console.error('Failed to sync neural density', err)
+    }
+  }, [api])
+
   useEffect(() => {
     if (api) {
       if (api.getTheme) api.getTheme().then(setTheme).catch(() => {})
+      // For Copilot/Global search we keep a cached list, but LibraryView will use paginated SQL
       api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
       api.loadCollections().then(list => setCollections(list || [])).catch(() => {})
+      syncStats()
+
+      // Neural Pulse: Periodic density recalibration
+      const pulse = setInterval(syncStats, 30000)
+      return () => clearInterval(pulse)
     }
-  }, [api])
+  }, [api, syncStats])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -52,11 +69,20 @@ export default function App() {
   }
 
   const addVocab = async (item) => {
-    const basicItem = { ...item, date: new Date().toISOString(), loading: !item.skipAI }
-    const newList = [basicItem, ...vocab]
+    const basicItem = { 
+      ...item, 
+      id: new Date().toISOString(), // Unique ID for Upsert
+      date: new Date().toISOString(), 
+      loading: !item.skipAI 
+    }
     
+    // Industrial Persistence: Upsert individual item
+    await api.saveVocabItem(basicItem)
+    syncStats()
+
+    // Local Sync for UI
+    const newList = [basicItem, ...vocab]
     setVocab(newList)
-    await api.saveVocab(newList)
     
     const displayTitle = item.text.length > 30 ? item.text.slice(0, 30) + '...' : item.text
     showToast(`Saved "${displayTitle}"`)
@@ -65,11 +91,12 @@ export default function App() {
 
     try {
       const entry = await api.explainWord({ text: item.text, videoTitle: item.videoTitle })
-      setVocab(prev => {
-        const enrichedList = prev.map(v => v.text === item.text && v.loading ? { ...v, ...entry, loading: false } : v)
-        api.saveVocab(enrichedList) // AI enrichment is a secondary async task, this is safer here but ideally we'd sequence it too
-        return enrichedList
-      })
+      const enriched = { ...basicItem, ...entry, loading: false }
+      
+      await api.saveVocabItem(enriched)
+      syncStats()
+
+      setVocab(prev => prev.map(v => v.id === basicItem.id ? enriched : v))
     } catch (e) {
       console.error('AI Enrichment failed', e)
     }
@@ -89,7 +116,14 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-background text-text overflow-hidden font-sans transition-colors duration-500">
-      <Activitybar view={view} setView={setView} onExport={handleGlobalExport} theme={theme} onToggleTheme={toggleTheme} />
+      <Activitybar 
+        view={view} 
+        setView={setView} 
+        onExport={handleGlobalExport} 
+        theme={theme} 
+        onToggleTheme={toggleTheme} 
+        stats={vocabStats}
+      />
       
       <main className="flex-1 relative overflow-hidden">
         {view === 'search' && (
@@ -117,6 +151,8 @@ export default function App() {
               displayLimit={displayLimit} setDisplayLimit={setDisplayLimit}
               api={api}
               showToast={showToast}
+              syncStats={syncStats}
+              stats={vocabStats}
             />
           </div>
         )}
