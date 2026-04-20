@@ -1,7 +1,7 @@
 import React, { useState, memo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Brain, Layout, Save, Loader2 } from 'lucide-react'
-import ModalCommandHeader from './ModalCommandHeader'
+import { Plus, Brain, Loader2 } from 'lucide-react'
+import AnalyticalSidebar from './AnalyticalSidebar'
 
 const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
   const [title, setTitle] = useState('')
@@ -106,27 +106,14 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
             </div>
           </div>
 
-          <div className={`relative z-50 flex w-[280px] shrink-0 flex-col border-l border-border bg-surface-2 overflow-hidden ${isMaximized ? 'rounded-none' : 'rounded-r-[5px]'}`}>
-            
-            <ModalCommandHeader 
-              title="Capture" 
-              subtitle="Node Interface" 
-              Icon={Plus} 
-              onClose={onClose} 
-              onMaximize={() => setIsMaximized(!isMaximized)}
-              isMaximized={isMaximized}
-            />
-
-            <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-4 space-y-8">
-              <div className="space-y-4">
-                <div className="pt-2 border-t border-border opacity-5">
-                   {/* Minimalist Industrial Interface */}
-                </div>
-              </div>
-            </div>
-
-            {/* Commmand Footer */}
-            <div className="p-6 border-t border-border bg-surface-2">
+          <AnalyticalSidebar 
+            mode="capture"
+            onClose={onClose}
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+          >
+            {/* Command Footer (Capture Specific) */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-border bg-surface-2">
               <button 
                 onClick={handleSave}
                 disabled={isSaving || !title.trim()}
@@ -136,7 +123,7 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
                 {!isSaving && <Plus className="h-4 w-4 absolute" />}
               </button>
             </div>
-          </div>
+          </AnalyticalSidebar>
         </motion.div>
       </div>
     </AnimatePresence>

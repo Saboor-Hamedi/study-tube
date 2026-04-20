@@ -4,6 +4,7 @@ import LibraryView from './components/vocabulary/LibraryView'
 import CopilotView from './components/chat/CopilotView'
 import SettingsView from './components/SettingsView'
 import EditorView from './components/EditorView'
+import InsightDetailView from './components/vocabulary/InsightDetailView'
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Notification from './components/Notification'
@@ -11,7 +12,8 @@ import Notification from './components/Notification'
 export default function App() {
   const [vocabStats, setVocabStats] = useState(null)
   const [savePath, setSavePath] = useState('')
-  const [view, setView] = useState('search') // 'search' | 'vocab' | 'settings'
+  const [view, setView] = useState('search') // 'search' | 'vocab' | 'settings' | 'research-detail'
+  const [selectedResearchNode, setSelectedResearchNode] = useState(null)
   const [vocab, setVocab] = useState([])
   const [collections, setCollections] = useState([])
   const [selectedCollection, setSelectedCollection] = useState('all')
@@ -153,6 +155,26 @@ export default function App() {
               showToast={showToast}
               syncStats={syncStats}
               stats={vocabStats}
+              onExpand={(item) => {
+                setSelectedResearchNode(item)
+                setView('research-detail')
+              }}
+            />
+          </div>
+        )}
+
+        {view === 'research-detail' && (
+          <div className="absolute inset-0">
+            <InsightDetailView 
+              item={selectedResearchNode}
+              setView={setView}
+              showToast={showToast}
+              api={api}
+              onUpdate={async (updated) => {
+                await api.saveVocabItem(updated)
+                setSelectedResearchNode(updated)
+                syncStats()
+              }}
             />
           </div>
         )}

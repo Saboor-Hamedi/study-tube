@@ -26,7 +26,8 @@ function LibraryView({
   sortBy, setSortBy,
   displayLimit, setDisplayLimit,
   api, showToast,
-  syncStats, stats
+  syncStats, stats,
+  onExpand
 }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCard, setSelectedCard] = useState(null)
@@ -544,7 +545,7 @@ function LibraryView({
                 </div>
               </div>
 
-              <div className="flex-1 max-w-lg px-8">
+              <div className="flex-1 max-w-2xl px-12">
                 <div className="relative group">
                   <input 
                     ref={searchInputRef}
@@ -556,9 +557,18 @@ function LibraryView({
                       if (e.key === 'Enter') {
                         if (isHistoryOpen && selectedIndex >= 0 && items[selectedIndex]) {
                           const item = items[selectedIndex]
-                          setSearchQuery(typeof item === 'string' ? item : item.text)
-                          setIsHistoryOpen(false)
+                          if (typeof item === 'string') {
+                            setSearchQuery(item)
+                            setIsHistoryOpen(false)
+                          } else {
+                            onExpand(item)
+                            setIsHistoryOpen(false)
+                          }
                           setSelectedIndex(-1)
+                        } else if (searchQuery.trim() && searchResults.length > 0) {
+                          // Industrial Auto-Nexus: Open first match immediately
+                          onExpand(searchResults[0])
+                          setIsHistoryOpen(false)
                         } else {
                           commitToHistory(searchQuery)
                           setIsHistoryOpen(false)
@@ -598,28 +608,16 @@ function LibraryView({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
                         style={{ willChange: 'transform, opacity' }}
-                        className="absolute inset-x-0 top-full bg-surface-3 border-x border-b border-border shadow-2xl z-[100] backdrop-blur-xl overflow-hidden rounded-b-[5px]"
+                        className="absolute inset-x-0 top-full mt-1.5 bg-surface-3 border border-border shadow-2xl z-[100] backdrop-blur-xl overflow-hidden rounded-[5px]"
                       >
                         <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-black/40">
-                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">
+                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted flex items-center gap-2">
+                             <div className="h-1.5 w-1.5 bg-accent rounded-full animate-pulse" />
                              {searchQuery.trim() ? 'Neural Discovery Results' : 'Search Discovery Log'}
                            </span>
-                           <div className="flex items-center gap-4">
-                              {!searchQuery.trim() && searchHistory.length > 0 && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    clearHistory()
-                                  }}
-                                  className="text-[9px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors"
-                                >
-                                  Purge Logs
-                                </button>
-                              )}
-                              <button onClick={() => setIsHistoryOpen(false)} className="text-muted hover:text-text transition-colors">
-                                <X className="h-3 w-3" />
-                              </button>
-                           </div>
+                           <button onClick={() => setIsHistoryOpen(false)} className="text-muted hover:text-text transition-colors">
+                             <X className="h-3 w-3" />
+                           </button>
                         </div>
                         <div className="max-h-[380px] overflow-y-auto scrollbar-thin">
                           {searchQuery.trim() ? (
@@ -637,7 +635,7 @@ function LibraryView({
                                     selectedIndex === idx ? 'bg-accent/20' : 'hover:bg-white/[0.03]'
                                   }`}
                                   onClick={() => {
-                                    setSearchQuery(item.text)
+                                    onExpand(item)
                                     setIsHistoryOpen(false)
                                     setSelectedIndex(-1)
                                   }}
@@ -703,6 +701,41 @@ function LibraryView({
                               ))
                             )
                           )}
+                        </div>
+
+                        {/* VS Code Style Footer */}
+                        <div className="px-4 py-2 bg-surface-2 border-t border-border flex items-center justify-between">
+                           <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-1.5 opacity-40">
+                                 <span className="px-1.5 py-0.5 bg-text/10 text-text text-[8px] font-black rounded uppercase">Up</span>
+                                 <span className="px-1.5 py-0.5 bg-text/10 text-text text-[8px] font-black rounded uppercase">Down</span>
+                                 <span className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Navigate</span>
+                              </div>
+                              <div className="h-3 w-px bg-border/40" />
+                              <div className="flex items-center gap-1.5 opacity-40">
+                                 <span className="px-1.5 py-0.5 bg-text/10 text-text text-[8px] font-black rounded uppercase">Enter</span>
+                                 <span className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Select</span>
+                              </div>
+                           </div>
+
+                           {!searchQuery.trim() && searchHistory.length > 0 && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  clearHistory()
+                                }}
+                                className="group flex items-center gap-1.5 px-2 py-0.5 hover:bg-red-500 text-red-500/60 hover:text-white transition-all border border-red-500/10 rounded-[3px]"
+                              >
+                                <Trash2 className="h-2.5 w-2.5" />
+                                <span className="text-[8px] font-black uppercase tracking-widest">Clear history</span>
+                              </button>
+                           )}
+                           
+                           {searchQuery.trim() && (
+                             <div className="text-[9px] text-muted/40 font-black uppercase tracking-[0.2em] italic">
+                               Neural Index: SQL FTS5 Active
+                             </div>
+                           )}
                         </div>
                       </motion.div>
                     )}
@@ -804,6 +837,7 @@ function LibraryView({
           api={api}
           onUpdate={handleUpdateItem}
           collections={collections}
+          onExpand={onExpand}
         />
       )}
 
