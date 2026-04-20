@@ -29,13 +29,27 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
   const [titleEditVal, setTitleEditVal] = useState(item?.text || '')
 
   useEffect(() => {
-    if (item) {
-      setEditVal(item.definition || '')
-      setTitleEditVal(item.text || '')
-      setSummary(item.summary || null)
-      setHighlights([])
-    }
-  }, [item])
+    const hydrate = async () => {
+      if (item) {
+        let fullItem = { ...item };
+        if (!item.definition && (item.id || item.date)) {
+          console.log('[NEURAL WORKSPACE] Shallow node detected. Synchronizing with archive...');
+          try {
+            const results = await api.loadVocabPage({ id: item.id || item.date, limit: 1 });
+            if (results?.[0]) fullItem = results[0];
+          } catch (err) {
+            console.error('[NEURAL WORKSPACE] Synchronization Failure:', err);
+          }
+        }
+        
+        setEditVal(fullItem.definition || '')
+        setTitleEditVal(fullItem.text || '')
+        setSummary(fullItem.summary || null)
+        setHighlights([])
+      }
+    };
+    hydrate();
+  }, [item, api]);
 
   const handleSaveEdit = () => {
     onUpdate({ ...item, text: titleEditVal, definition: editVal })
@@ -118,22 +132,14 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="flex flex-col">
-            <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">{item.type || 'Research Node'}</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-[8px] text-muted font-bold uppercase tracking-widest">{item.videoTitle || 'Universal Knowledge'}</span>
-              <span className="w-1 h-1 bg-border rounded-full" />
-              <span className="text-[8px] text-accent font-black uppercase tracking-widest flex items-center gap-1.5">
-                <Clock className="h-3 w-3" /> Indexed Archive
-              </span>
-            </div>
+          <div className="p-1.5 bg-accent/10 text-accent transition-all">
+             <FileText className="h-3.5 w-3.5" />
           </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center bg-surface-2 p-1">
-             <button className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all bg-surface-3 text-text shadow-lg">Analysis</button>
-             <button disabled className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all text-muted/10 cursor-not-allowed">Export</button>
+          <div className="flex flex-col">
+            <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">Insight Research</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] text-muted font-bold uppercase tracking-widest leading-none">{item.text || 'Subject Archive'}</span>
+            </div>
           </div>
         </div>
       </div>

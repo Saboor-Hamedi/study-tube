@@ -117,6 +117,7 @@ function LibraryView({
       setIsSearching(true)
       try {
         const results = await api.searchLibraryFTS(searchQuery)
+        console.log('[NEURAL SEARCH DIAGNOSTIC] Results Received:', results?.length, results?.[0])
         setSearchResults(results || [])
       } catch (err) {
         console.error('FTS Search Failure', err)
@@ -566,7 +567,6 @@ function LibraryView({
                           }
                           setSelectedIndex(-1)
                         } else if (searchQuery.trim() && searchResults.length > 0) {
-                          // Industrial Auto-Nexus: Open first match immediately
                           onExpand(searchResults[0])
                           setIsHistoryOpen(false)
                         } else {
@@ -653,10 +653,13 @@ function LibraryView({
                                   </div>
                                   
                                   <div className="pl-5 border-l border-border/20">
-                                    <p 
-                                      className="text-[10px] text-muted leading-relaxed line-clamp-2"
-                                      dangerouslySetInnerHTML={{ __html: item.definitionSnippet || 'No snippet available' }}
-                                    />
+                                    <p className="text-[10px] text-muted leading-relaxed line-clamp-2">
+                                      {item.definitionSnippet && item.definitionSnippet !== 'No snippet available' ? (
+                                        <span dangerouslySetInnerHTML={{ __html: item.definitionSnippet }} />
+                                      ) : (
+                                        item.definition ? item.definition.replace(/[#*`~_]/g, '').substring(0, 160) + (item.definition.length > 160 ? '...' : '') : 'No archival content available'
+                                      )}
+                                    </p>
                                   </div>
                                 </div>
                               ))

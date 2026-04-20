@@ -124,33 +124,41 @@ export function saveNotes(data) {
 /**
  * Library API - Industrial Scale Optimized
  */
-export function getLibraryPage({ collection = 'all', sortBy = 'newest', limit = 12, offset = 0 }) {
-  let query = 'SELECT * FROM library';
-  const params = [];
+export function getLibraryPage({ collection, sortBy, limit, id }) {
+  try {
+    if (id) {
+      return db.prepare('SELECT * FROM library WHERE id = ? OR date = ?').all(id, id);
+    }
 
-  // Filter Logic
-  if (collection === 'all') {
-    query += ' WHERE IFNULL(archived, 0) = 0';
-  } else if (collection === 'trash') {
-    query += ' WHERE IFNULL(archived, 0) = 1';
-  } else {
-    query += ' WHERE IFNULL(archived, 0) = 0 AND collection = ?';
-    params.push(collection);
+    let query = `SELECT * FROM library`
+    const params = []
+    
+    if (collection && collection !== 'all') {
+      if (collection === 'trash') {
+        query += ` WHERE archived = 1`
+      } else if (collection === 'unorganized') {
+        query += ` WHERE (collection IS NULL OR collection = '') AND archived = 0`
+      } else {
+        query += ` WHERE collection = ? AND archived = 0`
+        params.push(collection)
+      }
+    } else {
+      query += ` WHERE archived = 0`
+    }
+    
+    if (sortBy === 'alpha') query += ` ORDER BY text COLLATE NOCASE ASC`
+    else query += ` ORDER BY date DESC`
+    
+    if (limit) {
+      query += ` LIMIT ?`
+      params.push(limit)
+    }
+    
+    return db.prepare(query).all(...params)
+  } catch (err) {
+    console.error('Paginated fetch failure', err)
+    return []
   }
-
-  // Sorting Logic
-  if (sortBy === 'alpha') {
-    query += ' ORDER BY text ASC';
-  } else {
-    query += ' ORDER BY date DESC';
-  }
-
-  // Pagination
-  query += ' LIMIT ? OFFSET ?';
-  params.push(limit, offset);
-
-  const rows = db.prepare(query).all(...params);
-  return rows.map(r => ({ ...r, archived: !!r.archived }));
 }
 
 export function getCollectionStats() {
@@ -307,6 +315,8 @@ export function searchLibraryFTS(query) {
       SELECT 
         l.id, 
         l.text, 
+        l.definition,
+        l.date,
         l.videoTitle,
         snippet(library_fts, 1, '<mark>', '</mark>', '...', 20) as definitionSnippet
       FROM library l
