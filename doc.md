@@ -10,10 +10,30 @@ As of version 1.0.3, StudyTube has successfully migrated its entire data persist
 - **Reliability**: SQLite’s ACID (Atomicity, Consistency, Isolation, Durability) properties prevent data corruption during power failures or unexpected crashes.
 - **Advanced Search**: Implementation of **FTS5 (Full-Text Search)** provides "Neural-grade" indexing across all research definitions and titles.
 
+## Version 1.0.4: The Research Studio Hardening
+
+### 1. Neural FTS Discovery Engine
+StudyTube has evolved its search capabilities into a dual-intelligence system:
+
+- **Linguistically Intelligent Search**: Integrated the **Porter Stemmer** and **Unicode 61** tokenization. The search engine now understands word roots (e.g., "lets" matches "let's" and "let"), ensuring that punctuation or grammatical variations do not stop your research.
+- **Context-Aware Highlights**: Leverages SQLite's `snippet()` function to generate real-time "Research Snippets" in the search dropdown, highlighting exact query matches within definitions and source sentences.
+- **Search Discovery Log**: Implemented a persistent, SQLite-backed history system. Previous research vectors are stored and can be instantly recalled with keyboard navigation.
+
+### 2. High-Performance Indexing Architecture
+To maintain instantaneous responsiveness, the following B-Tree indexes have been deployed on the primary `library` table:
+
+- **`idx_library_collection`**: Accelerates folder/collection switching.
+- **`idx_library_date`**: Ensures chronologically perfect sorting for the research archive.
+- **`idx_library_archived`**: Optimizes the filtering logic for the Trash and active views.
+
+### 3. Industrial UI Refinements
+- **Kinetic Keyboard Navigation**: Fully keyboard-first search experience with Arrow-Key cycling through history and FTS results.
+- **Bit-Perfect Parallel Alignment**: Redesigned the search dropdown for seamless, parallel integration with the search input, using industrial `bg-accent/20` floods and vertical "Active Indicators."
+- **Tactical Silence**: Purged all diagnostic probes and alerts for a professional production release.
+
 ## Backend Architecture
 
 ### 1. The Core Engine (`better-sqlite3`)
-
 We utilize the `better-sqlite3` native driver for Node.js. It is the fastest SQLite library available, offering synchronous-like performance on a multi-threaded asynchronous architecture.
 
 - **WAL Mode (Write-Ahead Logging)**: Enabled by default to allow simultaneous reading and writing without blocking the UI thread.
