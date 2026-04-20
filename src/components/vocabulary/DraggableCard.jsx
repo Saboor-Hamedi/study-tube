@@ -3,27 +3,34 @@ import { CSS } from '@dnd-kit/utilities'
 import { Library, FileText, X, Folder, GripVertical as GripIcon, Trash2 } from 'lucide-react'
 import { memo } from 'react'
 
-export const DroppableFolder = memo(({ id, active, onClick, children, onDelete }) => {
+export const DroppableFolder = memo(({ id, active, onClick, children, onDelete, isCollapsed = false }) => {
   const { isOver, setNodeRef } = useDroppable({ id })
 
   return (
     <div 
       ref={setNodeRef}
-      className="group relative"
+      className={`group relative flex justify-center w-full transition-all duration-300 ${isCollapsed ? 'px-0' : ''}`}
     >
-      <div className={`absolute left-0 w-[2px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${active ? 'bg-accent opacity-100' : 'bg-transparent opacity-0'}`} />
+      {!isCollapsed && (
+        <div className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${active ? 'bg-accent opacity-100' : 'bg-transparent opacity-0'}`} />
+      )}
 
       <button 
         onClick={onClick}
-        className={`w-full flex items-center gap-2.5 px-3 py-1.5 transition-all duration-200 border  text-left ${
-          isOver 
-            ? 'bg-accent text-white border-accent shadow-[0_4px_12px_rgba(var(--accent-rgb),0.3)] z-10' 
-            : active 
-              ? 'bg-accent/5 border-accent/10 text-accent font-bold' 
-              : 'bg-transparent border-transparent text-muted hover:bg-surface-3 hover:text-text'
+        style={isCollapsed ? { width: '40px', height: '40px' } : {}}
+        className={`flex items-center transition-all duration-200 text-left shrink-0 ${
+          isCollapsed 
+            ? `justify-center rounded-full border-0 ${isOver ? 'bg-accent text-white' : active ? 'bg-accent/10 text-accent' : 'bg-transparent text-muted hover:bg-surface-3 hover:text-text'}` 
+            : `w-full gap-2.5 px-3 py-1.5 rounded-[5px] border border-transparent ${
+                isOver 
+                  ? 'bg-accent text-white border-accent shadow-[0_4px_12px_rgba(var(--accent-rgb),0.3)] z-10' 
+                  : active 
+                    ? 'text-accent font-bold' 
+                    : 'text-muted hover:bg-surface-3 hover:text-text'
+              }`
         }`}
       >
-        <div className={`transition-colors duration-200 ${isOver ? 'text-white' : active ? 'text-accent' : 'opacity-40 group-hover:opacity-100'}`}>
+        <div className={`transition-colors duration-200 shrink-0 flex items-center justify-center ${isOver ? 'text-white' : active ? 'text-accent' : 'opacity-40 group-hover:opacity-100'}`}>
           {id === 'all' ? (
             <Library className="h-3.5 w-3.5" />
           ) : id === 'trash' ? (
@@ -32,8 +39,9 @@ export const DroppableFolder = memo(({ id, active, onClick, children, onDelete }
             <Folder className="h-3.5 w-3.5" />
           )}
         </div>
-        <span className={`text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1 ${isOver ? 'text-white' : ''}`}>{children}</span>
-        
+        {!isCollapsed && (
+          <span className={`text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1 ${isOver ? 'text-white' : ''}`}>{children}</span>
+        )}
       </button>
     </div>
   )
@@ -45,8 +53,6 @@ export const DraggableCard = memo(({ id, v, children, useHandle = false }) => {
     data: v
   })
 
-  // INDUSTRIAL GHOST PROTOCOL: 
-  // Keeps the original card static (at low opacity) while the DragOverlay moves.
   const style = {
     opacity: isDragging ? 0.2 : 1,
     cursor: useHandle ? 'default' : 'grab',

@@ -100,15 +100,18 @@ export default function App() {
   }, [api])
 
   useEffect(() => {
-    if (api) {
-      if (api.getTheme) api.getTheme().then(setTheme).catch(() => {})
-      api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
-      api.loadCollections().then(list => setCollections(list || [])).catch(() => {})
-      syncStats()
-      syncHistory()
-      const pulse = setInterval(syncStats, 30000)
-      return () => clearInterval(pulse)
-    }
+    if (!api) return
+    
+    // Initial Hydration
+    if (api.getTheme) api.getTheme().then(setTheme).catch(() => {})
+    api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
+    api.loadCollections().then(list => setCollections(list || [])).catch(() => {})
+    
+    syncStats()
+    syncHistory()
+
+    const pulse = setInterval(syncStats, 30000)
+    return () => clearInterval(pulse)
   }, [api, syncStats, syncHistory])
 
   useEffect(() => {
