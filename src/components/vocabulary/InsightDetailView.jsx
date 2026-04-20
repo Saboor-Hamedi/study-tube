@@ -120,33 +120,11 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col h-full bg-background"
+      className="flex flex-col h-full bg-background overflow-hidden"
     >
-      {/* Standardized Page Header */}
-      <div className="flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface shrink-0 z-50">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setView('vocab')}
-            className="p-1.5 bg-surface-2 text-muted hover:text-accent hover:bg-accent/10 transition-all"
-            title="Return to Library"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <div className="p-1.5 bg-accent/10 text-accent transition-all">
-             <FileText className="h-3.5 w-3.5" />
-          </div>
-          <div className="flex flex-col">
-            <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">Insight Research</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-[8px] text-muted font-bold uppercase tracking-widest leading-none">{item.text || 'Subject Archive'}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden bg-surface">
-        {/* Main Workspace Rail (Full Width / Identical to Modal ContentArea) */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Workspace Rail (Full Width / Parallel to Sidebar logic) */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-surface">
           
           {/* Locked Title Hub (Modal Style) */}
           <div className="w-full h-[72px] shrink-0 border-b border-border/10 flex items-center px-8 lg:px-12 bg-background/20">
@@ -192,12 +170,11 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
                    </div>
                    <div className="flex items-center gap-3 text-accent relative z-10">
                       <Sparkles className="h-5 w-5" />
-                      <span className="text-[12px] font-black uppercase tracking-[0.5em]">Neural Synthesis Root</span>
+                      <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">Neural Synthesis Root</h2>
                    </div>
                    <div className="text-[17px] text-text/80 leading-relaxed font-light space-y-4 relative z-10">
                       {summary.split('\n').map((l, i) => (
                         <p key={i} className="flex gap-6 items-start">
-                          <span className="text-accent font-black mt-1 px-2 py-0.5 bg-accent/10 rounded text-[10px]">FIX</span>
                           {l.replace(/^[•\-\d\.]+\s*/, '')}
                         </p>
                       ))}

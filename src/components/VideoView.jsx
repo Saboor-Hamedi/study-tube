@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { Search, Loader2, Tv2, Play, X, ChevronLeft } from 'lucide-react'
+import { Search, Loader2, Tv2, Play, X, ChevronLeft, Library } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import VideoPreviewCard from './VideoPreviewCard'
 
@@ -19,11 +19,28 @@ export default function VideoView({
   preview, setPreview, 
   transcript, setTranscript,
   loadingTranscript, setLoadingTranscript,
-  showToast
+  showToast,
+  searchInputRef
 }) {
   const api = window.youtubeAPI
   const [busy, setBusy] = useState(false)
-  const searchInputRef = useRef(null)
+
+  const [quality, setQuality] = useState('')
+  const [progress, setProgress] = useState({})
+  const [taskId, setTaskId] = useState(null)
+  const [lastFile, setLastFile] = useState(null)
+
+  const isUrl = useMemo(() => YT_REGEX.test(query.trim()), [query])
+  const isDownloading = taskId ? (progress[taskId]?.percent ?? 0) < 100 : false
+
+  // Trigger search from Global Header
+  useEffect(() => {
+    const handleTrigger = () => {
+      isUrl ? loadUrl(query.trim()) : search()
+    }
+    window.addEventListener('video-search-trigger', handleTrigger)
+    return () => window.removeEventListener('video-search-trigger', handleTrigger)
+  }, [query, isUrl])
 
   // Tactical Keymap Listener
   useEffect(() => {
@@ -34,17 +51,9 @@ export default function VideoView({
         searchInputRef.current?.focus()
       }
     }
-    
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-  const [quality, setQuality] = useState('')
-  const [progress, setProgress] = useState({})
-  const [taskId, setTaskId] = useState(null)
-  const [lastFile, setLastFile] = useState(null)
-
-  const isUrl = useMemo(() => YT_REGEX.test(query.trim()), [query])
-  const isDownloading = taskId ? (progress[taskId]?.percent ?? 0) < 100 : false
+  }, [searchInputRef])
 
   useEffect(() => {
     if (!api) return
@@ -178,58 +187,7 @@ export default function VideoView({
 
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Universal Standardized Header (Always Visible) */}
-      <div className="flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
-        <div className="flex items-center gap-4">
-          <div 
-            onClick={() => preview && setPreview(null)}
-            className={`p-1.5 transition-all cursor-pointer ${preview ? 'bg-accent/10 text-accent hover:bg-accent hover:text-white' : (busy ? 'bg-accent/20 text-accent animate-pulse' : 'bg-surface-2 text-muted')}`}
-          >
-            {preview ? <ChevronLeft className="h-3.5 w-3.5" /> : <Search className="h-3.5 w-3.5" />}
-          </div>
-          <div className="hidden sm:block">
-            <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">{preview ? 'Video Analysis' : 'Research Discovery'}</h2>
-            <p className="text-[8px] text-muted font-bold uppercase tracking-widest leading-none">
-              {preview ? videoViewSubtext : (busy ? 'Scanning YouTube...' : 'Ready for deep search')}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex-1 max-w-lg px-8">
-          <div className="relative group">
-            <input 
-              ref={searchInputRef}
-              type="text"
-              value={query}
-              onChange={doExternalSearch}
-              onKeyDown={onEnter}
-              placeholder={preview ? "Search for another video... (Ctrl+F)" : "Paste URL or keywords... (Ctrl+F)"}
-              className="w-full bg-surface-2 border border-border py-2 px-6 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-               {busy ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" /> : <Search className="h-3.5 w-3.5 text-muted group-focus-within:text-accent" />}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center bg-surface-2 p-1">
-            <button 
-              onClick={() => setPreview(null)} 
-              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${!preview ? 'bg-surface-3 text-text shadow-lg' : 'text-muted hover:text-text'}`}
-            >
-              Discovery
-            </button>
-            <button 
-              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${preview ? 'bg-surface-3 text-text shadow-lg' : 'text-muted/10 cursor-not-allowed'}`}
-            >
-              Analysis
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full bg-background overflow-hidden text-text">
       {/* Main Content Area */}
       {preview ? (
         <div className="flex-1 flex overflow-hidden">

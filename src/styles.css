@@ -101,22 +101,30 @@ body {
   color: inherit;
 }
 
+mark {
+  background: #ffeb3b;
+  color: #000;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 700;
+}
+
 /* Floating Action Button */
 .fab-button {
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--accent);
   border: none;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   z-index: 10;
   color: white;
 }

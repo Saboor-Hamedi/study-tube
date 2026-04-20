@@ -121,6 +121,20 @@ export default function EditorView({ api, showToast }) {
     }
   }
 
+  // Global Command Stream Listeners
+  useEffect(() => {
+    const handleRefineEvent = () => handleNeuralRefine()
+    const handleClearEvent = () => setShowDeleteModal(true)
+    
+    window.addEventListener('editor:refine', handleRefineEvent)
+    window.addEventListener('editor:clear', handleClearEvent)
+    
+    return () => {
+      window.removeEventListener('editor:refine', handleRefineEvent)
+      window.removeEventListener('editor:clear', handleClearEvent)
+    }
+  }, [handleNeuralRefine])
+
   useEffect(() => {
     if (!api || typeof api.onRefineTrigger !== 'function') return
     const cleanup = api.onRefineTrigger(() => {
@@ -157,40 +171,7 @@ export default function EditorView({ api, showToast }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background animate-in fade-in duration-500">
-      {/* Unified Header */}
-      <div className="flex items-center justify-between px-8 py-3 border-b border-border bg-surface sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-indigo-500/20 text-indigo-400">
-            <FileText className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="text-[11px] font-black text-text uppercase tracking-[0.2em]">Research Editor</h2>
-            <p className="text-[9px] text-muted font-bold uppercase tracking-widest">Workspace 01 // Active</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setShowDeleteModal(true)}
-            className="p-2 text-muted hover:text-red-500 hover:bg-red-500/10 transition-all rounded-lg"
-            title="Clear Editor"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-          
-          <button 
-            onClick={handleNeuralRefine}
-            disabled={isRefining}
-            className="flex items-center gap-2 px-6 py-2 bg-text text-background text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-50 transition-all rounded-sm"
-            title="Refine Grammar & Flow"
-          >
-            {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            {isRefining ? 'Refining...' : 'Neural Refine'}
-          </button>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full bg-background animate-in fade-in duration-500 overflow-hidden">
       {/* Editor Container */}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-10 lg:px-24 xl:px-48 pb-40 relative">
         {isInitializing && (

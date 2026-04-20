@@ -19,33 +19,55 @@ import DeleteModal from '../DeleteModal'
 import InsightCaptureModal from './InsightCaptureModal'
 import PulseLoader from './PulseLoader'
 
-function LibraryView({ 
+export default function LibraryView({ 
   vocab, setVocab, 
   collections, setCollections, 
   selectedCollection, setSelectedCollection,
   sortBy, setSortBy,
   displayLimit, setDisplayLimit,
-  api, showToast,
-  syncStats, stats,
-  onExpand
+  api, 
+  showToast,
+  syncStats,
+  stats,
+  onExpand,
+  searchInputRef,
+  // Elevated Search Logic
+  searchQuery, setSearchQuery,
+  searchResults, setSearchResults,
+  isSearching, setIsSearching,
+  searchHistory, setSearchHistory,
+  isHistoryOpen, setIsHistoryOpen,
+  historyRef
 }) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [localVocab, setLocalVocab] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [isAppending, setIsAppending] = useState(false)
+  
   const [selectedCard, setSelectedCard] = useState(null)
   const [itemToDelete, setItemToDelete] = useState(null)
-  const [activeDragItem, setActiveDragItem] = useState(null)
+  
   const [isInsightCaptureModalOpen, setIsInsightCaptureModalOpen] = useState(false)
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const [searchHistory, setSearchHistory] = useState([])
-  const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [selectedIndex, setSelectedIndex] = useState(-1)
-  const searchInputRef = useRef(null)
-  const historyRef = useRef(null)
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false)
+  const [newCollectionName, setNewCollectionName] = useState('')
 
-  // Industrial State: Only holds the visible window of research
-  const [localVocab, setLocalVocab] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [isAppending, setIsAppending] = useState(false)
+  const [activeDragItem, setActiveDragItem] = useState(null)
+
+  // Register Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        searchInputRef?.current?.focus()
+      }
+      // Ctrl + N: Neural Forge
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault()
+        setIsInsightCaptureModalOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [searchInputRef])
 
   // High-Performance Optimization: Defer the background filtering to keep typing fast
   const deferredSearchQuery = useDeferredValue(searchQuery)
@@ -89,10 +111,6 @@ function LibraryView({
     }
   }, [selectedCollection, sortBy, displayLimit, api]);
 
-  useEffect(() => {
-    syncLibraryPage(true)
-  }, [syncLibraryPage])
-
   // Initial Load from SQLite search log
   useEffect(() => {
     const loadLog = async () => {
@@ -117,7 +135,6 @@ function LibraryView({
       setIsSearching(true)
       try {
         const results = await api.searchLibraryFTS(searchQuery)
-        console.log('[NEURAL SEARCH DIAGNOSTIC] Results Received:', results?.length, results?.[0])
         setSearchResults(results || [])
       } catch (err) {
         console.error('FTS Search Failure', err)
@@ -139,66 +156,17 @@ function LibraryView({
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [historyRef, searchInputRef, setIsHistoryOpen])
 
-  // Tactical Keymap Listener
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ctrl + N: Neural Forge
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault()
-        setIsInsightCaptureModalOpen(true)
-      }
-      // Ctrl + F: Focus Matrix
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault()
-        searchInputRef.current?.focus()
-      }
-    }
-    
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+    syncLibraryPage(true)
+  }, [syncLibraryPage])
 
-  /**
-   * History Management: Commits queries to the SQLite Search Log.
-   */
-  const commitToHistory = async (query) => {
-    const trimmed = query.trim()
-    if (!trimmed) return
-    try {
-      await api.addSearchLog(trimmed)
-      const log = await api.getSearchLog()
-      setSearchHistory(log)
-      setSelectedIndex(-1)
-    } catch (err) {
-      console.error('[FRONTEND ERROR] Persistence Failure', err)
-    }
-  }
-
-  const removeFromHistory = async (query) => {
-    try {
-      await api.deleteSearchLog(query)
-      const log = await api.getSearchLog()
-      setSearchHistory(log)
-      setSelectedIndex(-1)
-    } catch (err) {
-      console.error('[FRONTEND ERROR] Eradication Failure', err)
-    }
-  }
-
-  const clearHistory = async () => {
-    try {
-      await api.clearSearchLog()
-      setSearchHistory([])
-      setIsHistoryOpen(false)
-      setSelectedIndex(-1)
-    } catch (err) {
-      console.error('[FRONTEND ERROR] Chronology Purge Failure', err)
-    }
-  }
-  const [isCreatingCollection, setIsCreatingCollection] = useState(false)
-  const [newCollectionName, setNewCollectionName] = useState('')
+  // Sync Local Grid with Archival State
+  useEffect(() => {
+    setLocalVocab(vocab)
+    setLoading(false)
+  }, [vocab])
 
   const visible = localVocab
 
@@ -421,8 +389,10 @@ function LibraryView({
       setNewCollectionName={setNewCollectionName}
       showTrash={true}
       stats={stats}
+      sortBy={sortBy}
+      setSortBy={setSortBy}
     />
-  ), [collections, selectedCollection, isCreatingCollection, newCollectionName, stats])
+  ), [collections, selectedCollection, isCreatingCollection, newCollectionName, stats, sortBy, setSortBy])
 
   const gridMemo = useMemo(() => (
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
@@ -523,302 +493,75 @@ function LibraryView({
     <DndContext 
       sensors={sensors} 
       collisionDetection={pointerWithin} 
-      modifiers={[snapCenterToCursor]}
       onDragStart={(e) => setActiveDragItem(e.active.data.current)} 
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-full bg-background transition-colors duration-500 overflow-hidden">
-        <div className="flex-1 flex overflow-hidden">
-          {sidebarMemo}
-
-          <div className="flex-1 flex flex-col">
-            {/* Universal Standardized Header */}
-            <div className="flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface sticky top-0 z-50 transition-colors duration-500">
-              <div className="flex items-center gap-4">
-                <div className="p-1.5 bg-accent/10 text-accent transition-all">
-                  <Library className="h-3.5 w-3.5" />
-                </div>
-                <div className="hidden sm:block">
-                  <h2 className="text-[10px] font-black text-text uppercase tracking-[0.2em]">Research Archive</h2>
-                  <p className="text-[8px] text-muted font-bold uppercase tracking-widest leading-none">
-                    Total Intelligence: {vocab.length} Units
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex-1 max-w-2xl px-12">
-                <div className="relative group">
-                  <input 
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onFocus={() => setIsHistoryOpen(true)}
-                    onKeyDown={(e) => {
-                      const items = searchQuery.trim() ? searchResults : searchHistory
-                      if (e.key === 'Enter') {
-                        if (isHistoryOpen && selectedIndex >= 0 && items[selectedIndex]) {
-                          const item = items[selectedIndex]
-                          if (typeof item === 'string') {
-                            setSearchQuery(item)
-                            setIsHistoryOpen(false)
-                          } else {
-                            onExpand(item)
-                            setIsHistoryOpen(false)
-                          }
-                          setSelectedIndex(-1)
-                        } else if (searchQuery.trim() && searchResults.length > 0) {
-                          onExpand(searchResults[0])
-                          setIsHistoryOpen(false)
-                        } else {
-                          commitToHistory(searchQuery)
-                          setIsHistoryOpen(false)
-                        }
-                      }
-                      if (e.key === 'ArrowDown' && isHistoryOpen && items.length > 0) {
-                        e.preventDefault()
-                        setSelectedIndex(prev => (prev + 1) % items.length)
-                      }
-                      if (e.key === 'ArrowUp' && isHistoryOpen && items.length > 0) {
-                        e.preventDefault()
-                        setSelectedIndex(prev => (prev - 1 + items.length) % items.length)
-                      }
-                      if (e.key === 'Escape') {
-                        setIsHistoryOpen(false)
-                        setSelectedIndex(-1)
-                      }
-                    }}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value)
-                      if (!isHistoryOpen) setIsHistoryOpen(true)
-                      setSelectedIndex(-1)
-                    }}
-                    placeholder="Search neural archive... (Ctrl+F)"
-                    className="w-full bg-surface-2 border border-border py-2 px-10 text-[12px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all placeholder:text-muted/20"
-                  />
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                    <SearchIcon className={`h-3.5 w-3.5 transition-colors ${isSearching ? 'text-accent animate-pulse' : 'text-muted group-focus-within:text-accent'}`} />
-                  </div>
-                  
-                  {/* Tactical History/Search Log Dropdown */}
-                  <AnimatePresence>
-                    {isHistoryOpen && (
-                      <motion.div 
-                        ref={historyRef}
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        style={{ willChange: 'transform, opacity' }}
-                        className="absolute inset-x-0 top-full mt-1.5 bg-surface-3 border border-border shadow-2xl z-[100] backdrop-blur-xl overflow-hidden rounded-[5px]"
-                      >
-                        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-black/40">
-                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted flex items-center gap-2">
-                             <div className="h-1.5 w-1.5 bg-accent rounded-full animate-pulse" />
-                             {searchQuery.trim() ? 'Neural Discovery Results' : 'Search Discovery Log'}
-                           </span>
-                           <button onClick={() => setIsHistoryOpen(false)} className="text-muted hover:text-text transition-colors">
-                             <X className="h-3 w-3" />
-                           </button>
-                        </div>
-                        <div className="max-h-[380px] overflow-y-auto scrollbar-thin">
-                          {searchQuery.trim() ? (
-                            /* Mode: Discovery Results */
-                            searchResults.length === 0 ? (
-                              <div className="px-4 py-10 text-center">
-                                <SearchIcon className="h-6 w-6 text-muted/10 mx-auto mb-3" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted/20 italic">No direct matches in neural archive.</p>
-                              </div>
-                            ) : (
-                              searchResults.map((item, idx) => (
-                                <div 
-                                  key={item.id}
-                                  className={`group flex flex-col px-4 py-3 transition-all cursor-pointer border-b border-border/10 last:border-0 relative ${
-                                    selectedIndex === idx ? 'bg-accent/20' : 'hover:bg-white/[0.03]'
-                                  }`}
-                                  onClick={() => {
-                                    onExpand(item)
-                                    setIsHistoryOpen(false)
-                                    setSelectedIndex(-1)
-                                  }}
-                                >
-                                  {selectedIndex === idx && (
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
-                                  )}
-                                  
-                                  <div className="flex items-center justify-between gap-3 mb-1">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                      <FileText className={`h-3 w-3 transition-colors ${selectedIndex === idx ? 'text-accent' : 'text-muted/30 group-hover:text-accent'}`} />
-                                      <span className={`text-[12px] truncate ${selectedIndex === idx ? 'text-text font-black' : 'text-text font-bold'}`}>{item.text}</span>
-                                    </div>
-                                    <span className="text-[8px] text-muted/40 uppercase tracking-tighter whitespace-nowrap">{item.videoTitle?.substring(0, 20)}...</span>
-                                  </div>
-                                  
-                                  <div className="pl-5 border-l border-border/20">
-                                    <p className="text-[10px] text-muted leading-relaxed line-clamp-2">
-                                      {item.definitionSnippet && item.definitionSnippet !== 'No snippet available' ? (
-                                        <span dangerouslySetInnerHTML={{ __html: item.definitionSnippet }} />
-                                      ) : (
-                                        item.definition ? item.definition.replace(/[#*`~_]/g, '').substring(0, 160) + (item.definition.length > 160 ? '...' : '') : 'No archival content available'
-                                      )}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))
-                            )
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex h-full overflow-hidden text-text bg-background"
+      >
+        {sidebarMemo}
+        
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
+            <div className="max-w-[1400px] mx-auto min-h-[400px] flex flex-col">
+              
+              <AnimatePresence mode="wait">
+                {loading ? (
+                  <motion.div 
+                    key="loader"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 flex items-center justify-center p-20"
+                  >
+                    <PulseLoader />
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="grid"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full flex-1 flex flex-col"
+                  >
+                    {gridMemo}
+                    
+                    {/* Industrial Expansion Gate */}
+                    {localVocab.length >= displayLimit && (
+                      <div className="mt-12 flex justify-center pb-20">
+                        <button 
+                          onClick={() => {
+                            setIsAppending(true)
+                            setDisplayLimit(prev => prev + 12)
+                          }}
+                          disabled={isAppending}
+                          className="group flex items-center gap-3 px-8 py-3 bg-surface-2 border border-border/20 text-muted hover:text-accent hover:border-accent/40 transition-all "
+                        >
+                          {isAppending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            /* Mode: Search History */
-                            searchHistory.length === 0 ? (
-                              <div className="px-4 py-6 text-center">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted/20 italic">Archive logs empty. Press [Enter] to commit intel.</p>
-                              </div>
-                            ) : (
-                              searchHistory.map((q, idx) => (
-                                <div 
-                                  key={idx}
-                                  className={`group flex items-center justify-between px-4 py-2.5 transition-all cursor-pointer border-b border-border/10 last:border-0 relative ${
-                                    selectedIndex === idx ? 'bg-accent/20' : 'hover:bg-white/[0.03]'
-                                  }`}
-                                  onClick={() => {
-                                    setSearchQuery(q)
-                                    setIsHistoryOpen(false)
-                                    setSelectedIndex(-1)
-                                  }}
-                                >
-                                  {selectedIndex === idx && (
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" />
-                                  )}
-                                  
-                                  <div className="flex items-center gap-3 overflow-hidden ml-1">
-                                    <RefreshCcw className={`h-3.5 w-3.5 transition-colors ${selectedIndex === idx ? 'text-accent' : 'text-muted/30 group-hover:text-accent'}`} />
-                                    <span className={`text-[11px] truncate ${selectedIndex === idx ? 'text-text font-black' : 'text-text/80 group-hover:text-text'}`}>{q}</span>
-                                  </div>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      removeFromHistory(q)
-                                    }}
-                                    className={`p-1 transition-all rounded-[3px] z-10 ${selectedIndex === idx ? 'bg-black/20 text-text/40 hover:text-red-500' : 'text-muted/20 hover:text-red-500'}`}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              ))
-                            )
+                            <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-500" />
                           )}
-                        </div>
-
-                        {/* VS Code Style Footer */}
-                        <div className="px-4 py-2 bg-surface-2 border-t border-border flex items-center justify-between">
-                           <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-1.5 opacity-40">
-                                 <span className="px-1.5 py-0.5 bg-text/10 text-text text-[8px] font-black rounded uppercase">Up</span>
-                                 <span className="px-1.5 py-0.5 bg-text/10 text-text text-[8px] font-black rounded uppercase">Down</span>
-                                 <span className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Navigate</span>
-                              </div>
-                              <div className="h-3 w-px bg-border/40" />
-                              <div className="flex items-center gap-1.5 opacity-40">
-                                 <span className="px-1.5 py-0.5 bg-text/10 text-text text-[8px] font-black rounded uppercase">Enter</span>
-                                 <span className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Select</span>
-                              </div>
-                           </div>
-
-                           {!searchQuery.trim() && searchHistory.length > 0 && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  clearHistory()
-                                }}
-                                className="group flex items-center gap-1.5 px-2 py-0.5 hover:bg-red-500 text-red-500/60 hover:text-white transition-all border border-red-500/10 rounded-[3px]"
-                              >
-                                <Trash2 className="h-2.5 w-2.5" />
-                                <span className="text-[8px] font-black uppercase tracking-widest">Clear history</span>
-                              </button>
-                           )}
-                           
-                           {searchQuery.trim() && (
-                             <div className="text-[9px] text-muted/40 font-black uppercase tracking-[0.2em] italic">
-                               Neural Index: SQL FTS5 Active
-                             </div>
-                           )}
-                        </div>
-                      </motion.div>
+                          <span className="text-[11px] font-black uppercase tracking-[0.3em]">Expand Neural Horizon</span>
+                        </button>
+                      </div>
                     )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex items-center bg-surface-2 p-1">
-                  <button 
-                    onClick={() => setSortBy('newest')}
-                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === 'newest' ? 'bg-surface-3 text-text shadow-lg' : 'text-muted hover:text-text'}`}
-                  >
-                    Newest
-                  </button>
-                  <button 
-                    onClick={() => setSortBy('alpha')}
-                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === 'alpha' ? 'bg-surface-3 text-text shadow-lg' : 'text-muted hover:text-text'}`}
-                  >
-                    Alpha
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
-              <div className="max-w-[1400px] mx-auto min-h-[400px] flex flex-col">
-                <AnimatePresence>
-                  {loading ? (
-                    <motion.div 
-                      key="loader"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute inset-0 z-50 flex items-center justify-center bg-surface/20 pointer-events-none"
-                    >
-                      <PulseLoader />
-                    </motion.div>
-                  ) : (
-                    <motion.div 
-                      key="grid"
-                      initial={{ opacity: 0, scale: 0.99 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                      className="flex-1"
-                    >
-                      {gridMemo}
-
-                      {localVocab.length >= displayLimit && (
-                        <div className="flex justify-center mt-6 pb-12">
-                          <button 
-                            disabled={isAppending}
-                            onClick={() => {
-                              setIsAppending(true)
-                              setDisplayLimit(p => p + 6)
-                            }}
-                            className="group relative px-8 py-2.5 bg-surface-2 border border-border/40 text-text/60 text-[9px] font-black uppercase tracking-[0.3em] hover:bg-surface-3 hover:text-accent hover:border-accent/40 transition-all disabled:opacity-50"
-                          >
-                            <span className={isAppending ? 'opacity-0' : 'opacity-100'}>Synchronize More Nodes</span>
-                            {isAppending && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
-                              </div>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Insight Capture Modal */}
-                <button className='fab-button' onClick={() => setIsInsightCaptureModalOpen(true)}>
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Floating Action Portal */}
+              <button 
+                className="fixed bottom-8 right-8 w-12 h-12 bg-accent text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50" 
+                onClick={() => setIsInsightCaptureModalOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {isInsightCaptureModalOpen && (
         <InsightCaptureModal 
@@ -871,5 +614,3 @@ function LibraryView({
     </DndContext>
   )
 }
-
-export default LibraryView

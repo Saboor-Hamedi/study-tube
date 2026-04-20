@@ -14,7 +14,9 @@ export default function Sidebar({
   newCollectionName,
   setNewCollectionName,
   showTrash = false,
-  stats
+  stats,
+  sortBy,
+  setSortBy
 }) {
   const [renamingId, setRenamingId] = useState(null)
   const [renamingValue, setRenamingValue] = useState('')
@@ -42,6 +44,28 @@ export default function Sidebar({
   return (
     <div className="w-52 border-r border-border bg-surface-2 flex flex-col overflow-hidden transition-colors duration-500">
       <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-6">
+        
+        {/* Analytical Sort Matrix */}
+        <div className="space-y-3">
+          <div className="px-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">Sort Index</p>
+          </div>
+          <div className="flex bg-surface-3 p-1 mx-1.5 rounded-[3px] border border-border/10 shadow-inner">
+            <button 
+              onClick={() => setSortBy?.('newest')}
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all rounded-[2px] ${sortBy === 'newest' ? 'bg-accent/10 text-accent shadow-sm' : 'text-muted/40 hover:text-text'}`}
+            >
+              Newest
+            </button>
+            <button 
+              onClick={() => setSortBy?.('alpha')}
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all rounded-[2px] ${sortBy === 'alpha' ? 'bg-accent/10 text-accent shadow-sm' : 'text-muted/40 hover:text-text'}`}
+            >
+              Alpha
+            </button>
+          </div>
+        </div>
+
         {/* System Folders */}
         <div className="space-y-3">
           <div className="px-2">
