@@ -817,7 +817,7 @@ function LibraryView({
         />
       )}
 
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay dropAnimation={null} zIndex={500}>
         {activeDragItem ? (
           <div className="w-[160px] bg-surface-2 border border-accent p-1.5 shadow-2xl opacity-90 scale-90 pointer-events-none rounded-[5px]">
              <div className="flex items-center gap-1.5">

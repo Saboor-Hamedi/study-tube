@@ -7,14 +7,20 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [isMaximized, setIsMaximized] = useState(false)
+  const [isMaximized, setIsMaximized] = useState(() => {
+    return localStorage.getItem('studytube_capture_maximized') === 'true'
+  })
+
+  // Persistence Protocol
+  useEffect(() => {
+    localStorage.setItem('studytube_capture_maximized', isMaximized)
+  }, [isMaximized])
 
   // Reset state on open
   useEffect(() => {
     if (isOpen) {
       setTitle('')
       setContent('')
-      setIsMaximized(false)
     }
   }, [isOpen])
 
@@ -61,20 +67,19 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
 
   return (
     <AnimatePresence>
-      <div className={`fixed inset-0 z-[200] flex items-center justify-center transition-all duration-500 ${isMaximized ? 'p-0' : 'p-0 lg:p-8'}`}>
+      <div className={`fixed inset-0 z-[1000] flex items-center justify-center transition-all duration-500 ${isMaximized ? 'p-0' : 'p-0 lg:p-8'}`}>
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          transition={{ duration: 0.2 }}
-          className="absolute inset-0 bg-black/90 backdrop-blur-md" 
+          transition={{ duration: 0.15 }}
+          className="absolute inset-0 bg-black/90 backdrop-blur-md px-4" 
           onClick={onClose} 
         />
         <motion.div 
-          layout
-          initial={{ opacity: 0, scale: 0.98, y: 40 }} 
+          initial={{ opacity: 0, scale: 0.99, y: 10 }} 
           animate={{ opacity: 1, scale: 1, y: 0 }} 
-          exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+          exit={{ opacity: 0, scale: 0.99, y: 10 }} 
           transition={industrialTransition}
           style={{ borderRadius: isMaximized ? 0 : 5 }}
           className={`industrial-modal relative h-[88vh] bg-surface border border-border shadow-2xl shadow-black/80 overflow-hidden flex flex-row ${isMaximized ? 'maximized h-full w-full max-w-full' : 'w-[92vw] max-w-7xl'}`}

@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle, X, Trash2 } from 'lucide-react'
 
-export default function DeleteModal({ isOpen, onClose, onConfirm, title = "Erase Data", message = "Are you sure? This action is irreversible." }) {
+const DeleteModal = memo(({ isOpen, onClose, onConfirm, title = "Erase Data", message = "Are you sure? This action is irreversible." }) => {
   if (!isOpen) return null
 
   return (
@@ -50,4 +51,6 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, title = "Erase
       </div>
     </AnimatePresence>
   )
-}
+})
+
+export default DeleteModal

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, memo, useEffect } from 'react'
+import { useState, useRef, useMemo, memo, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Library, FileText, Sparkles, Brain, ListChecks, Loader2, Star, RefreshCcw, Maximize2, Minimize2, X, Pencil, Quote, Copy, AlertCircle } from 'lucide-react'
 import ModalCommandHeader from './ModalCommandHeader'
@@ -101,7 +101,26 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   const [isEditing, setIsEditing] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [titleEditVal, setTitleEditVal] = useState('')
-  const [isMaximized, setIsMaximized] = useState(true)
+  const [isMaximized, setIsMaximized] = useState(() => {
+    return localStorage.getItem('studytube_reader_maximized') !== 'false' // Default to true as before
+  })
+
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // Persistence Protocol
+  useEffect(() => {
+    localStorage.setItem('studytube_reader_maximized', isMaximized)
+  }, [isMaximized])
+
+  // Hydration Protocol: Prevents main-thread freeze on mount
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => setIsHydrated(true), 150)
+      return () => clearTimeout(timer)
+    } else {
+      setIsHydrated(false)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (isOpen && item) {
@@ -192,8 +211,14 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   /**
    * Lexical Visualization: Dynamically wraps identified terminology in the research content.
    */
-  const renderContentWithHeatmap = (text) => {
-    if (!highlights.length) return <ReactMarkdown remarkPlugins={[remarkGfm]} components={neuralComponents}>{text}</ReactMarkdown>
+  const renderContentWithHeatmap = useCallback((text) => {
+    if (!highlights.length) {
+      return (
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={neuralComponents}>
+          {text}
+        </ReactMarkdown>
+      )
+    }
     
     // Hardened Regex: Escape special characters in highlights
     const safeHighlights = highlights.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
@@ -204,124 +229,132 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
         {text.split(regex).map(p => highlights.includes(p.toLowerCase()) ? `**${p}**` : p).join('')}
       </ReactMarkdown>
     )
-  }
+  }, [highlights]);
 
   const industrialTransition = { type: 'spring', damping: 25, stiffness: 300, mass: 0.5 }
 
   return (
     <AnimatePresence>
-      <div className={`fixed inset-0 z-[200] flex items-center justify-center transition-all duration-500 ${isMaximized ? 'p-0' : 'p-0 lg:p-8'}`}>
+      <div className={`fixed inset-0 z-[1000] flex items-center justify-center transition-all duration-500 ${isMaximized ? 'p-0' : 'p-0 lg:p-8'}`}>
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          transition={{ duration: 0.2 }}
-          className="absolute inset-0 bg-black/90 backdrop-blur-md" 
+          transition={{ duration: 0.15 }}
+          className="absolute inset-0 bg-black/90 backdrop-blur-md px-4" 
           onClick={onClose} 
         />
         <motion.div 
-          layout
-          initial={{ opacity: 0, scale: 0.98, y: 40 }} 
+          initial={{ opacity: 0, scale: 1, y: 0 }} 
           animate={{ opacity: 1, scale: 1, y: 0 }} 
-          exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-          transition={industrialTransition}
+          exit={{ opacity: 0, scale: 1, y: 0 }} 
+          transition={{ duration: 0.08, ease: "linear" }}
           style={{ borderRadius: isMaximized ? 0 : 5 }}
           className={`relative h-[88vh] bg-surface border border-border shadow-2xl shadow-black/80 overflow-hidden flex flex-row ${isMaximized ? 'h-full w-full max-w-full' : 'w-[92vw] max-w-7xl'}`}
         >
-          
-          <ContentArea 
-             item={item} isEditing={isEditing} isMaximized={isMaximized}
-             titleEditVal={titleEditVal} setTitleEditVal={setTitleEditVal}
-             editVal={editVal} setEditVal={setEditVal}
-             highlights={highlights} renderContentWithHeatmap={renderContentWithHeatmap}
-          />
+          {!isHydrated ? (
+            <div className="flex-1 flex flex-col items-center justify-center bg-surface transition-all duration-500">
+               <div className="flex items-center gap-3 opacity-20">
+                  <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-accent">Synchronizing Neural Workspace...</span>
+               </div>
+            </div>
+          ) : (
+            <>
+              <ContentArea 
+                item={item} isEditing={isEditing} isMaximized={isMaximized}
+                titleEditVal={titleEditVal} setTitleEditVal={setTitleEditVal}
+                editVal={editVal} setEditVal={setEditVal}
+                highlights={highlights} renderContentWithHeatmap={renderContentWithHeatmap}
+              />
 
-          {/* Industrial Command Sidebar */}
-          <div className={`w-[280px] shrink-0 border-l border-border bg-surface-2 flex flex-col relative z-50 overflow-y-auto scrollbar-thin ${isMaximized ? 'rounded-none' : 'rounded-r-[5px]'}`}>
-             
-             <ModalCommandHeader 
-               title="Hub-Zero" 
-               subtitle="Archive" 
-               Icon={Library} 
-               onClose={onClose} 
-               onMaximize={() => setIsMaximized(!isMaximized)}
-               isMaximized={isMaximized}
-             />
-             
-             <div className="flex-1 overflow-y-auto scrollbar-thin px-6 pt-8 pb-10 space-y-10">
-              {/* Action Interface */}
-              <div className="space-y-4">
-                 <p className="text-[9px] font-black uppercase tracking-[0.4em] text-muted/40 px-1 flex items-center gap-2">
-                    <Star className="h-3.5 w-3.5" /> Document Actions
-                 </p>
-                <div className="flex flex-col gap-3">
-                    {isEditing ? (
-                      <div className="flex flex-col gap-2">
-                        <button onClick={handleSaveEdit} className="w-full py-4 bg-accent text-white text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20 rounded-[5px]">Commit Changes</button>
-                        <button onClick={() => setIsEditing(false)} className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all rounded-[5px] border border-red-500/20">Abort Edit</button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <button onClick={startEditing} className="flex-1 py-3 bg-accent text-white text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group rounded-[5px] shadow-lg shadow-accent/10">
-                          <Pencil className="h-3.5 w-3.5" /> Edit
+              {/* Industrial Command Sidebar */}
+              <div className={`w-[280px] shrink-0 border-l border-border bg-surface-2 flex flex-col relative z-50 overflow-y-auto scrollbar-thin ${isMaximized ? 'rounded-none' : 'rounded-r-[5px]'}`}>
+                
+                <ModalCommandHeader 
+                  title="Hub-Zero" 
+                  subtitle="Archive" 
+                  Icon={Library} 
+                  onClose={onClose} 
+                  onMaximize={() => setIsMaximized(!isMaximized)}
+                  isMaximized={isMaximized}
+                />
+                
+                <div className="flex-1 overflow-y-auto scrollbar-thin px-6 pt-8 pb-10 space-y-10">
+                  {/* Action Interface */}
+                  <div className="space-y-4">
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-muted/40 px-1 flex items-center gap-2">
+                       <Star className="h-3.5 w-3.5" /> Document Actions
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        {isEditing ? (
+                          <div className="flex flex-col gap-2">
+                            <button onClick={handleSaveEdit} className="w-full py-4 bg-accent text-white text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20 rounded-[5px]">Commit Changes</button>
+                            <button onClick={() => setIsEditing(false)} className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all rounded-[5px] border border-red-500/20">Abort Edit</button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button onClick={startEditing} className="flex-1 py-3 bg-accent text-white text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group rounded-[5px] shadow-lg shadow-accent/10">
+                              <Pencil className="h-3.5 w-3.5" /> Edit
+                            </button>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${item.text}\n\n${item.definition}`)
+                                showToast('Copied')
+                              }}
+                              className="flex-1 py-3 bg-surface-3 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-text hover:text-background transition-all flex items-center justify-center gap-2 rounded-[5px]"
+                            >
+                              <Copy className="h-3.5 w-3.5" /> Copy
+                            </button>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border/50 mx-2" />
+
+                  {/* Logic Core */}
+                  <div className="space-y-5">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted/30 px-1 flex items-center gap-2">
+                        <Brain className="h-3 w-3" /> Logic
+                    </p>
+                    <div className="space-y-3">
+                        <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left relative rounded-[5px]">
+                          {isSummarizing ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Sparkles className="h-4 w-4 text-accent group-hover:text-white" />}
+                          <div>
+                            <p className="text-[10px] font-black text-text uppercase tracking-widest group-hover:text-white">Synthesis</p>
+                            <p className="text-[8px] text-accent group-hover:text-white/60 uppercase">Deep Insight</p>
+                          </div>
                         </button>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${item.text}\n\n${item.definition}`)
-                            showToast('Copied')
-                          }}
-                          className="flex-1 py-3 bg-surface-3 border border-border text-text text-[10px] font-black uppercase tracking-widest hover:bg-text hover:text-background transition-all flex items-center justify-center gap-2 rounded-[5px]"
-                        >
-                          <Copy className="h-3.5 w-3.5" /> Copy
-                        </button>
-                      </div>
-                    )}
+
+                        <div className="flex gap-2">
+                          <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="flex-1 p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left rounded-[5px]">
+                            {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-muted" /> : <ListChecks className="h-4 w-4 text-text" />}
+                            <div>
+                              <p className="text-[10px] font-black text-text uppercase tracking-widest">Heatmap</p>
+                              <p className="text-[9px] text-muted uppercase">Identify</p>
+                            </div>
+                          </button>
+                          {highlights.length > 0 && (
+                            <button 
+                              onClick={() => { setHighlights([]); showToast('Heatmap Deactivated') }}
+                              className="px-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/10 rounded-[5px]"
+                              title="Clear Highlights"
+                            >
+                              <RefreshCcw className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div className="h-px bg-border/50 mx-2" />
-
-              {/* Logic Core (Shifted Down) */}
-              <div className="space-y-5">
-                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted/30 px-1 flex items-center gap-2">
-                    <Brain className="h-3 w-3" /> Logic
-                 </p>
-                 <div className="space-y-3">
-                    <button onClick={handleGenerateSummary} disabled={isSummarizing} className="w-full p-4 bg-accent/5 border border-accent/20 flex items-center gap-4 group hover:bg-accent transition-all disabled:opacity-50 text-left relative rounded-[5px]">
-                      {isSummarizing ? <Loader2 className="h-4 w-4 text-accent animate-spin" /> : <Sparkles className="h-4 w-4 text-accent group-hover:text-white" />}
-                      <div>
-                        <p className="text-[10px] font-black text-text uppercase tracking-widest group-hover:text-white">Synthesis</p>
-                        <p className="text-[8px] text-accent group-hover:text-white/60 uppercase">Deep Insight</p>
-                      </div>
-                    </button>
-
-                    <div className="flex gap-2">
-                      <button onClick={handleIdentifyVocab} disabled={isHighlighting} className="flex-1 p-4 bg-surface-2 border border-border flex items-center gap-4 group hover:bg-surface-3 transition-all disabled:opacity-50 text-left rounded-[5px]">
-                        {isHighlighting ? <Loader2 className="h-4 w-4 animate-spin text-muted" /> : <ListChecks className="h-4 w-4 text-text" />}
-                        <div>
-                          <p className="text-[10px] font-black text-text uppercase tracking-widest">Heatmap</p>
-                          <p className="text-[9px] text-muted uppercase">Identify</p>
-                        </div>
-                      </button>
-                      {highlights.length > 0 && (
-                        <button 
-                          onClick={() => { setHighlights([]); showToast('Heatmap Deactivated') }}
-                          className="px-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/10 rounded-[5px]"
-                          title="Clear Highlights"
-                        >
-                          <RefreshCcw className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                 </div>
-              </div>
-
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  </AnimatePresence>
-)
+            </>
+          )}
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  )
 }
 
 export default memo(CardReaderModal)
