@@ -1,4 +1,4 @@
-import { useMemo, memo, useState, useEffect, useRef, useDeferredValue } from 'react'
+import { useMemo, memo, useState, useEffect, useRef, useDeferredValue, useCallback } from 'react'
 // ... rest of imports
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -44,49 +44,53 @@ function LibraryView({
   // Industrial State: Only holds the visible window of research
   const [localVocab, setLocalVocab] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isAppending, setIsAppending] = useState(false)
 
   // High-Performance Optimization: Defer the background filtering to keep typing fast
   const deferredSearchQuery = useDeferredValue(searchQuery)
 
   // Neural Pagination: Fetch only what is visible - Optimized for 100k+ records
-  useEffect(() => {
-    const fetchPage = async () => {
-      const controller = new AbortController();
-      let forceHydrate = false;
+  const syncLibraryPage = useCallback(async (showLoader = true) => {
+    const controller = new AbortController();
+    let forceHydrate = false;
+    
+    const timeout = setTimeout(() => {
+      forceHydrate = true;
+      setLoading(false);
+      setIsAppending(false);
+      console.warn('[NEURAL GATEWAY] Fetch timeout exceeded. Forcing hydration.');
+    }, 6000);
+
+    // Industrial Minimum Pulse Delay (300ms) to ensure visual consistency
+    const minDelay = new Promise(resolve => setTimeout(resolve, showLoader ? 300 : 0));
+
+    if (showLoader && !isAppending) setLoading(true)
+    try {
+      const fetchPromise = api.loadVocabPage({ 
+        collection: selectedCollection, 
+        sortBy, 
+        limit: displayLimit 
+      });
+
+      const [page] = await Promise.all([fetchPromise, minDelay]);
       
-      const timeout = setTimeout(() => {
-        forceHydrate = true;
-        setLoading(false);
-        console.warn('[NEURAL GATEWAY] Fetch timeout exceeded. Forcing hydration.');
-      }, 6000);
-
-      // Industrial Minimum Pulse Delay (300ms) to ensure visual consistency
-      const minDelay = new Promise(resolve => setTimeout(resolve, 300));
-
-      setLoading(true)
-      try {
-        const fetchPromise = api.loadVocabPage({ 
-          collection: selectedCollection, 
-          sortBy, 
-          limit: displayLimit 
-        });
-
-        const [page] = await Promise.all([fetchPromise, minDelay]);
-        
-        if (!forceHydrate) {
-          setLocalVocab(page || [])
-          // Micro-tick for DOM hydration before releasing loader
-          await new Promise(r => setTimeout(r, 50));
-        }
-      } catch (err) {
-        console.error('Paginated fetch failure', err)
-      } finally {
-        clearTimeout(timeout);
-        setLoading(false)
+      if (!forceHydrate) {
+        setLocalVocab(page || [])
+        // Micro-tick for DOM hydration before releasing loader
+        await new Promise(r => setTimeout(r, 50));
       }
+    } catch (err) {
+      console.error('Paginated fetch failure', err)
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false)
+      setIsAppending(false)
     }
-    fetchPage()
-  }, [selectedCollection, sortBy, displayLimit, api])
+  }, [selectedCollection, sortBy, displayLimit, api]);
+
+  useEffect(() => {
+    syncLibraryPage(true)
+  }, [syncLibraryPage])
 
   // Initial Load from SQLite search log
   useEffect(() => {
@@ -243,7 +247,8 @@ function LibraryView({
       if (syncStats) syncStats()
       if (setVocab) setVocab(prev => prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item))
       
-      if (selectedCard?.id === updated.id || selectedCard?.date === updated.date) setSelectedCard(updated)
+      // Perform Industrial Silent Refill to keep the grid full without displacement
+      syncLibraryPage(false)
     } catch (err) {
       console.error('Update failure', err)
       showToast('Nexus Synchrony Failure: Update not persistent', 'error')
@@ -283,8 +288,8 @@ function LibraryView({
         showToast('Insight moved to trash', 'success')
       }
       
-      // Refresh visible page view + global counters
-      setLocalVocab(prev => prev.filter(item => (item.id || item.date) !== itemId))
+      // Refresh visible page view + global counters + Automatic Silent Refill
+      await syncLibraryPage(false)
       if (syncStats) syncStats()
       if (setVocab) setVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
       
@@ -448,11 +453,16 @@ function LibraryView({
                       <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
                     </div>
                   ) : (
-                    <div className="prose prose-invert prose-xs text-[13px] text-text/70 leading-[1.6] select-text line-clamp-4">
-                       <ReactMarkdown>{v.definition}</ReactMarkdown>
+                    <div className="text-[12px] text-text/60 leading-[1.6] select-text font-light tracking-wide italic overflow-hidden">
+                       {v.definition
+                         ?.replace(/[#*`~_]/g, '')
+                         ?.replace(/\[(.*?)\]\(.*?\)/g, '$1')
+                         ?.split(/\s+/)
+                         ?.slice(0, 20)
+                         ?.join(' ')}
+                       {(v.definition?.split(/\s+/).length > 20) ? '...' : ''}
                     </div>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-surface group-hover:from-surface-2 transition-colors to-transparent pointer-events-none" />
                 </div>
               </div>
 
@@ -727,15 +737,9 @@ function LibraryView({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="flex-1 flex items-center justify-center absolute inset-0 z-50 bg-surface/60 backdrop-blur-sm"
+                      className="absolute inset-0 z-50 flex items-center justify-center bg-surface/20 pointer-events-none"
                     >
-                      <PulseLoader 
-                        message={
-                          selectedCollection === 'all' ? "Synchronizing ALL Research..." :
-                          selectedCollection === 'trash' ? "Polling Neural Trash..." :
-                          `Accessing "${selectedCollection}" Archive...`
-                        } 
-                      />
+                      <PulseLoader />
                     </motion.div>
                   ) : (
                     <motion.div 
@@ -748,12 +752,21 @@ function LibraryView({
                       {gridMemo}
 
                       {localVocab.length >= displayLimit && (
-                        <div className="flex justify-center mt-12 py-10">
+                        <div className="flex justify-center mt-6 pb-12">
                           <button 
-                            onClick={() => setDisplayLimit(p => p + 6)}
-                            className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl "
+                            disabled={isAppending}
+                            onClick={() => {
+                              setIsAppending(true)
+                              setDisplayLimit(p => p + 6)
+                            }}
+                            className="group relative px-8 py-2.5 bg-surface-2 border border-border/40 text-text/60 text-[9px] font-black uppercase tracking-[0.3em] hover:bg-surface-3 hover:text-accent hover:border-accent/40 transition-all disabled:opacity-50"
                           >
-                            Load More Research Entries
+                            <span className={isAppending ? 'opacity-0' : 'opacity-100'}>Synchronize More Nodes</span>
+                            {isAppending && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
+                              </div>
+                            )}
                           </button>
                         </div>
                       )}
