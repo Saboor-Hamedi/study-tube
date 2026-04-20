@@ -146,7 +146,7 @@ export function getLibraryPage({ collection, sortBy, limit, id }) {
       query += ` WHERE archived = 0`
     }
     
-    if (sortBy === 'alpha') query += ` ORDER BY text COLLATE NOCASE ASC`
+    if (sortBy === 'alpha') query += ` ORDER BY date ASC`
     else query += ` ORDER BY date DESC`
     
     if (limit) {
