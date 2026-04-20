@@ -17,9 +17,8 @@ export default function App() {
   const [chatHistory, setChatHistory] = useState([
     { role: 'assistant', content: 'Hello. I am your studyTube research copilot. I can help you analyze saved words, suggest grammar rules, or create custom research cards. Ask me anything.' }
   ])
-  const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('date')
-  const [displayLimit, setDisplayLimit] = useState(10)
+  const [displayLimit, setDisplayLimit] = useState(6)
   const [videoQuery, setVideoQuery] = useState('')
   const [videoResults, setVideoResults] = useState([])
   const [videoPreview, setVideoPreview] = useState(null)
@@ -114,7 +113,6 @@ export default function App() {
               collections={collections} setCollections={setCollections}
               selectedCollection={selectedCollection}
               setSelectedCollection={setSelectedCollection}
-              searchQuery={searchQuery} setSearchQuery={setSearchQuery}
               sortBy={sortBy} setSortBy={setSortBy}
               displayLimit={displayLimit} setDisplayLimit={setDisplayLimit}
               api={api}

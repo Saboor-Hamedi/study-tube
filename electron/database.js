@@ -226,7 +226,7 @@ export function searchLibraryFTS(query) {
       JOIN library_fts ON l.rowid = library_fts.rowid
       WHERE library_fts MATCH '"' || ? || '"*'
       ORDER BY rank
-      LIMIT 10
+      LIMIT 6
     `).all(query);
 
     return rows;

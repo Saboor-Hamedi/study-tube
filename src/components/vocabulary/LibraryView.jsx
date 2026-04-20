@@ -1,4 +1,5 @@
-import { useMemo, memo, useState, useEffect, useRef } from 'react'
+import { useMemo, memo, useState, useEffect, useRef, useDeferredValue } from 'react'
+// ... rest of imports
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Loader2, Trash2, Search as SearchIcon, RefreshCcw, 
@@ -21,11 +22,11 @@ function LibraryView({
   vocab, setVocab, 
   collections, setCollections, 
   selectedCollection, setSelectedCollection,
-  searchQuery, setSearchQuery,
   sortBy, setSortBy,
   displayLimit, setDisplayLimit,
   api, showToast
 }) {
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedCard, setSelectedCard] = useState(null)
   const [itemToDelete, setItemToDelete] = useState(null)
   const [activeDragItem, setActiveDragItem] = useState(null)
@@ -37,6 +38,9 @@ function LibraryView({
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const searchInputRef = useRef(null)
   const historyRef = useRef(null)
+
+  // High-Performance Optimization: Defer the background filtering to keep typing fast
+  const deferredSearchQuery = useDeferredValue(searchQuery)
 
   // Initial Load from SQLite
   useEffect(() => {
@@ -70,7 +74,7 @@ function LibraryView({
       }
     }
 
-    const timer = setTimeout(search, 150) // Tactical Debounce
+    const timer = setTimeout(search, 100) // Blazing Fast Debounce
     return () => clearTimeout(timer)
   }, [searchQuery])
 
@@ -145,37 +149,43 @@ function LibraryView({
   const [newCollectionName, setNewCollectionName] = useState('')
 
   const filtered = useMemo(() => {
-    return vocab
-      .filter(v => {
-        const q = searchQuery.toLowerCase().trim()
-        
-        // Accelerated Search Vector Check
-        if (q === '') {
-           if (selectedCollection === 'all') return !v.archived
-           if (selectedCollection === 'trash') return v.archived
-           if (selectedCollection === 'unorganized') return !v.archived && !v.collection
-           return !v.archived && v.collection === selectedCollection
-        }
+    const q = deferredSearchQuery.toLowerCase().trim()
+    
+    // Step 1: Filter
+    const results = vocab.filter(v => {
+      // Fast path for empty search
+      if (q === '') {
+         if (selectedCollection === 'all') return !v.archived
+         if (selectedCollection === 'trash') return v.archived
+         if (selectedCollection === 'unorganized') return !v.archived && !v.collection
+         return !v.archived && v.collection === selectedCollection
+      }
 
-        const searchVector = v._searchIndex || (v.text + ' ' + (v.definition || '') + ' ' + (v.videoTitle || '')).toLowerCase()
-        if (!v._searchIndex) v._searchIndex = searchVector
+      // Optimized Search Vector matching (no mutation inside filter)
+      const matchesSearch = (
+        v.text.toLowerCase().includes(q) || 
+        (v.definition && v.definition.toLowerCase().includes(q)) ||
+        (v.videoTitle && v.videoTitle.toLowerCase().includes(q))
+      )
 
-        const matchesSearch = searchVector.includes(q)
-        if (selectedCollection === 'trash') return matchesSearch && v.archived
-        if (v.archived) return false
-        if (selectedCollection === 'unorganized') return matchesSearch && !v.collection
-        if (selectedCollection && selectedCollection !== 'all') return matchesSearch && v.collection === selectedCollection
-        return matchesSearch
-      })
-      .sort((a, b) => {
-        if (sortBy === 'newest') return new Date(b.date) - new Date(a.date)
-        if (sortBy === 'oldest') return new Date(v.date) - new Date(a.date)
-        if (sortBy === 'alpha') return a.text.localeCompare(b.text)
-        return 0
-      })
-  }, [vocab, selectedCollection, searchQuery, sortBy])
+      if (selectedCollection === 'trash') return matchesSearch && v.archived
+      if (v.archived) return false
+      if (selectedCollection === 'unorganized') return matchesSearch && !v.collection
+      if (selectedCollection && selectedCollection !== 'all') return matchesSearch && v.collection === selectedCollection
+      return matchesSearch
+    })
 
-  const visible = filtered.slice(0, displayLimit)
+    // Step 2: Sort (Optimized Date Parsing)
+    return results.sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime()
+      if (sortBy === 'oldest') return new Date(a.date).getTime() - new Date(b.date).getTime()
+      if (sortBy === 'alpha') return a.text.localeCompare(b.text)
+      return 0
+    })
+  }, [vocab, selectedCollection, deferredSearchQuery, sortBy])
+
+  const visible = useMemo(() => filtered.slice(0, displayLimit), [filtered, displayLimit])
+
 
   /**
    * Neural Prepend: Commits a new manual research node to the archive.
@@ -349,6 +359,113 @@ function LibraryView({
     setIsInsightCaptureModalOpen(true)
   }
 
+  // Top-Level Memoization: Prevents Hook Violations & Isolation Latency
+  const sidebarMemo = useMemo(() => (
+    <Sidebar 
+      collections={collections} 
+      selectedCollection={selectedCollection} 
+      setSelectedCollection={setSelectedCollection} 
+      handleDeleteCollection={handleDeleteCollection}
+      handleRenameCollection={handleRenameCollection}
+      handleCreateCollection={handleCreateCollection}
+      isCreatingCollection={isCreatingCollection}
+      setIsCreatingCollection={setIsCreatingCollection}
+      newCollectionName={newCollectionName}
+      setNewCollectionName={setNewCollectionName}
+      showTrash={true}
+    />
+  ), [collections, selectedCollection, isCreatingCollection, newCollectionName])
+
+  const gridMemo = useMemo(() => (
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
+      {visible.map((v, i) => (
+        <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
+          {({ listeners, attributes }) => (
+            <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative border border-transparent hover:border-border/20">
+              <div className="flex flex-col gap-4 overflow-hidden">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex flex-col gap-1 min-h-[44px]">
+                    <h3 className="text-[14px] font-bold text-text leading-normal line-clamp-2">{v.text}</h3>
+                    {v.type && (
+                      <span className="text-accent text-[11px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 20)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                    <div {...listeners} {...attributes} className="p-1.5 bg-surface-3 border border-border hover:bg-accent text-muted hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </div>
+                    <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-hidden relative">
+                  {v.loading ? (
+                    <div className="flex items-center gap-2 py-1 opacity-50">
+                      <Loader2 className="h-3 w-3 animate-spin text-accent" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
+                    </div>
+                  ) : (
+                    <div className="prose prose-invert prose-xs text-[13px] text-text/70 leading-[1.6] select-text line-clamp-4">
+                       <ReactMarkdown>{v.definition}</ReactMarkdown>
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-surface group-hover:from-surface-2 transition-colors to-transparent pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="mt-auto pt-1.5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                   <div className="flex flex-col">
+                      <span className="text-[9px] text-muted font-bold uppercase tracking-tighter line-clamp-1 opacity-40">{v.videoTitle || 'Universal Knowledge'}</span>
+                      <span className="text-[8px] text-muted/20 font-mono tracking-tighter uppercase">{new Date(v.date).toLocaleDateString()}</span>
+                   </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button 
+                     onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
+                     className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
+                   >
+                      <DownloadIcon className="h-3.5 w-3.5" />
+                   </button>
+                   {v.archived ? (
+                      <button 
+                        onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }}
+                        className="p-1.5 hover:bg-accent/10 text-accent  transition-all"
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5" />
+                      </button>
+                   ) : v.collection && (
+                      <button 
+                       onClick={(i_e) => {
+                         i_e.stopPropagation()
+                         handleUpdateItem({ ...v, collection: null })
+                         showToast(`Removed from ${v.collection}`)
+                       }}
+                        className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent  transition-all"
+                      >
+                       <FolderMinus className="h-3.5 w-3.5" />
+                      </button>
+                   )}
+                   <button 
+                     onClick={(i_e) => {
+                       i_e.stopPropagation()
+                       setItemToDelete(v)
+                     }}
+                     className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
+                   >
+                     <Trash2 className="h-3.5 w-3.5" />
+                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DraggableCard>
+      ))}
+    </div>
+  ), [visible, activeDragItem])
+
   return (
     <DndContext 
       sensors={sensors} 
@@ -359,19 +476,7 @@ function LibraryView({
     >
       <div className="flex h-full bg-background transition-colors duration-500 overflow-hidden">
         <div className="flex-1 flex overflow-hidden">
-          <Sidebar 
-            collections={collections} 
-            selectedCollection={selectedCollection} 
-            setSelectedCollection={setSelectedCollection} 
-            handleDeleteCollection={handleDeleteCollection}
-            handleRenameCollection={handleRenameCollection}
-            handleCreateCollection={handleCreateCollection}
-            isCreatingCollection={isCreatingCollection}
-            setIsCreatingCollection={setIsCreatingCollection}
-            newCollectionName={newCollectionName}
-            setNewCollectionName={setNewCollectionName}
-            showTrash={true}
-          />
+          {sidebarMemo}
 
           <div className="flex-1 flex flex-col">
             {/* Universal Standardized Header */}
@@ -441,6 +546,7 @@ function LibraryView({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
+                        style={{ willChange: 'transform, opacity' }}
                         className="absolute inset-x-0 top-full bg-surface-3 border-x border-b border-border shadow-2xl z-[100] backdrop-blur-xl overflow-hidden rounded-b-[5px]"
                       >
                         <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-black/40">
@@ -573,98 +679,12 @@ function LibraryView({
 
             <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
               <div className="max-w-[1400px] mx-auto">
-                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
-                  {visible.map((v, i) => (
-                    <DraggableCard key={v.date || i} id={v.date || i} v={v} useHandle={true}>
-                      {({ listeners, attributes }) => (
-                        <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative border border-transparent hover:border-border/20">
-                          <div className="flex flex-col gap-4 overflow-hidden">
-                            <div className="flex justify-between items-start gap-3">
-                              <div className="flex flex-col gap-1 min-h-[44px]">
-                                <h3 className="text-[14px] font-bold text-text leading-normal line-clamp-2">{v.text}</h3>
-                                {v.type && (
-                                  <span className="text-accent text-[11px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 20)}</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                <div {...listeners} {...attributes} className="p-1.5 bg-surface-3 border border-border hover:bg-accent text-muted hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
-                                  <GripVertical className="h-3.5 w-3.5" />
-                                </div>
-                                <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
-                                  <Maximize2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="flex-1 overflow-hidden relative">
-                              {v.loading ? (
-                                <div className="flex items-center gap-2 py-1 opacity-50">
-                                  <Loader2 className="h-3 w-3 animate-spin text-accent" />
-                                  <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
-                                </div>
-                              ) : (
-                                <div className="prose prose-invert prose-xs text-[13px] text-text/70 leading-[1.6] select-text line-clamp-4">
-                                   <ReactMarkdown>{v.definition}</ReactMarkdown>
-                                </div>
-                              )}
-                              <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-surface group-hover:from-surface-2 transition-colors to-transparent pointer-events-none" />
-                            </div>
-                          </div>
-
-                          <div className="mt-auto pt-1.5 flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-2">
-                               <div className="flex flex-col">
-                                  <span className="text-[9px] text-muted font-bold uppercase tracking-tighter line-clamp-1 opacity-40">{v.videoTitle || 'Universal Knowledge'}</span>
-                                  <span className="text-[8px] text-muted/20 font-mono tracking-tighter uppercase">{new Date(v.date).toLocaleDateString()}</span>
-                               </div>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                               <button 
-                                 onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
-                                 className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
-                               >
-                                  <DownloadIcon className="h-3.5 w-3.5" />
-                               </button>
-                               {v.archived ? (
-                                  <button 
-                                    onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }}
-                                    className="p-1.5 hover:bg-accent/10 text-accent  transition-all"
-                                  >
-                                    <RefreshCcw className="h-3.5 w-3.5" />
-                                  </button>
-                               ) : v.collection && (
-                                  <button 
-                                   onClick={(i_e) => {
-                                     i_e.stopPropagation()
-                                     handleUpdateItem({ ...v, collection: null })
-                                     showToast(`Removed from ${v.collection}`)
-                                   }}
-                                   className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent  transition-all"
-                                  >
-                                   <FolderMinus className="h-3.5 w-3.5" />
-                                  </button>
-                               )}
-                               <button 
-                                 onClick={(i_e) => {
-                                   i_e.stopPropagation()
-                                   setItemToDelete(v)
-                                 }}
-                                 className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
-                               >
-                                 <Trash2 className="h-3.5 w-3.5" />
-                               </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </DraggableCard>
-                  ))}
-                </div>
+                {gridMemo}
 
                 {filtered.length > displayLimit && (
                   <div className="flex justify-center mt-12 py-10">
                     <button 
-                      onClick={() => setDisplayLimit(p => p + 12)}
+                      onClick={() => setDisplayLimit(p => p + 6)}
                       className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl "
                     >
                       Load More Research Entries
@@ -676,38 +696,44 @@ function LibraryView({
                 <button className='fab-button' onClick={() => setIsInsightCaptureModalOpen(true)}>
                   <Plus className="h-3.5 w-3.5" />
                 </button>
-
-                <InsightCaptureModal 
-                  isOpen={isInsightCaptureModalOpen}
-                  onClose={() => setIsInsightCaptureModalOpen(false)}
-                  showToast={showToast}
-                  api={api}
-                  onInsert={handleAddItem}
-                  collections={collections}
-                />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <CardReaderModal 
-        isOpen={!!selectedCard} 
-        item={selectedCard} 
-        onClose={() => setSelectedCard(null)} 
-        showToast={showToast}
-        api={api}
-        onUpdate={handleUpdateItem}
-        collections={collections}
-      />
+      {isInsightCaptureModalOpen && (
+        <InsightCaptureModal 
+          isOpen={isInsightCaptureModalOpen}
+          onClose={() => setIsInsightCaptureModalOpen(false)}
+          showToast={showToast}
+          api={api}
+          onInsert={handleAddItem}
+          collections={collections}
+        />
+      )}
 
-      <DeleteModal 
-        isOpen={!!itemToDelete}
-        title={selectedCollection === 'trash' || itemToDelete?.archived ? 'Eradicate Research?' : 'Move to Trash?'}
-        message={selectedCollection === 'trash' || itemToDelete?.archived ? 'This action permanently dissolves the insight from the neural archive.' : 'The insight will be moved to the trash for later disposal.'}
-        onConfirm={handleDelete}
-        onClose={() => setItemToDelete(null)}
-      />
+      {selectedCard && (
+        <CardReaderModal 
+          isOpen={!!selectedCard} 
+          item={selectedCard} 
+          onClose={() => setSelectedCard(null)} 
+          showToast={showToast}
+          api={api}
+          onUpdate={handleUpdateItem}
+          collections={collections}
+        />
+      )}
+
+      {itemToDelete && (
+        <DeleteModal 
+          isOpen={!!itemToDelete}
+          title={selectedCollection === 'trash' || itemToDelete?.archived ? 'Eradicate Research?' : 'Move to Trash?'}
+          message={selectedCollection === 'trash' || itemToDelete?.archived ? 'This action permanently dissolves the insight from the neural archive.' : 'The insight will be moved to the trash for later disposal.'}
+          onConfirm={handleDelete}
+          onClose={() => setItemToDelete(null)}
+        />
+      )}
 
       <DragOverlay dropAnimation={null}>
         {activeDragItem ? (
