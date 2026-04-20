@@ -159,54 +159,96 @@ export default function App() {
     }
   }
 
+  const videoProps = {
+    savePath, setSavePath, 
+    onAddVocab: addVocab, 
+    query: videoQuery, setQuery: setVideoQuery, 
+    results: videoResults, setResults: setVideoResults, 
+    preview: videoPreview, setPreview: setVideoPreview, 
+    transcript: videoTranscript, setTranscript: setVideoTranscript, 
+    loadingTranscript, setLoadingTranscript, 
+    showToast, searchInputRef 
+  }
+
+  const libraryProps = {
+    vocab, setVocab, 
+    collections, setCollections, 
+    selectedCollection, setSelectedCollection, 
+    sortBy, setSortBy, 
+    displayLimit, setDisplayLimit, 
+    api, showToast, syncStats, stats: vocabStats, 
+    searchQuery: libQuery, setSearchQuery: setLibQuery, 
+    searchResults: libResults, setSearchResults: setLibResults, 
+    isSearching: isLibSearching, setIsSearching: setIsLibSearching, 
+    searchHistory: libHistory, setSearchHistory: setLibHistory, 
+    isHistoryOpen: isLibHistoryOpen, setIsHistoryOpen: setIsLibHistoryOpen, 
+    searchInputRef, historyRef: libHistoryRef, 
+    onExpand: (item) => { setSelectedResearchNode(item); setView('research-detail'); }
+  }
+
   return (
-    <div className="flex h-screen bg-background text-text overflow-hidden font-sans transition-colors duration-500">
-      <Activitybar view={view} setView={setView} onExport={handleGlobalExport} theme={theme} onToggleTheme={toggleTheme} stats={vocabStats} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
-          view={view} setView={setView} item={selectedResearchNode}
-          videoSearch={view === 'search' ? { query: videoQuery, setQuery: setVideoQuery, preview: videoPreview, setPreview: setVideoPreview, inputRef: searchInputRef, onSearch: () => window.dispatchEvent(new CustomEvent('video-search-trigger')) } : null}
-          librarySearch={(view === 'vocab' || view === 'research-detail') ? {
-            query: libQuery, setQuery: setLibQuery, inputRef: searchInputRef, results: libResults,
-            isHistoryOpen: isLibHistoryOpen, setIsHistoryOpen: setIsLibHistoryOpen,
-            history: libHistory, historyRef: libHistoryRef, isSearching: isLibSearching,
-            selectedIndex: libSelectedIndex, setSelectedIndex: setLibSelectedIndex,
-            syncHistory, removeFromHistory, clearHistory,
-            onSelect: (item) => { setSelectedResearchNode(item); setView('research-detail'); commitToHistory(item.text); setIsLibHistoryOpen(false); setLibSelectedIndex(-1); }
-          } : null}
-        />
-        <main className="flex-1 relative overflow-hidden">
-          {view === 'search' && (
-            <div className="absolute inset-0">
-              <VideoView savePath={savePath} setSavePath={setSavePath} onAddVocab={addVocab} query={videoQuery} setQuery={setVideoQuery} results={videoResults} setResults={setVideoResults} preview={videoPreview} setPreview={setVideoPreview} transcript={videoTranscript} setTranscript={setVideoTranscript} loadingTranscript={loadingTranscript} setLoadingTranscript={setLoadingTranscript} showToast={showToast} searchInputRef={searchInputRef} />
-            </div>
-          )}
-          {view === 'vocab' && (
-            <div className="absolute inset-0 overflow-y-auto scrollbar-thin">
-              <LibraryView vocab={vocab} setVocab={setVocab} collections={collections} setCollections={setCollections} selectedCollection={selectedCollection} setSelectedCollection={setSelectedCollection} sortBy={sortBy} setSortBy={setSortBy} displayLimit={displayLimit} setDisplayLimit={setDisplayLimit} api={api} showToast={showToast} syncStats={syncStats} stats={vocabStats} searchQuery={libQuery} setSearchQuery={setLibQuery} searchResults={libResults} setSearchResults={setLibResults} isSearching={isLibSearching} setIsSearching={setIsLibSearching} searchHistory={libHistory} setSearchHistory={setLibHistory} isHistoryOpen={isLibHistoryOpen} setIsHistoryOpen={setIsLibHistoryOpen} searchInputRef={searchInputRef} historyRef={libHistoryRef} onExpand={(item) => { setSelectedResearchNode(item); setView('research-detail'); }} />
-            </div>
-          )}
-          {view === 'research-detail' && (
-            <div className="absolute inset-0">
-              <InsightDetailView item={selectedResearchNode} setView={setView} showToast={showToast} api={api} onUpdate={async (updated) => { await api.saveVocabItem(updated); setSelectedResearchNode(updated); syncStats(); }} />
-            </div>
-          )}
-          {view === 'copilot' && (
-            <div className="absolute inset-0">
-              <CopilotView vocab={vocab} setVocab={setVocab} collections={collections} setCollections={setCollections} selectedCollection={selectedCollection} setSelectedCollection={setSelectedCollection} messages={chatHistory} setMessages={setChatHistory} setView={setView} api={api} showToast={showToast} />
-            </div>
-          )}
-          {view === 'editor' && (
-            <div className="absolute inset-0">
-              <EditorView api={api} showToast={showToast} />
-            </div>
-          )}
-          {view === 'settings' && (
-            <div className="absolute inset-0">
-              <SettingsView api={api} />
-            </div>
-          )}
-        </main>
+    <div className="flex h-screen bg-background text-text overflow-hidden font-sans transition-colors duration-500 relative">
+      {/* Bioluminescent Orbital Glow Layer */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-40">
+        <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
+        <div className="absolute -bottom-[10%] -left-[10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="relative z-10 flex w-full h-full">
+        <Activitybar view={view} setView={setView} onExport={handleGlobalExport} theme={theme} onToggleTheme={toggleTheme} stats={vocabStats} />
+        
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <Header 
+            view={view} setView={setView} item={selectedResearchNode}
+            videoSearch={view === 'search' ? { ...videoProps, onSearch: () => window.dispatchEvent(new CustomEvent('video-search-trigger')) } : null}
+            librarySearch={(view === 'vocab' || view === 'research-detail') ? {
+              ...libraryProps,
+              query: libQuery,
+              setQuery: setLibQuery,
+              history: libHistory,
+              results: libResults,
+              isSearching: isLibSearching,
+              onSelect: (item) => { setSelectedResearchNode(item); setView('research-detail'); commitToHistory(item.text); setIsLibHistoryOpen(false); setLibSelectedIndex(-1); },
+              syncHistory, removeFromHistory, clearHistory,
+              selectedIndex: libSelectedIndex, setSelectedIndex: setLibSelectedIndex
+            } : null}
+          />
+          
+          <main className="flex-1 relative overflow-hidden">
+            <AnimatePresence mode="wait">
+              {view === 'search' && (
+                <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                  <VideoView {...videoProps} />
+                </motion.div>
+              )}
+              {view === 'vocab' && (
+                <motion.div key="vocab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-y-auto scrollbar-thin">
+                  <LibraryView {...libraryProps} />
+                </motion.div>
+              )}
+              {view === 'research-detail' && (
+                <motion.div key="detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                  <InsightDetailView item={selectedResearchNode} setView={setView} showToast={showToast} api={api} onUpdate={async (updated) => { await api.saveVocabItem(updated); setSelectedResearchNode(updated); syncStats(); }} />
+                </motion.div>
+              )}
+              {view === 'copilot' && (
+                <motion.div key="copilot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                  <CopilotView vocab={vocab} setVocab={setVocab} collections={collections} setCollections={setCollections} selectedCollection={selectedCollection} setSelectedCollection={setSelectedCollection} messages={chatHistory} setMessages={setChatHistory} setView={setView} api={api} showToast={showToast} />
+                </motion.div>
+              )}
+              {view === 'editor' && (
+                <motion.div key="editor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                  <EditorView api={api} showToast={showToast} />
+                </motion.div>
+              )}
+              {view === 'settings' && (
+                <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                  <SettingsView api={api} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </main>
+        </div>
       </div>
       <Notification toast={toast} onClose={() => setToast(null)} />
     </div>

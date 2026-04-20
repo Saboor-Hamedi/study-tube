@@ -1,16 +1,27 @@
-import { Library, Search as SearchIcon, Loader2, ChevronLeft, RefreshCcw, Trash2, X, Sparkles } from 'lucide-react'
+import { Library, Search as SearchIcon, Loader2, ChevronLeft, RefreshCcw, Trash2, X, Sparkles, User as UserIcon, Settings, Sun, Moon, FileDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
 
 export default function Header({ 
   view, 
   setView, 
-  // Library Search Props
   librarySearch,
-  // Video Search Props
   videoSearch,
-  // Detail Props
   item,
 }) {
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const profileRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setIsProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const getHeaderTitle = () => {
     if (view === 'vocab') return 'Library View'
     if (view === 'search') return 'Video View'
@@ -27,13 +38,13 @@ export default function Header({
         {view === 'research-detail' && (
           <button 
             onClick={() => setView('vocab')}
-            className="p-1.5 bg-surface-2 text-muted hover:text-accent hover:bg-accent/10 transition-all"
+            className="p-1.5 bg-surface-2 text-muted hover:text-accent hover:bg-accent/10 transition-all rounded-[3px]"
             title="Return to Library"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         )}
-        <div className="p-1.5 bg-accent/10 text-accent transition-all">
+        <div className="p-1.5 bg-accent/10 text-accent transition-all rounded-[3px]">
           <Library className="h-3.5 w-3.5" />
         </div>
         <div className="hidden sm:block">
@@ -41,7 +52,6 @@ export default function Header({
         </div>
       </div>
 
-      {/* Global Search Interface Slot */}
       <div className="flex-1 max-w-lg px-4 sm:px-8 lg:px-12 transition-all">
         {view === 'vocab' && librarySearch && (
           <div className="relative group">
@@ -70,7 +80,6 @@ export default function Header({
                     librarySearch.onSelect(librarySearch.results[0])
                     librarySearch.setIsHistoryOpen(false)
                   } else {
-                    // Logic to commit to history will be handled by LibraryView effect
                     librarySearch.setIsHistoryOpen(false)
                   }
                 }
@@ -93,13 +102,12 @@ export default function Header({
                 librarySearch.setSelectedIndex(-1)
               }}
               placeholder="Search neural archive... (Ctrl+F)"
-              className="w-full bg-surface-2 border border-border py-1.5 px-9 text-[11px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[3px]"
+              className="w-full bg-surface-2/50 border border-border py-2 px-10 text-[11px] text-text outline-none focus:border-accent/60 focus:bg-surface-3 focus:ring-4 focus:ring-accent/5 transition-all placeholder:text-muted/20 rounded-[4px] shadow-sm"
             />
             <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
               <SearchIcon className={`h-3.5 w-3.5 transition-colors ${librarySearch.isSearching ? 'text-accent animate-pulse' : 'text-muted group-focus-within:text-accent'}`} />
             </div>
             
-            {/* Search History Dropdown */}
             <AnimatePresence>
               {librarySearch.isHistoryOpen && (
                 <motion.div 
@@ -176,8 +184,6 @@ export default function Header({
                       )
                     )}
                   </div>
-                  
-                  {/* Discovery Footer with Command Hints */}
                   <div className="px-4 py-2 bg-surface-2/50 border-t border-border/40 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5">
@@ -226,48 +232,71 @@ export default function Header({
         )}
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Workstation Switcher */}
-        <div className="flex items-center bg-surface-2 p-1 rounded-[3px]">
-          <button 
-            onClick={() => setView('search')} 
-            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${view === 'search' ? 'bg-surface-3 text-text shadow-sm' : 'text-muted hover:text-text'}`}
-          >
-            Discovery
-          </button>
-          <button 
-            onClick={() => setView('vocab')} 
-            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${(view === 'vocab' || view === 'research-detail') ? 'bg-surface-3 text-text shadow-sm' : 'text-muted hover:text-text'}`}
-          >
-            Laboratory
-          </button>
-          <button 
-            onClick={() => setView('editor')} 
-            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${view === 'editor' ? 'bg-surface-3 text-text shadow-sm' : 'text-muted hover:text-text'}`}
-          >
-            Synthesis
-          </button>
-        </div>
+      <div className="flex items-center gap-4 relative" ref={profileRef}>
+        <AnimatePresence>
+          {isProfileOpen && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute top-full right-0 mt-2 w-48 bg-surface-2 border border-border shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[250] overflow-hidden rounded-[5px] backdrop-blur-xl"
+            >
+              <div className="p-3 border-b border-border bg-black/20">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Navigation Hub</p>
+                <p className="text-[9px] text-muted tracking-wide mt-0.5">Switch Workstations</p>
+              </div>
 
-        {/* Synthesis Context Actions */}
-        {view === 'editor' && (
-          <div className="flex items-center gap-2 pl-2 border-l border-border/20">
-            <button 
-              onClick={() => window.dispatchEvent(new CustomEvent('editor:clear'))}
-              className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 transition-all rounded-[3px]"
-              title="Clear Neural Draft"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-            <button 
-              onClick={() => window.dispatchEvent(new CustomEvent('editor:refine'))}
-              className="flex items-center gap-2 px-4 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest hover:opacity-90 transition-all rounded-[3px]"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Refine
-            </button>
-          </div>
-        )}
+              <div className="p-1.5 space-y-0.5">
+                {[
+                  { id: 'search', name: 'Discovery', icon: SearchIcon },
+                  { id: 'vocab', name: 'Laboratory', icon: RefreshCcw },
+                  { id: 'editor', name: 'Synthesis', icon: Sparkles }
+                ].map(item => (
+                  <button 
+                    key={item.id}
+                    onClick={() => { setView(item.id); setIsProfileOpen(false) }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-[3px] ${view === item.id ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-surface-3 hover:text-text'}`}
+                  >
+                    <item.icon className="h-3.5 w-3.5" />
+                    <span>{item.name}</span>
+                  </button>
+                ))}
+
+                {view === 'editor' && (
+                  <>
+                    <div className="h-px bg-border/40 mx-2 my-1" />
+                    <button 
+                      onClick={() => { window.dispatchEvent(new CustomEvent('editor:clear')); setIsProfileOpen(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted hover:bg-red-500/10 hover:text-red-500 transition-all rounded-[3px]"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Clear Draft</span>
+                    </button>
+                    <button 
+                      onClick={() => { window.dispatchEvent(new CustomEvent('editor:refine')); setIsProfileOpen(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-accent hover:bg-accent/10 transition-all rounded-[3px]"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Refine Synthesis</span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="p-2 border-t border-border bg-black/40 flex items-center gap-2">
+                <div className="h-1.5 w-1.5 bg-accent rounded-full animate-pulse" />
+                <span className="text-[8px] font-black uppercase tracking-tight text-muted">Ready for Command</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <button
+          onClick={() => setIsProfileOpen(!isProfileOpen)}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border ${isProfileOpen ? 'bg-accent/20 border-accent/40 text-accent ring-2 ring-accent/10' : 'bg-surface-2 border-border text-muted/60 hover:border-accent/30 hover:text-text hover:shadow-xl'}`}
+        >
+          <UserIcon className="h-4 w-4" />
+        </button>
       </div>
     </div>
   )

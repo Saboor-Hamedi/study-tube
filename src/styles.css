@@ -1,22 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;700;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root { 
-  --surface: #101010;
-  --surface-2: #161616;
-  --surface-3: #1c1c1c;
-  --border: rgba(255,255,255,0.08);
-  --muted: #666;
+:root {
+  --background: #08090a;
+  --surface: #0c0d0f;
+  --surface-2: #121417;
+  --surface-3: #181a1f;
+  --border: #22252a;
+  --text: #e2e8f0;
+  --muted: #64748b;
   --accent: #3b82f6;
-  --accent-rgb: 59, 130, 246;
-  --accent-hover: #2563eb;
-  --success: #22c55e;
+  --accent-glow: rgba(59, 130, 246, 0.15);
+  --success: #10b981;
   --danger: #ef4444;
-  --background: #000000;
-  --text: #ffffff;
   --glass: rgba(15, 15, 15, 0.7);
   --selection: rgba(59, 130, 246, 0.3);
   color-scheme: dark; 
