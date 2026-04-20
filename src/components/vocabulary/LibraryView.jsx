@@ -17,6 +17,7 @@ import Sidebar from '../Sidebar'
 import ReactMarkdown from 'react-markdown'
 import DeleteModal from '../DeleteModal'
 import InsightCaptureModal from './InsightCaptureModal'
+import PulseLoader from './PulseLoader'
 
 function LibraryView({ 
   vocab, setVocab, 
@@ -50,17 +51,37 @@ function LibraryView({
   // Neural Pagination: Fetch only what is visible - Optimized for 100k+ records
   useEffect(() => {
     const fetchPage = async () => {
+      const controller = new AbortController();
+      let forceHydrate = false;
+      
+      const timeout = setTimeout(() => {
+        forceHydrate = true;
+        setLoading(false);
+        console.warn('[NEURAL GATEWAY] Fetch timeout exceeded. Forcing hydration.');
+      }, 6000);
+
+      // Industrial Minimum Pulse Delay (300ms) to ensure visual consistency
+      const minDelay = new Promise(resolve => setTimeout(resolve, 300));
+
       setLoading(true)
       try {
-        const page = await api.loadVocabPage({ 
+        const fetchPromise = api.loadVocabPage({ 
           collection: selectedCollection, 
           sortBy, 
           limit: displayLimit 
-        })
-        setLocalVocab(page)
+        });
+
+        const [page] = await Promise.all([fetchPromise, minDelay]);
+        
+        if (!forceHydrate) {
+          setLocalVocab(page || [])
+          // Micro-tick for DOM hydration before releasing loader
+          await new Promise(r => setTimeout(r, 50));
+        }
       } catch (err) {
         console.error('Paginated fetch failure', err)
       } finally {
+        clearTimeout(timeout);
         setLoading(false)
       }
     }
@@ -205,8 +226,18 @@ function LibraryView({
     try {
       await api.saveVocabItem(updated)
       
-      // Update our visible "window" optimistically
-      setLocalVocab(prev => prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item))
+      // Update our visible "window" with Industrial Filter Logic
+      // If the archival state now mismatches the current collection view, remove it
+      setLocalVocab(prev => {
+        // Condition: If item still belongs in current collection
+        const isTrashView = selectedCollection === 'trash';
+        const itemBelongs = isTrashView ? updated.archived : !updated.archived;
+        
+        if (!itemBelongs) {
+          return prev.filter(item => (item.id || item.date) !== (updated.id || updated.date));
+        }
+        return prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item);
+      });
       
       // Sync global state and industrial stats
       if (syncStats) syncStats()
@@ -265,9 +296,7 @@ function LibraryView({
   }
 
   const handleRestore = async (item) => {
-    const newList = vocab.map(v => v.date === item.date ? { ...v, archived: false } : v)
-    setVocab(newList)
-    await api.saveVocab(newList)
+    await handleUpdateItem({ ...item, archived: 0 })
     showToast('Insight restored to archive')
   }
 
@@ -690,19 +719,47 @@ function LibraryView({
             </div>
 
             <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
-              <div className="max-w-[1400px] mx-auto">
-                {gridMemo}
-
-                {localVocab.length >= displayLimit && (
-                  <div className="flex justify-center mt-12 py-10">
-                    <button 
-                      onClick={() => setDisplayLimit(p => p + 6)}
-                      className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl "
+              <div className="max-w-[1400px] mx-auto min-h-[400px] flex flex-col">
+                <AnimatePresence>
+                  {loading ? (
+                    <motion.div 
+                      key="loader"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex-1 flex items-center justify-center absolute inset-0 z-50 bg-surface/60 backdrop-blur-sm"
                     >
-                      Load More Research Entries
-                    </button>
-                  </div>
-                )}
+                      <PulseLoader 
+                        message={
+                          selectedCollection === 'all' ? "Synchronizing ALL Research..." :
+                          selectedCollection === 'trash' ? "Polling Neural Trash..." :
+                          `Accessing "${selectedCollection}" Archive...`
+                        } 
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      key="grid"
+                      initial={{ opacity: 0, scale: 0.99 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="flex-1"
+                    >
+                      {gridMemo}
+
+                      {localVocab.length >= displayLimit && (
+                        <div className="flex justify-center mt-12 py-10">
+                          <button 
+                            onClick={() => setDisplayLimit(p => p + 6)}
+                            className="px-8 py-3 bg-surface-2 border border-border text-text text-[11px] font-black uppercase tracking-widest hover:bg-surface-3 transition-all shadow-xl "
+                          >
+                            Load More Research Entries
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Insight Capture Modal */}
                 <button className='fab-button' onClick={() => setIsInsightCaptureModalOpen(true)}>

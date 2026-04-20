@@ -132,7 +132,7 @@ export function getLibraryPage({ collection = 'all', sortBy = 'newest', limit = 
   if (collection === 'all') {
     query += ' WHERE IFNULL(archived, 0) = 0';
   } else if (collection === 'trash') {
-    query += ' WHERE archived = 1';
+    query += ' WHERE IFNULL(archived, 0) = 1';
   } else {
     query += ' WHERE IFNULL(archived, 0) = 0 AND collection = ?';
     params.push(collection);
@@ -157,7 +157,7 @@ export function getCollectionStats() {
   try {
     // Industrial Counting: Treat NULL as 0 (Unarchived)
     const all = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 0').get().count;
-    const trash = db.prepare('SELECT COUNT(*) as count FROM library WHERE archived = 1').get().count;
+    const trash = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 1').get().count;
     
     const collections = db.prepare(`
       SELECT collection as name, COUNT(*) as count 
@@ -166,7 +166,6 @@ export function getCollectionStats() {
       GROUP BY collection
     `).all();
 
-    console.log(`[SQLITE STATS] Root:${all} Trash:${trash} Groups:${collections.length}`);
     return { all, trash, collections };
   } catch (err) {
     console.error('[SQLITE STATS ERROR]', err.message);

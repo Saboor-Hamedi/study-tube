@@ -20,8 +20,7 @@ const ModalCommandHeader = ({
           {Icon && <Icon className="h-4 w-4 text-accent" />}
         </div>
         <div className="flex flex-col text-left">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-text">{title}</span>
-          <span className="text-[7px] font-bold uppercase tracking-widest text-muted/30">{subtitle}</span>
+           {/* Minimalist Industrial Hub */}
         </div>
       </div>
       <div className="flex items-center gap-1.5">

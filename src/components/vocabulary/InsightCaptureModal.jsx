@@ -114,11 +114,8 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
 
             <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-4 space-y-8">
               <div className="space-y-4">
-                <p className="flex items-center gap-2 px-1 text-[9px] font-black uppercase tracking-[0.3em] text-muted/30">
-                  <Layout className="h-3 w-3" /> Actions
-                </p>
-                <div className="pt-2 border-t border-border opacity-20">
-                   <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Ready for neural archival...</p>
+                <div className="pt-2 border-t border-border opacity-5">
+                   {/* Minimalist Industrial Interface */}
                 </div>
               </div>
             </div>
@@ -128,9 +125,10 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
               <button 
                 onClick={handleSave}
                 disabled={isSaving || !title.trim()}
-                className="w-full py-4 bg-accent text-white rounded-[5px] text-[10px] font-black uppercase tracking-[0.4em] hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-accent text-white rounded-[5px] flex items-center justify-center hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20 disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" /> : "Forge Node"}
+                <Loader2 className={`h-4 w-4 animate-spin ${isSaving ? 'opacity-100' : 'opacity-0'}`} />
+                {!isSaving && <Plus className="h-4 w-4 absolute" />}
               </button>
             </div>
           </div>
