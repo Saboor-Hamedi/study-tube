@@ -9,7 +9,6 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import AnalyticalSidebar from './AnalyticalSidebar'
-import InsightChatDrawer from './InsightChatDrawer'
 
 const neuralComponents = {
   ol: ({node, ...props}) => <ol className="list-decimal pl-10 space-y-4 my-8 text-accent marker:text-accent marker:font-black" {...props} />,
@@ -20,7 +19,11 @@ const neuralComponents = {
   em: ({node, ...props}) => <em className="text-muted italic" {...props} />
 }
 
-const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
+const InsightDetailView = ({ 
+  item, setView, showToast, api, onUpdate, 
+  onOpenCopilot,
+  collections, selectedCollection, setSelectedCollection
+}) => {
   const [summary, setSummary] = useState(item?.summary || null)
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [highlights, setHighlights] = useState([])
@@ -28,7 +31,6 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editVal, setEditVal] = useState(item?.definition || '')
   const [titleEditVal, setTitleEditVal] = useState(item?.text || '')
-  const [isChatOpen, setIsChatOpen] = useState(false)
 
   useEffect(() => {
     const hydrate = async () => {
@@ -193,8 +195,7 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
           isEditing={isEditing}
           isSummarizing={isSummarizing}
           isHighlighting={isHighlighting}
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
+          onOpenCopilot={onOpenCopilot}
           highlights={highlights}
           setHighlights={setHighlights}
           handleSaveEdit={handleSaveEdit}
@@ -206,12 +207,7 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
         />
       </div>
 
-      <InsightChatDrawer 
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        item={item}
-        api={api}
-      />
+      {/* Unified Copilot protocol handles deep-dive dialogue contextually */}
     </motion.div>
   )
 }

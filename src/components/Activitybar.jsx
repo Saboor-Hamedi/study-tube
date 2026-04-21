@@ -9,8 +9,7 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
   const mainTabs = [
     { id: 'search', label: 'Discover', icon: Search },
     { id: 'vocab', label: 'Library', icon: BookOpen },
-    { id: 'editor', label: 'Research Editor', icon: FileText },
-    { id: 'copilot', label: 'Research Assist', icon: Sparkles }
+    { id: 'editor', label: 'Research Editor', icon: FileText }
   ]
 
   useEffect(() => {

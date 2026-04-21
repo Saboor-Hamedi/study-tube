@@ -23,18 +23,15 @@ const AnalyticalSidebar = ({
   isMaximized,
   onMaximize,
   mode = 'workspace', // 'workspace' | 'modal' | 'capture'
-  isChatOpen,
-  setIsChatOpen,
+  onOpenCopilot,
   children
 }) => {
   const isModal = mode === 'modal' || mode === 'capture'
   const isCapture = mode === 'capture'
 
   const handleOpenChat = () => {
-    if (typeof setIsChatOpen === 'function') {
-      setIsChatOpen(true)
-    } else {
-      console.warn('[NEURAL SIDEBAR] setIsChatOpen trigger missing in this context.')
+    if (onOpenCopilot) {
+      onOpenCopilot(item)
     }
   }
 

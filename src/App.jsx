@@ -6,6 +6,8 @@ import SettingsView from './components/SettingsView'
 import EditorView from './components/EditorView'
 import InsightDetailView from './components/vocabulary/InsightDetailView'
 import Header from './components/Header'
+import InsightCaptureModal from './components/vocabulary/InsightCaptureModal'
+import GlobalNeuralMenu from './components/GlobalNeuralMenu'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Notification from './components/Notification'
@@ -23,6 +25,10 @@ export default function App() {
   ])
   const [sortBy, setSortBy] = useState('newest')
   const [displayLimit, setDisplayLimit] = useState(6)
+  
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false)
+  const [isCaptureOpen, setIsCaptureOpen] = useState(false)
+  const [copilotContext, setCopilotContext] = useState(null)
   
   const [videoQuery, setVideoQuery] = useState('')
   const [videoResults, setVideoResults] = useState([])
@@ -188,7 +194,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-background text-text overflow-hidden font-sans transition-colors duration-500 relative">
-      {/* Bioluminescent Orbital Glow Layer */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-40">
         <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
         <div className="absolute -bottom-[10%] -left-[10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
@@ -228,12 +233,17 @@ export default function App() {
               )}
               {view === 'research-detail' && (
                 <motion.div key="detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-                  <InsightDetailView item={selectedResearchNode} setView={setView} showToast={showToast} api={api} onUpdate={async (updated) => { await api.saveVocabItem(updated); setSelectedResearchNode(updated); syncStats(); }} />
-                </motion.div>
-              )}
-              {view === 'copilot' && (
-                <motion.div key="copilot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-                  <CopilotView vocab={vocab} setVocab={setVocab} collections={collections} setCollections={setCollections} selectedCollection={selectedCollection} setSelectedCollection={setSelectedCollection} messages={chatHistory} setMessages={setChatHistory} setView={setView} api={api} showToast={showToast} />
+                  <InsightDetailView 
+                    item={selectedResearchNode} 
+                    setView={setView} 
+                    showToast={showToast} 
+                    api={api} 
+                    onOpenCopilot={(ctx) => { setCopilotContext(ctx); setIsCopilotOpen(true); }}
+                    collections={collections}
+                    selectedCollection={selectedCollection}
+                    setSelectedCollection={setSelectedCollection}
+                    onUpdate={async (updated) => { await api.saveVocabItem(updated); setSelectedResearchNode(updated); syncStats(); }} 
+                  />
                 </motion.div>
               )}
               {view === 'editor' && (
@@ -250,6 +260,36 @@ export default function App() {
           </main>
         </div>
       </div>
+
+      <CopilotView 
+        isOpen={isCopilotOpen} 
+        onClose={() => { setIsCopilotOpen(false); setCopilotContext(null); }}
+        vocab={vocab} setVocab={setVocab}
+        collections={collections} setCollections={setCollections}
+        selectedCollection={selectedCollection}
+        setSelectedCollection={setSelectedCollection}
+        messages={chatHistory} setMessages={setChatHistory}
+        contextItem={copilotContext}
+        api={api} showToast={showToast}
+      />
+
+      <InsightCaptureModal 
+        isOpen={isCaptureOpen} 
+        onClose={() => setIsCaptureOpen(false)}
+        onInsert={addVocab}
+        showToast={showToast}
+        api={api}
+      />
+
+      {view !== 'settings' && (
+        <GlobalNeuralMenu 
+          onOpenCapture={() => setIsCaptureOpen(true)}
+          onOpenCopilot={() => { setCopilotContext(null); setIsCopilotOpen(true); }}
+          stats={vocabStats}
+          isShifted={isCopilotOpen || isCaptureOpen}
+        />
+      )}
+
       <Notification toast={toast} onClose={() => setToast(null)} />
     </div>
   )

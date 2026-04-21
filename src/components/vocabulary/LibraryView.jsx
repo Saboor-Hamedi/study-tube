@@ -46,7 +46,6 @@ export default function LibraryView({
   const [selectedCard, setSelectedCard] = useState(null)
   const [itemToDelete, setItemToDelete] = useState(null)
   
-  const [isInsightCaptureModalOpen, setIsInsightCaptureModalOpen] = useState(false)
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
 
@@ -550,29 +549,10 @@ export default function LibraryView({
                   </motion.div>
                 )}
               </AnimatePresence>
-              
-              {/* Floating Action Portal */}
-              <button 
-                className="fixed bottom-8 right-8 w-12 h-12 bg-accent text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50" 
-                onClick={() => setIsInsightCaptureModalOpen(true)}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
             </div>
           </div>
         </div>
       </motion.div>
-
-      {isInsightCaptureModalOpen && (
-        <InsightCaptureModal 
-          isOpen={isInsightCaptureModalOpen}
-          onClose={() => setIsInsightCaptureModalOpen(false)}
-          showToast={showToast}
-          api={api}
-          onInsert={handleAddItem}
-          collections={collections}
-        />
-      )}
 
       {selectedCard && (
         <CardReaderModal 
