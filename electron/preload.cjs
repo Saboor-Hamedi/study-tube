@@ -7,6 +7,12 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   getTranscript: (videoId) => ipcRenderer.invoke('youtube:getTranscript', videoId),
   processTranscript: (data) => ipcRenderer.invoke('ai:processTranscript', data),
   chatWithAI: (data) => ipcRenderer.invoke('ai:chat', data),
+  chatWithAIStream: (data) => ipcRenderer.invoke('ai:chat-stream', data),
+  onChatChunk: (cb) => {
+    const fn = (_e, d) => cb(d)
+    ipcRenderer.on('ai:chat-chunk', fn)
+    return () => ipcRenderer.removeListener('ai:chat-chunk', fn)
+  },
   stopAI: () => ipcRenderer.invoke('ai:stop'),
   pickSavePath: () => ipcRenderer.invoke('fs:pickSavePath'),
   getSavePath: () => ipcRenderer.invoke('settings:getSavePath'),

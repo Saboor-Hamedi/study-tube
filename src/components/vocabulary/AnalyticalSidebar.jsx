@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { 
   Library, Sparkles, Brain, ListChecks, 
   Loader2, Star, RefreshCcw, Pencil, Copy,
-  ExternalLink
+  ExternalLink, MessageSquare
 } from 'lucide-react'
 import ModalCommandHeader from './ModalCommandHeader'
 
@@ -23,10 +23,20 @@ const AnalyticalSidebar = ({
   isMaximized,
   onMaximize,
   mode = 'workspace', // 'workspace' | 'modal' | 'capture'
+  isChatOpen,
+  setIsChatOpen,
   children
 }) => {
   const isModal = mode === 'modal' || mode === 'capture'
   const isCapture = mode === 'capture'
+
+  const handleOpenChat = () => {
+    if (typeof setIsChatOpen === 'function') {
+      setIsChatOpen(true)
+    } else {
+      console.warn('[NEURAL SIDEBAR] setIsChatOpen trigger missing in this context.')
+    }
+  }
 
   return (
     <aside className={`shrink-0 border-l border-border bg-surface-2 flex flex-col relative z-50 ${isModal ? 'w-[280px]' : 'w-[260px] pt-8 overflow-y-auto'} ${isModal && !isMaximized ? 'rounded-r-[5px]' : ''} scrollbar-thin`}>
@@ -100,9 +110,23 @@ const AnalyticalSidebar = ({
               </p>
               <div className="space-y-2">
                 <button 
+                  onClick={handleOpenChat}
+                  disabled={isEditing}
+                  className="w-full p-3 bg-accent text-white hover:brightness-110 rounded-[5px] flex items-center gap-3 group transition-all disabled:opacity-30 text-left shadow-lg shadow-accent/20"
+                >
+                  <div className="p-1.5 bg-white/20 rounded-[3px]">
+                      <MessageSquare className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest">Neural Dialogue</p>
+                    <p className="text-[8px] text-white/70 uppercase tracking-tight">Contextual Chat</p>
+                  </div>
+                </button>
+
+                <button 
                   onClick={handleGenerateSummary} 
                   disabled={isSummarizing || isEditing} 
-                  className="w-full p-3 bg-accent/5 border border-accent/10 hover:border-accent/40 rounded-[5px] flex items-center gap-3 group transition-all disabled:opacity-30 text-left"
+                  className="w-full p-3 bg-surface-3 border border-border hover:border-accent/40 rounded-[5px] flex items-center gap-3 group transition-all disabled:opacity-30 text-left"
                 >
                   <div className="p-1.5 bg-accent/10 rounded-[3px]">
                       {isSummarizing ? <Loader2 className="h-3 w-3 animate-spin text-accent" /> : <Sparkles className="h-3 w-3 text-accent transition-colors group-hover:text-white" />}

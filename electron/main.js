@@ -259,6 +259,99 @@ function registerIpcHandlers() {
     } catch (e) { console.error(`[IPC REG FAIL] ${channel}:`, e.message) }
   }
 
+  // --- Neural Dialogue Handlers (High Priority) ---
+  safeHandle('ai:chat-stream', async (event, { messages, context }) => {
+    const apiKey = readAppState().aiApiKey
+    if (!apiKey) throw new Error('API Key missing.')
+    if (aiAbortController) aiAbortController.abort()
+    aiAbortController = new AbortController()
+
+    const wc = event.sender
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        signal: aiAbortController.signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ role: 'system', content: `Neural Assistant. Context: ${context}` }, ...messages],
+          temperature: 0.7,
+          stream: true
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`AI Core Error (${response.status}): ${errorText}`)
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed === 'data: [DONE]') continue
+          
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(trimmed.slice(6))
+              const content = data.choices?.[0]?.delta?.content || ''
+              if (content) {
+                fullText += content
+                sendToRenderer(wc, 'ai:chat-chunk', { content })
+              }
+            } catch (e) {
+              console.warn('[AI STREAM] Chunk Parsing Anomalous:', trimmed)
+            }
+          }
+        }
+      }
+      
+      aiAbortController = null
+      return fullText
+    } catch (e) {
+      aiAbortController = null
+      if (e.name === 'AbortError') return null
+      console.error('[AI STREAM CRITICAL]', e.message)
+      throw e
+    }
+  })
+
+  safeHandle('ai:chat', async (_e, { messages, context }) => {
+    const apiKey = readAppState().aiApiKey
+    if (!apiKey) throw new Error('API Key missing.')
+    if (aiAbortController) aiAbortController.abort()
+    aiAbortController = new AbortController()
+
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        signal: aiAbortController.signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ role: 'system', content: `Friendly English Tutor. Context: ${context}` }, ...messages],
+          temperature: 0.7
+        })
+      })
+      const data = await response.json()
+      aiAbortController = null
+      return data.choices?.[0]?.message?.content || 'No response.'
+    } catch (e) {
+      if (e.name === 'AbortError') return null
+      console.error('[ai:chat]', e.message)
+      throw new Error(`AI Tutor offline: ${e.message}`)
+    }
+  })
+
   safeHandle('search:get-log', async () => {
     console.log('[IPC] Fetching Search Log...');
     return getSearchLog();
@@ -475,33 +568,6 @@ function registerIpcHandlers() {
       const data = await response.json()
       return data.choices?.[0]?.message?.content || 'No response from AI.'
     } catch (e) { console.error('[processTranscript]', e.message); throw new Error(`AI Analysis failed: ${e.message}`) }
-  })
-
-  ipcMain.handle('ai:chat', async (_e, { messages, context }) => {
-    const apiKey = readAppState().aiApiKey
-    if (!apiKey) throw new Error('API Key missing.')
-    if (aiAbortController) aiAbortController.abort()
-    aiAbortController = new AbortController()
-
-    try {
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        signal: aiAbortController.signal,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [{ role: 'system', content: `Friendly English Tutor. Context: ${context}` }, ...messages],
-          temperature: 0.7
-        })
-      })
-      const data = await response.json()
-      aiAbortController = null
-      return data.choices?.[0]?.message?.content || 'No response.'
-    } catch (e) {
-      if (e.name === 'AbortError') return null
-      console.error('[ai:chat]', e.message)
-      throw new Error(`AI Tutor offline: ${e.message}`)
-    }
   })
 
   // ─── Data Persistence (SQLite3 Powered) ──────────────────────────────────

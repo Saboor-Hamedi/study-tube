@@ -131,7 +131,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                   className={`flex flex-col gap-4 ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div className={`flex items-start gap-6 max-w-full ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className={`shrink-0 p-1.5  border transition-all duration-300
+                    <div className={`shrink-0 p-1.5 border rounded-full transition-all duration-300
                       ${m.role === 'user' 
                         ? 'bg-indigo-500/10 border-indigo-500/10' 
                         : 'bg-emerald-500/10 border-emerald-500/10'}`}>
@@ -145,26 +145,26 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                           <DraggableCard id={`msg-${i}`} v={{ ...m, type: 'chat-message' }} useHandle={true}>
                             {({ listeners, attributes }) => (
                               <div className="group/msg relative cursor-text select-text">
-                                <div className="prose prose-lg max-w-none 
-                                  prose-p:text-text prose-p:leading-relaxed prose-p:mb-4
+                                <div className="prose prose-sm max-w-none 
+                                  prose-p:text-[13px] prose-p:leading-[1.6] prose-p:text-text prose-p:tracking-wide prose-p:font-light prose-p:mb-4
                                   prose-strong:text-accent prose-strong:font-black
                                   prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
-                                  prose-code:bg-surface-3 prose-code:p-1 prose-code: prose-code:text-accent
+                                  prose-code:bg-surface-3 prose-code:p-1 prose-code:text-accent
                                   select-text cursor-text">
                                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                                 </div>
                                 
                                 <div className="mt-4 flex items-center gap-4 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                                   <div {...listeners} {...attributes} className="p-2 bg-surface-2 hover:bg-accent text-muted hover:text-text  cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-border">
-                                      <GripVertical className="h-3 w-3" />
-                                      <span className="text-[8px] font-black uppercase tracking-widest">Archive Insight</span>
-                                   </div>
+                                    <div {...listeners} {...attributes} className="p-1.5 bg-transparent hover:bg-[var(--accent)] text-[var(--accent)] hover:text-white cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-[var(--accent)]/20 rounded-[5px]">
+                                       <GripVertical className="h-3 w-3 " />
+                                       <span className="text-[8px] font-black uppercase tracking-widest">Archive Insight</span>
+                                    </div>
                                 </div>
                               </div>
                             )}
                           </DraggableCard>
                        ) : (
-                          <p className="text-xl font-light text-text leading-relaxed tracking-wide mb-2 select-text cursor-text">{m.content}</p>
+                          <p className="text-[13px] leading-[1.6] font-medium text-text tracking-wide mb-2 select-text cursor-text">{m.content}</p>
                        )}
                     </div>
                   </div>
@@ -185,7 +185,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
             {/* Gemini Style Input Hub */}
             <div className="absolute bottom-8 left-0 right-0 px-10 lg:px-24 xl:px-48 z-30">
               <div className="max-w-5xl mx-auto relative">
-                <div className="bg-surface-2 border border-border rounded-[28px] p-1.5 pr-3 shadow-2xl shadow-black focus-within:border-accent/30 transition-all backdrop-blur-2xl flex items-center gap-2 group/input">
+                <div className="bg-surface-2 border border-border rounded-[28px] p-1.5 pr-3 focus-within:border-accent/30 transition-all backdrop-blur-2xl flex items-center gap-2 group/input">
                   <div className="p-2.5 bg-surface-3 rounded-full ml-1">
                      <Plus className="h-3.5 w-3.5 text-muted group-hover/input:text-text transition-colors cursor-pointer" />
                   </div>
@@ -230,11 +230,13 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
 
       <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
         {activeDragMessage ? (
-          <div className="pointer-events-none flex items-center gap-3 bg-surface-3 border border-accent/40  py-3 px-6 shadow-2xl w-64 backdrop-blur-2xl">
-            <Sparkles className="h-4 w-4 text-accent animate-pulse" />
-            <div className="overflow-hidden">
-              <p className="text-[10px] font-black text-text uppercase tracking-widest truncate">Neural Extract</p>
-              <p className="text-[8px] text-accent font-bold uppercase tracking-tighter">Archiving to folder...</p>
+          <div className="pointer-events-none flex items-center gap-2 bg-[var(--surface-3)] border border-[var(--accent)] py-1 px-3 shadow-2xl w-[150px] opacity-95 rounded-[5px]">
+            <div className="p-1 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-[3px]">
+               <FileText className="h-3 w-3 text-[var(--accent)]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] font-black text-[var(--text)] uppercase tracking-widest truncate">Neural Extract</p>
+              <p className="text-[7px] text-[var(--accent)] font-bold uppercase tracking-tighter">Archiving...</p>
             </div>
           </div>
         ) : null}

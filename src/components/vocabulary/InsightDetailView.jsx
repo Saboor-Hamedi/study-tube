@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import AnalyticalSidebar from './AnalyticalSidebar'
+import InsightChatDrawer from './InsightChatDrawer'
 
 const neuralComponents = {
   ol: ({node, ...props}) => <ol className="list-decimal pl-10 space-y-4 my-8 text-accent marker:text-accent marker:font-black" {...props} />,
@@ -27,6 +28,7 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editVal, setEditVal] = useState(item?.definition || '')
   const [titleEditVal, setTitleEditVal] = useState(item?.text || '')
+  const [isChatOpen, setIsChatOpen] = useState(false)
 
   useEffect(() => {
     const hydrate = async () => {
@@ -191,6 +193,8 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
           isEditing={isEditing}
           isSummarizing={isSummarizing}
           isHighlighting={isHighlighting}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
           highlights={highlights}
           setHighlights={setHighlights}
           handleSaveEdit={handleSaveEdit}
@@ -201,6 +205,13 @@ const InsightDetailView = ({ item, setView, showToast, api, onUpdate }) => {
           setView={setView}
         />
       </div>
+
+      <InsightChatDrawer 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        item={item}
+        api={api}
+      />
     </motion.div>
   )
 }
