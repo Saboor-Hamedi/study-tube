@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import EditorJS from '@editorjs/editorjs'
-import './../editor.css'
+import './../../editor.css'
 import { FileText, Save, Trash2, Loader2, Sparkles } from 'lucide-react'
-import DeleteModal from './DeleteModal'
+import DeleteModal from '../research-vault/DeleteModal'
 
 // Import Tools
 import Header from '@editorjs/header'

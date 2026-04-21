@@ -1,5 +1,5 @@
 import { Plus, Library, FileText, Maximize2, Trash2, Pencil, Check, ChevronLeft, ChevronRight, Hash, Folder, Calendar, Type, Star } from 'lucide-react'
-import { DroppableFolder } from './vocabulary/DraggableCard'
+import { DroppableFolder } from '../features/research-vault/DraggableCard'
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 

@@ -13,9 +13,9 @@ import {
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import CardReaderModal from './CardReaderModal'
 import { DroppableFolder, DraggableCard } from './DraggableCard'
-import Sidebar from '../Sidebar'
+import Sidebar from '../../components/Sidebar'
 import ReactMarkdown from 'react-markdown'
-import DeleteModal from '../DeleteModal'
+import DeleteModal from './DeleteModal'
 import InsightCaptureModal from './InsightCaptureModal'
 import PulseLoader from './PulseLoader'
 

@@ -5,7 +5,7 @@ import { DndContext, DragOverlay, defaultDropAnimationSideEffects, PointerSensor
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { DroppableFolder, DraggableCard } from '../vocabulary/DraggableCard'
+import { DroppableFolder, DraggableCard } from '../research-vault/DraggableCard'
 
 export default memo(function CopilotView({ 
   isOpen, onClose, 
