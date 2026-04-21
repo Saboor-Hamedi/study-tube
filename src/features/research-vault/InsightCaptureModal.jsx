@@ -49,13 +49,14 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
       type: 'Manual Research',
       videoTitle: 'Internal Forge',
       archived: 0,
-      collection: null
+      collection: null,
+      skipAI: !!content.trim() // Industrial Bypass: Human definitions are sacred
     }
 
     try {
-      // Direct call to onInsert which is handleAddItem in LibraryView
-      await onInsert(newItem)
+      // Optimistic Modal Exit: Close immediately to provide industrial responsiveness
       onClose()
+      await onInsert(newItem)
     } catch (e) {
       showToast('Forge Interrupted', 'error')
     } finally {

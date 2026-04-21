@@ -161,13 +161,25 @@ export default function LibraryView({
     syncLibraryPage(true)
   }, [syncLibraryPage])
 
-  // Sync Local Grid with Archival State
+  // Sync Local Grid with Archival State - Constrained by Industrial Display Limit
   useEffect(() => {
-    setLocalVocab(vocab)
+    setLocalVocab(vocab.slice(0, displayLimit))
     setLoading(false)
-  }, [vocab])
+  }, [vocab, displayLimit])
 
   const visible = localVocab
+
+  /**
+   * Industrial Metrics: Calculates the total density of the current collection
+   * to determine if pagination boundaries have been reached.
+   */
+  const totalInCollection = useMemo(() => {
+    if (!stats) return 0;
+    if (selectedCollection === 'all') return stats.all || 0;
+    if (selectedCollection === 'trash') return stats.trash || 0;
+    const coll = (stats.collections || []).find(c => c.name === selectedCollection);
+    return coll ? coll.count : 0;
+  }, [stats, selectedCollection]);
 
 
 
@@ -398,20 +410,20 @@ export default function LibraryView({
       {visible.map((v, i) => (
         <DraggableCard key={(v.id || v.date) || i} id={(v.id || v.date) || i} v={v} useHandle={true}>
           {({ listeners, attributes }) => (
-            <div className="group h-[180px] bg-transparent p-4 hover:bg-text/[0.02] transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md overflow-hidden relative border border-transparent hover:border-border/20">
+            <div className="group h-[180px] bg-surface p-5 transition-all duration-500 flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-black/5 overflow-hidden relative border border-border/10 hover:border-accent/20 rounded-[5px]">
               <div className="flex flex-col gap-4 overflow-hidden">
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex flex-col gap-1 min-h-[44px]">
-                    <h3 className="text-[14px] font-bold text-text leading-normal line-clamp-2">{v.text}</h3>
+                    <h3 className="text-[14px] font-bold text-slate-900 leading-normal line-clamp-2">{v.text}</h3>
                     {v.type && (
                       <span className="text-accent text-[11px] font-bold uppercase tracking-[0.1em]">{v.type.split(/[.,(]/)[0].trim().substring(0, 20)}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                    <div {...listeners} {...attributes} className="p-1.5 bg-surface-3 border border-border hover:bg-accent text-muted hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
+                    <div {...listeners} {...attributes} className="p-1.5 bg-slate-200 border border-slate-300 hover:bg-accent text-slate-600 hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
                       <GripVertical className="h-3.5 w-3.5" />
                     </div>
-                    <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
+                    <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-slate-200 border border-slate-300 hover:bg-accent text-slate-600 hover:text-white transition-all rounded-[5px]">
                       <Maximize2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -424,7 +436,7 @@ export default function LibraryView({
                       <span className="text-[10px] font-bold uppercase tracking-widest text-accent">calling ai...</span>
                     </div>
                   ) : (
-                    <div className="text-[12px] text-text/60 leading-[1.6] select-text font-light tracking-wide italic overflow-hidden">
+                    <div className="text-[12px] text-slate-600 leading-[1.6] select-text font-light tracking-wide italic overflow-hidden">
                        {v.definition
                          ?.replace(/[#*`~_]/g, '')
                          ?.replace(/\[(.*?)\]\(.*?\)/g, '$1')
@@ -527,25 +539,38 @@ export default function LibraryView({
                     {gridMemo}
                     
                     {/* Industrial Expansion Gate */}
-                    {localVocab.length >= displayLimit && (
-                      <div className="mt-12 flex justify-center pb-20">
-                        <button 
-                          onClick={() => {
-                            setIsAppending(true)
-                            setDisplayLimit(prev => prev + 12)
-                          }}
-                          disabled={isAppending}
-                          className="group flex items-center gap-3 px-8 py-3 bg-surface-2 border border-border/20 text-muted hover:text-accent hover:border-accent/40 transition-all "
-                        >
-                          {isAppending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-500" />
+                    <div className="mt-8 mb-20 flex flex-col items-center gap-6">
+                      {isAppending ? (
+                        <PulseLoader message="Expanding Research Horizon..." />
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          {localVocab.length >= displayLimit && totalInCollection > displayLimit && (
+                            <button 
+                              onClick={() => {
+                                setIsAppending(true)
+                                setTimeout(() => {
+                                  setDisplayLimit(prev => prev + 3)
+                                  setIsAppending(false)
+                                }, 600) // Simulated Neural Connection Delay
+                              }}
+                              className="group h-10 px-6 flex items-center gap-2 bg-surface-2 border border-border/10 text-muted/60 hover:text-accent hover:border-accent/30 hover:bg-accent/5 transition-all rounded-full"
+                            >
+                              <Plus className="h-3 w-3 group-hover:rotate-90 transition-transform duration-500" />
+                              <span className="text-[9px] font-black uppercase tracking-[0.2em]">Load more</span>
+                            </button>
                           )}
-                          <span className="text-[11px] font-black uppercase tracking-[0.3em]">Expand Neural Horizon</span>
-                        </button>
-                      </div>
-                    )}
+
+                          {displayLimit > 6 && (
+                            <button 
+                              onClick={() => setDisplayLimit(6)}
+                              className="h-10 px-6 flex items-center bg-transparent border border-transparent hover:border-red-500/20 text-muted/30 hover:text-red-400 transition-all rounded-full"
+                            >
+                              <span className="text-[9px] font-black uppercase tracking-[0.2em]">Collapse</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -577,7 +602,7 @@ export default function LibraryView({
         />
       )}
 
-      <DragOverlay dropAnimation={null} zIndex={500}>
+      <DragOverlay dropAnimation={null} zIndex={500} modifiers={[snapCenterToCursor]}>
         {activeDragItem ? (
           <div className="w-[160px] bg-surface-2 border border-accent p-1.5 shadow-2xl opacity-90 scale-90 pointer-events-none rounded-[5px]">
              <div className="flex items-center gap-1.5">

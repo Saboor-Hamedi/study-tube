@@ -8,51 +8,45 @@ import InsightDetailView from './features/research-vault/InsightDetailView'
 import Header from './components/Header'
 import InsightCaptureModal from './features/research-vault/InsightCaptureModal'
 import GlobalNeuralMenu from './features/neural-chat/GlobalNeuralMenu'
-import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Notification from './components/Notification'
+import { useStore } from './store/useStore'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 export default function App() {
-  const [vocabStats, setVocabStats] = useState(null)
-  const [savePath, setSavePath] = useState('')
-  const [view, setView] = useState('search') 
-  const [selectedResearchNode, setSelectedResearchNode] = useState(null)
-  const [vocab, setVocab] = useState([])
-  const [collections, setCollections] = useState([])
-  const [selectedCollection, setSelectedCollection] = useState('all')
-  const [chatHistory, setChatHistory] = useState([
-    { role: 'assistant', content: 'Hello. I am your studyTube research copilot. I can help you analyze saved words, suggest grammar rules, or create custom research cards. Ask me anything.' }
-  ])
-  const [sortBy, setSortBy] = useState('newest')
-  const [displayLimit, setDisplayLimit] = useState(6)
-  
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false)
-  const [isCaptureOpen, setIsCaptureOpen] = useState(false)
-  const [copilotContext, setCopilotContext] = useState(null)
-  
-  const [videoQuery, setVideoQuery] = useState('')
-  const [videoResults, setVideoResults] = useState([])
-  const [videoPreview, setVideoPreview] = useState(null)
-  const [videoTranscript, setVideoTranscript] = useState(null)
-  const [loadingTranscript, setLoadingTranscript] = useState(false)
-  const [toast, setToast] = useState(null)
-  const [theme, setTheme] = useState('dark')
-  
-  const [libQuery, setLibQuery] = useState('')
-  const [libResults, setLibResults] = useState([])
-  const [isLibSearching, setIsLibSearching] = useState(false)
-  const [libHistory, setLibHistory] = useState([])
-  const [isLibHistoryOpen, setIsLibHistoryOpen] = useState(false)
-  const [libSelectedIndex, setLibSelectedIndex] = useState(-1)
+  const {
+    vocabStats, setVocabStats,
+    savePath, setSavePath,
+    view, setView,
+    selectedResearchNode, setSelectedResearchNode,
+    vocab, setVocab,
+    collections, setCollections,
+    selectedCollection, setSelectedCollection,
+    chatHistory, setChatHistory,
+    sortBy, setSortBy,
+    displayLimit, setDisplayLimit,
+    isCopilotOpen, setIsCopilotOpen,
+    isCaptureOpen, setIsCaptureOpen,
+    copilotContext, setCopilotContext,
+    videoQuery, setVideoQuery,
+    videoResults, setVideoResults,
+    videoPreview, setVideoPreview,
+    videoTranscript, setVideoTranscript,
+    loadingTranscript, setLoadingTranscript,
+    toast, setToast,
+    theme, setTheme,
+    libQuery, setLibQuery,
+    libResults, setLibResults,
+    isLibSearching, setIsLibSearching,
+    libHistory, setLibHistory,
+    isLibHistoryOpen, setIsLibHistoryOpen,
+    libSelectedIndex, setLibSelectedIndex,
+    showToast
+  } = useStore()
   
   const searchInputRef = useRef(null)
   const libHistoryRef = useRef(null)
   const api = window.youtubeAPI
-
-  const showToast = useCallback((msg, type = 'success') => {
-    setToast({ msg, type })
-    setTimeout(() => setToast(null), 3000)
-  }, [])
 
   const syncHistory = useCallback(async () => {
     if (!api) return
@@ -134,14 +128,20 @@ export default function App() {
     const basicItem = { 
       ...item, 
       id: new Date().toISOString(),
-      date: new Date().toISOString(), 
-      loading: !item.skipAI 
+      date: item.date || new Date().toISOString(), 
+      loading: !item.skipAI && !item.definition 
     }
+    
+    // Initial Save Bridge
     await api.saveVocabItem(basicItem)
     syncStats()
     setVocab(prev => [basicItem, ...prev])
     showToast(`Saved "${item.text.length > 30 ? item.text.slice(0, 30) + '...' : item.text}"`)
-    if (item.skipAI) return
+    
+    // If we have a manual definition or skipAI is locked, we exit early
+    if (item.skipAI || item.definition) return
+
+    // Background Neural Enrichment
     try {
       const entry = await api.explainWord({ text: item.text, videoTitle: item.videoTitle })
       const enriched = { ...basicItem, ...entry, loading: false }
