@@ -51,20 +51,15 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
         {mainTabs.map(renderTab)}
       </div>
 
-      <div className="mt-auto flex flex-col items-center relative" ref={dropdownRef}>
+      <div className="mt-auto w-full flex flex-col items-center relative" ref={dropdownRef}>
         <AnimatePresence>
           {isDropdownOpen && (
             <motion.div 
               initial={{ opacity: 0, x: 10, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              className="absolute bottom-14 left-full ml-2 w-48 bg-surface-2 border border-border shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[250] overflow-hidden rounded-[5px] backdrop-blur-xl"
+              className="absolute bottom-5 left-full ml-0 w-48 bg-surface-2 border border-border shadow-xl z-[250] overflow-hidden rounded-[5px] backdrop-blur-xl"
             >
-              <div className="p-3 border-b border-border bg-black/20">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Operator Module</p>
-                <p className="text-[9px] text-muted tracking-wide mt-0.5">Research Session Active</p>
-              </div>
-
               <div className="p-1.5 space-y-0.5">
                 <button 
                   onClick={() => { setView('settings'); setIsDropdownOpen(false) }}
@@ -94,20 +89,15 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
                   <span>Export Archive</span>
                 </button>
               </div>
-
-              <div className="p-2 border-t border-border bg-black/40 flex items-center gap-2">
-                <div className="h-1.5 w-1.5 bg-success rounded-full animate-pulse" />
-                <span className="text-[8px] font-black uppercase tracking-tight text-muted">Archival System Online</span>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border ${isDropdownOpen ? 'bg-accent/20 border-accent/40 text-accent ring-2 ring-accent/10' : 'bg-surface-2 border-border text-muted/60 hover:border-accent/30 hover:text-text hover:shadow-xl hover:-translate-y-0.5'}`}
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border ${isDropdownOpen ? 'bg-accent/20 border-accent/40 text-accent ring-2 ring-accent/10' : 'bg-surface-2 border-border text-muted/60 hover:border-accent/30 hover:text-text hover:shadow-xl hover:-translate-y-0.5'}`}
         >
-          <UserIcon className="h-4 w-4" />
+          <UserIcon className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

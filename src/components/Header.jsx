@@ -239,13 +239,8 @@ export default function Header({
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute top-full right-0 mt-2 w-48 bg-surface-2 border border-border shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[250] overflow-hidden rounded-[5px] backdrop-blur-xl"
+              className="absolute top-full right-0 mt-2 w-48 bg-surface-2 border border-border shadow-xl z-[250] overflow-hidden rounded-[5px] backdrop-blur-xl"
             >
-              <div className="p-3 border-b border-border bg-black/20">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Navigation Hub</p>
-                <p className="text-[9px] text-muted tracking-wide mt-0.5">Switch Workstations</p>
-              </div>
-
               <div className="p-1.5 space-y-0.5">
                 {[
                   { id: 'search', name: 'Discovery', icon: SearchIcon },
@@ -282,20 +277,15 @@ export default function Header({
                   </>
                 )}
               </div>
-
-              <div className="p-2 border-t border-border bg-black/40 flex items-center gap-2">
-                <div className="h-1.5 w-1.5 bg-accent rounded-full animate-pulse" />
-                <span className="text-[8px] font-black uppercase tracking-tight text-muted">Ready for Command</span>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border ${isProfileOpen ? 'bg-accent/20 border-accent/40 text-accent ring-2 ring-accent/10' : 'bg-surface-2 border-border text-muted/60 hover:border-accent/30 hover:text-text hover:shadow-xl'}`}
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border ${isProfileOpen ? 'bg-accent/20 border-accent/40 text-accent ring-2 ring-accent/10' : 'bg-surface-2 border-border text-muted/60 hover:border-accent/30 hover:text-text hover:shadow-xl'}`}
         >
-          <UserIcon className="h-4 w-4" />
+          <UserIcon className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>
