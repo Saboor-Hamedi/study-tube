@@ -157,7 +157,7 @@ export default function CopilotView({ vocab, setVocab, collections, setCollectio
                                 <div className="mt-4 flex items-center gap-4 opacity-0 group-hover/msg:opacity-100 transition-opacity">
                                     <div {...listeners} {...attributes} className="p-1.5 bg-transparent hover:bg-[var(--accent)] text-[var(--accent)] hover:text-white cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-[var(--accent)]/20 rounded-[5px]">
                                        <GripVertical className="h-3 w-3 " />
-                                       <span className="text-[8px] font-black uppercase tracking-widest">Archive Insight</span>
+                                       <span className="text-[8px] font-black uppercase tracking-widest">Archive</span>
                                     </div>
                                 </div>
                               </div>

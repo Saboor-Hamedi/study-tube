@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  X, Send, Brain, Sparkles, Loader2, 
-  Terminal, Cpu
+  X, Send, Brain, Sparkles, Loader2, Square, Plus
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -12,6 +11,7 @@ const InsightChatDrawer = memo(({ isOpen, onClose, item, api }) => {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef(null)
+  const textareaRef = useRef(null)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -19,12 +19,21 @@ const InsightChatDrawer = memo(({ isOpen, onClose, item, api }) => {
     }
   }, [messages])
 
+  // Auto-expand textarea logic
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
+    }
+  }, [input])
+
   const handleSendMessage = async (e) => {
-    e.preventDefault()
+    e?.preventDefault()
     if (!input.trim() || isLoading) return
 
     const userMessage = { role: 'user', content: input }
     setMessages(prev => [...prev, userMessage])
+    const currentInput = input
     setInput('')
     setIsLoading(true)
 
@@ -39,10 +48,8 @@ ${item.definition}
 Format: industrial, concise, bullet points if needed.`
 
       const chatHistory = messages.map(m => ({ role: m.role, content: m.content }))
-      
-      const assistantIdx = messages.length + 1 // +1 for the user message already added
+      const assistantIdx = messages.length + 1
 
-      // Setup chunk listener BEFORE sending request
       unsubscribe = api.onChatChunk(({ content }) => {
         currentContent += content
         setMessages(cm => cm.map((msg, idx) => 
@@ -50,7 +57,6 @@ Format: industrial, concise, bullet points if needed.`
         ))
       })
 
-      // Mount assistant message
       setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
       await api.chatWithAIStream({
@@ -69,6 +75,11 @@ Format: industrial, concise, bullet points if needed.`
       if (unsubscribe) unsubscribe()
       setIsLoading(false)
     }
+  }
+
+  const handleStop = async () => {
+    await api.stopAI()
+    setIsLoading(false)
   }
 
   return (
@@ -126,7 +137,7 @@ Format: industrial, concise, bullet points if needed.`
                   <div className={`max-w-[92%] py-1 px-3 rounded-[6px] text-[13px] leading-[1.6] relative ${
                     msg.role === 'user' 
                       ? 'bg-[var(--accent)] text-white font-medium border border-white/10' 
-                      : 'bg-[var(--surface-3)] border border-[var(--border)] text-[var(--text)]/90 font-light'
+                      : 'bg-[var(--surface-3)] border border-[var(--border)] text-[var(--text)]/90 font-light shadow-sm'
                   }`}>
                     {msg.role === 'assistant' ? (
                       <div className="select-text cursor-text whitespace-pre-wrap tracking-wide">
@@ -147,22 +158,36 @@ Format: industrial, concise, bullet points if needed.`
               ))}
             </div>
 
-            <div className="p-4 bg-[var(--surface-3)] border-t border-[var(--border)]">
-              <form onSubmit={handleSendMessage} className="relative flex items-center border border-[var(--border)] rounded-[5px] bg-[var(--background)]/50 focus-within:border-[var(--accent)] transition-all">
-                <div className="pl-3 text-[var(--muted)] border-r border-[var(--border)]/30 pr-2">
-                   <Terminal className="h-3.5 w-3.5" />
+            <div className="p-6 bg-[var(--surface-3)] border-t border-[var(--border)]">
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[24px] p-1.5 pr-3 focus-within:border-[var(--accent)]/30 transition-all backdrop-blur-2xl flex items-center gap-2 group/input">
+                  <div className="p-2 bg-[var(--surface-3)] rounded-full ml-1">
+                    <Plus className="h-3 w-3 text-[var(--muted)] group-hover/input:text-[var(--text)] transition-colors cursor-pointer" />
+                  </div>
+                  <textarea 
+                    ref={textareaRef}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        isLoading ? handleStop() : handleSendMessage()
+                      }
+                    }}
+                    placeholder={isLoading ? "AI is generating..." : "Chat with resources..."}
+                    className="flex-1 bg-transparent px-2 py-2.5 text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--muted)]/40 resize-none min-h-[40px] max-h-[200px] scrollbar-none"
+                    rows={1}
+                  />
+                  <button 
+                    onClick={isLoading ? handleStop : handleSendMessage}
+                    className={`shrink-0 p-2 rounded-full transition-all active:scale-95 ${
+                      isLoading ? 'bg-red-500 text-white' : (input.trim() ? 'bg-[var(--text)] text-[var(--background)]' : 'bg-[var(--surface-3)] text-[var(--muted)]')
+                    }`}
+                  >
+                    {isLoading ? <Square className="h-3 w-3 fill-current" /> : <Send className="h-3 w-3 fill-current" />}
+                  </button>
                 </div>
-                <input 
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder="Inquire material..."
-                  className="w-full bg-transparent py-2.5 px-4 text-xs text-[var(--text)] outline-none"
-                  disabled={isLoading}
-                />
-                <button type="submit" disabled={isLoading || !input.trim()} className="p-2.5 text-[var(--accent)] hover:text-white hover:bg-[var(--accent)] transition-all disabled:opacity-30">
-                  <Send className="h-3.5 w-3.5" />
-                </button>
-              </form>
+              </div>
             </div>
           </motion.div>
         </>
