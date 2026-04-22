@@ -448,7 +448,7 @@ function LibraryView({
                     <div {...listeners} {...attributes} className="p-1.5 bg-surface-3 border border-border hover:bg-accent text-muted hover:text-white transition-all cursor-grab active:cursor-grabbing rounded-[5px]">
                       <GripVertical className="h-3.5 w-3.5" />
                     </div>
-                    <button onClick={() => setSelectedCard(v)} className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
+                    <button onClick={() => setSelectedCard(v)} title="Maximize Insight" className="p-1.5 bg-surface-2 border border-border/20 hover:bg-accent text-muted/40 hover:text-white transition-all rounded-[5px]">
                       <Maximize2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -484,13 +484,14 @@ function LibraryView({
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                    <button 
                      onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
+                     title="Export Insight"
                      className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
                    >
                       <DownloadIcon className="h-3.5 w-3.5" />
                    </button>
                    {v.archived ? (
                       <button 
-                        onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }}
+                        onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }} title="Restore to Archive"
                         className="p-1.5 hover:bg-accent/10 text-accent  transition-all"
                       >
                         <RefreshCcw className="h-3.5 w-3.5" />
@@ -502,6 +503,7 @@ function LibraryView({
                          handleUpdateItem({ ...v, collection: null })
                          showToast(`Removed from ${v.collection}`)
                        }}
+                       title="Remove from Collection"
                         className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent  transition-all"
                       >
                        <FolderMinus className="h-3.5 w-3.5" />
@@ -512,6 +514,7 @@ function LibraryView({
                        i_e.stopPropagation()
                        setItemToDelete(v)
                      }}
+                     title={v.archived ? "Permanently Eradicate" : "Move to Trash"}
                      className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
                    >
                      <Trash2 className="h-3.5 w-3.5" />

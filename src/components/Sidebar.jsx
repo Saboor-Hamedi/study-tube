@@ -76,6 +76,7 @@ export default function Sidebar({
             {setIsCreatingCollection && (
               <button 
                 onClick={() => setIsCreatingCollection(true)}
+                title="Establish New Collection"
                 className="p-1 h-5 w-5 flex items-center justify-center bg-surface-3 hover:bg-accent hover:text-white text-muted transition-all duration-300 "
               >
                 <Plus className="h-3 w-3" />
@@ -119,12 +120,14 @@ export default function Sidebar({
                     <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/folder:opacity-100 transition-opacity bg-surface-2/95 backdrop-blur-md pl-1 pr-1 py-1 rounded-sm shadow-xl z-20">
                        <button 
                         onClick={(e) => { e.stopPropagation(); startRename(c) }}
+                        title="Re-designate Collection"
                         className="p-1.5 hover:bg-accent/10 text-muted/40 hover:text-accent rounded-sm transition-all"
                        >
                          <Pencil className="h-3 w-3" />
                        </button>
                        <button 
                         onClick={(e) => { e.stopPropagation(); handleDeleteCollection?.(c) }}
+                        title="Disband Collection"
                         className="p-1.5 hover:bg-red-500/10 text-muted/40 hover:text-red-500 rounded-sm transition-all"
                        >
                          <Trash2 className="h-3 w-3" />

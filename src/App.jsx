@@ -69,10 +69,11 @@ export default function App() {
   }
 
   const addVocab = async (item) => {
+    const now = new Date().toISOString()
     const basicItem = { 
       ...item, 
-      id: new Date().toISOString(), // Unique ID for Upsert
-      date: new Date().toISOString(), 
+      id: now, // Critical: Ensure ID matches Date for strict upsert
+      date: now, 
       loading: !item.skipAI 
     }
     

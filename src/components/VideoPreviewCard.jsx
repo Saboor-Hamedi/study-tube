@@ -114,6 +114,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
   const [chatInp, setChatInp] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [selection, setSelection] = useState(null)
+  const captureTimeoutRef = useRef(null)
   const [messages, setMessages] = useState([
     { role: 'assistant', content: "Hi! I'm your AI English Tutor. I've read the transcript for this video. Ask me anything!" }
   ])
@@ -151,7 +152,9 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
   }
 
   const captureSelection = () => {
-    setTimeout(() => {
+    if (captureTimeoutRef.current) clearTimeout(captureTimeoutRef.current)
+    
+    captureTimeoutRef.current = setTimeout(() => {
       const s = window.getSelection()
       const text = s?.toString().trim()
       
@@ -172,6 +175,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
       } else {
         if (selection) setSelection(null)
       }
+      captureTimeoutRef.current = null
     }, 60)
   }
 
@@ -204,7 +208,7 @@ export default function VideoPreviewCard({ video, onClose, transcript, loadingTr
   }
 
   return (
-    <div className="flex-1 flex flex-col w-full bg-background transition-colors duration-500" onMouseUp={captureSelection} onDoubleClick={captureSelection}>
+    <div className="flex-1 flex flex-col w-full bg-background transition-colors duration-500" onMouseUp={captureSelection}>
       <AnimatePresence>
         {selection && (
           <motion.div 
