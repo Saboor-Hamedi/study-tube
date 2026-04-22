@@ -161,11 +161,9 @@ export default function LibraryView({
     syncLibraryPage(true)
   }, [syncLibraryPage])
 
-  // Sync Local Grid with Archival State - Constrained by Industrial Display Limit
-  useEffect(() => {
-    setLocalVocab(vocab.slice(0, displayLimit))
-    setLoading(false)
-  }, [vocab, displayLimit])
+  // NOTE: localVocab is managed exclusively by syncLibraryPage to stay
+  // collection-aware. The global vocab prop is NOT piped here directly
+  // because it is unfiltered and would clobber collection/trash views.
 
   const visible = localVocab
 
@@ -258,8 +256,8 @@ export default function LibraryView({
    */
   const handleDelete = async () => {
     if (!itemToDelete) return
+    const itemId = itemToDelete.id || itemToDelete.date
     try {
-      const itemId = itemToDelete.id || itemToDelete.date
       if (selectedCollection === 'trash' || itemToDelete.archived) {
         await api.deleteVocabItem(itemId)
         showToast('Insight permanently eradicated', 'success')
@@ -268,12 +266,17 @@ export default function LibraryView({
         await api.saveVocabItem(archivedItem)
         showToast('Insight moved to trash', 'success')
       }
-      
-      // Refresh visible page view + global counters + Automatic Silent Refill
+
+      // Optimistic local remove: keeps current collection view intact
+      setLocalVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
+
+      // Sync global state (does NOT touch localVocab — effect removed)
+      if (setVocab) setVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
+
+      // Silently refill the grid from the correct collection
       await syncLibraryPage(false)
       if (syncStats) syncStats()
-      if (setVocab) setVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
-      
+
       setItemToDelete(null)
     } catch (err) {
       console.error('System refusal: Delete failed', err)
