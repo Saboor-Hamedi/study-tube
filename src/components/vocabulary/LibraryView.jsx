@@ -387,6 +387,9 @@ function LibraryView({
         // Optimistic UI for local viewport
         setLocalVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
         
+        // Industrial Silent Refill: Pull replacement data to maintain display density
+        await syncLibraryPage(false)
+        
         if (syncStats) syncStats()
         if (setVocab) setVocab(prev => prev.map(v => (v.id || v.date) === itemId ? updated : v))
         
