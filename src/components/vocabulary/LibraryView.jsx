@@ -247,6 +247,11 @@ function LibraryView({
       if (syncStats) syncStats()
       if (setVocab) setVocab(prev => prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item))
       
+      // Industrial Modal Synchrony: Ensure the open reader shows the fresh data
+      if (selectedCard && (selectedCard.id || selectedCard.date) === (updated.id || updated.date)) {
+        setSelectedCard(updated)
+      }
+      
       // Perform Industrial Silent Refill to keep the grid full without displacement
       syncLibraryPage(false)
     } catch (err) {

@@ -153,8 +153,8 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   /**
    * Archive Modification: Persists manual edits back to the neural stack.
    */
-  const handleSaveEdit = () => {
-    onUpdate({ ...item, text: titleEditVal, definition: editVal })
+  const handleSaveEdit = async () => {
+    await onUpdate({ ...item, text: titleEditVal, definition: editVal })
     setIsEditing(false)
     showToast('Archive Permanently Updated')
   }
