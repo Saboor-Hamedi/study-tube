@@ -28,6 +28,7 @@ export function initDatabase() {
       id TEXT PRIMARY KEY, 
       text TEXT,
       definition TEXT,
+      summary TEXT,
       videoTitle TEXT,
       timestamp REAL,
       date TEXT,
@@ -37,6 +38,14 @@ export function initDatabase() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  // 2a. Industrial Migration: Ensure 'summary' column exists for legacy databases
+  try {
+    db.prepare('ALTER TABLE library ADD COLUMN summary TEXT').run();
+    console.log('[SQLITE] Database Migrated: Added summary column');
+  } catch (e) {
+    // Column already exists, ignore error
+  }
 
   // 2b. High-Performance B-Tree Indexes
   db.exec(`
@@ -175,11 +184,12 @@ export function getCollectionStats() {
 
 export function saveVocabItem(item) {
   const stmt = db.prepare(`
-    INSERT INTO library (id, text, definition, videoTitle, timestamp, date, archived, collection, type)
-    VALUES (@id, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type)
+    INSERT INTO library (id, text, definition, summary, videoTitle, timestamp, date, archived, collection, type)
+    VALUES (@id, @text, @definition, @summary, @videoTitle, @timestamp, @date, @archived, @collection, @type)
     ON CONFLICT(id) DO UPDATE SET
       text = excluded.text,
       definition = excluded.definition,
+      summary = excluded.summary,
       videoTitle = excluded.videoTitle,
       archived = excluded.archived,
       collection = excluded.collection,
@@ -191,6 +201,7 @@ export function saveVocabItem(item) {
     id: item.date || item.id || new Date().toISOString(),
     text: item.text || '',
     definition: item.definition || '',
+    summary: item.summary || null,
     videoTitle: item.videoTitle || 'Universal Knowledge',
     timestamp: item.timestamp || 0,
     date: item.date || new Date().toISOString(),

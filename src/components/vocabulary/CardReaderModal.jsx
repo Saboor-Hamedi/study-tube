@@ -178,7 +178,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
       const cleaned = response.replace(/[#*`~_]/g, '').replace(/^(Sure|Of course|Here is).+?(:|\.)/i, '').trim()
       
       setSummary(cleaned)
-      onUpdate({ ...item, summary: cleaned }) // Auto-sync to persistence
+      await onUpdate({ ...item, summary: cleaned }) // Auto-sync to persistence
     } catch (e) {
       showToast(e.message === 'AI Request Timed Out' ? 'Synthesis Time Out' : 'Synthesis Interrupted', 'error')
     } finally {
