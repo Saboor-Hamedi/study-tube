@@ -130,9 +130,13 @@ ${contextItem.type === "editor" ? "MISSION: You are reviewing a live draft. Prov
   };
 
   const handleStop = async () => {
-    if (api.stopAI) await api.stopAI();
     setIsTyping(false);
     isTypingRef.current = false;
+    try {
+      if (api.stopAI) await api.stopAI();
+    } catch (e) {
+      console.warn("api.stopAI failed or not implemented", e);
+    }
   };
 
   const sensors = useSensors(
@@ -259,37 +263,64 @@ ${contextItem.type === "editor" ? "MISSION: You are reviewing a live draft. Prov
                         : "bg-[var(--surface-3)] text-[var(--text)] border border-[var(--border)]"
                     }`}
                   >
-                    {m.role === 'assistant' ? (
-                      <DraggableCard id={`msg-sidebar-${i}`} v={{ ...m, type: 'chat-message' }} useHandle={true}>
+                    {m.role === "assistant" ? (
+                      <DraggableCard
+                        id={`msg-sidebar-${i}`}
+                        v={{ ...m, type: "chat-message" }}
+                        useHandle={true}
+                      >
                         {({ listeners, attributes }) => (
                           <div className="group/msg relative cursor-text select-text w-full">
                             <div className="prose prose-sm max-w-none prose-p:text-[12px] prose-p:leading-[1.6] prose-p:text-[var(--text)] prose-p:mb-3 prose-strong:text-[var(--accent)] prose-code:bg-[var(--surface-2)] prose-code:p-0.5">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {m.content}
+                              </ReactMarkdown>
                             </div>
-                            
+
                             <div className="mt-2 flex flex-wrap items-center gap-2 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                              <div {...listeners} {...attributes} className="p-1.5 bg-transparent hover:bg-[var(--accent)] text-[var(--accent)] hover:text-white cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-[var(--accent)]/20 rounded-[5px]">
+                              <div
+                                {...listeners}
+                                {...attributes}
+                                className="p-1.5 bg-transparent hover:bg-[var(--accent)] text-[var(--accent)] hover:text-white cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-[var(--accent)]/20 rounded-[5px]"
+                              >
                                 <GripVertical className="h-3 w-3" />
-                                <span className="text-[8px] font-black uppercase tracking-widest">Archive</span>
+                                <span className="text-[8px] font-black uppercase tracking-widest">
+                                  Archive
+                                </span>
                               </div>
-                              
-                              {contextItem?.type === 'editor' && m.content.includes('[REFINED_BLOCKS]') && (
-                                <button
-                                  onClick={() => {
-                                    try {
-                                      const match = m.content.match(/\[REFINED_BLOCKS\]([\s\S]*?)\[\/REFINED_BLOCKS\]/)
-                                      if (match?.[1]) {
-                                        const blocks = JSON.parse(match[1])
-                                        window.dispatchEvent(new CustomEvent('editor:apply-correction', { detail: { blocks } }))
+
+                              {contextItem?.type === "editor" &&
+                                m.content.includes("[REFINED_BLOCKS]") && (
+                                  <button
+                                    onClick={() => {
+                                      try {
+                                        const match = m.content.match(
+                                          /\[REFINED_BLOCKS\]([\s\S]*?)\[\/REFINED_BLOCKS\]/,
+                                        );
+                                        if (match?.[1]) {
+                                          const blocks = JSON.parse(match[1]);
+                                          window.dispatchEvent(
+                                            new CustomEvent(
+                                              "editor:apply-correction",
+                                              { detail: { blocks } },
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        showToast(
+                                          "Block Parse Failure",
+                                          "error",
+                                        );
                                       }
-                                    } catch (e) { showToast('Block Parse Failure', 'error') }
-                                  }}
-                                  className="p-1.5 bg-[var(--success)]/10 hover:bg-[var(--success)] text-[var(--success)] hover:text-white transition-all flex items-center gap-2 border border-[var(--success)]/20 rounded-[5px]"
-                                >
-                                  <RefreshCcw className="h-3 w-3" /> 
-                                  <span className="text-[8px] font-black uppercase tracking-widest">Apply</span>
-                                </button>
-                              )}
+                                    }}
+                                    className="p-1.5 bg-[var(--success)]/10 hover:bg-[var(--success)] text-[var(--success)] hover:text-white transition-all flex items-center gap-2 border border-[var(--success)]/20 rounded-[5px]"
+                                  >
+                                    <RefreshCcw className="h-3 w-3" />
+                                    <span className="text-[8px] font-black uppercase tracking-widest">
+                                      Apply
+                                    </span>
+                                  </button>
+                                )}
                             </div>
                           </div>
                         )}
@@ -313,7 +344,7 @@ ${contextItem.type === "editor" ? "MISSION: You are reviewing a live draft. Prov
 
             {/* Input */}
             <div className="p-3 border-t border-[var(--border)] bg-[var(--surface-3)]">
-              <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[16px] px-3 py-2 flex items-center gap-2 focus-within:border-[var(--accent)]/30 transition-all">
+              <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[5px] p-1 flex items-center gap-2 focus-within:border-[var(--accent)] transition-all">
                 <textarea
                   ref={textareaRef}
                   value={input}
@@ -324,24 +355,31 @@ ${contextItem.type === "editor" ? "MISSION: You are reviewing a live draft. Prov
                       isTyping ? handleStop() : handleSend();
                     }
                   }}
-                  placeholder={isTyping ? "Generating..." : "Ask AI..."}
-                  className="flex-1 bg-transparent text-[12px] text-[var(--text)] outline-none placeholder:text-[var(--muted)]/40 resize-none min-h-[28px] max-h-[120px] scrollbar-none"
+                  placeholder={
+                    isTyping ? "Synthesizing output..." : "Enter directive..."
+                  }
+                  className="flex-1 bg-transparent px-2 py-1.5 text-[12px] font-medium text-[var(--text)] outline-none placeholder:text-[var(--muted)]/50 placeholder:uppercase placeholder:tracking-widest resize-none min-h-[32px] max-h-[120px] scrollbar-none"
                   rows={1}
                 />
                 <button
-                  onClick={isTyping ? handleStop : handleSend}
-                  className={`shrink-0 p-1.5 rounded-full transition-all active:scale-95 ${
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isTyping ? handleStop() : handleSend();
+                  }}
+                  className={`shrink-0 p-2 rounded-[3px] transition-all active:scale-95 ${
                     isTyping
-                      ? "bg-red-500 text-white"
+                      ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30"
                       : input.trim()
-                        ? "bg-[var(--text)] text-[var(--background)]"
-                        : "bg-[var(--surface-3)] text-[var(--muted)]"
+                        ? "bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/30 hover:bg-[var(--accent)]/20"
+                        : "bg-[var(--surface-3)] text-[var(--muted)] border border-[var(--border)]"
                   }`}
                 >
                   {isTyping ? (
-                    <Square className="h-2.5 w-2.5 fill-current" />
+                    <Square className="h-3 w-3 fill-current" />
                   ) : (
-                    <Send className="h-2.5 w-2.5 fill-current" />
+                    <Send className="h-3 w-3 fill-current" />
                   )}
                 </button>
               </div>
@@ -557,8 +595,8 @@ ${contextItem.type === "editor" ? "MISSION: You are reviewing a live draft. Prov
                 {/* Input Hub */}
                 <div className="p-6 bg-[var(--surface-3)] border-t border-[var(--border)]">
                   <div className="max-w-4xl mx-auto">
-                    <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[24px] p-1.5 pr-3 focus-within:border-[var(--accent)]/30 transition-all backdrop-blur-2xl flex items-center gap-2 group/input">
-                      <div className="p-2 bg-[var(--surface-3)] rounded-full ml-1">
+                    <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[5px] p-1 focus-within:border-[var(--accent)] transition-all flex items-center gap-2 group/input">
+                      <div className="p-2 bg-[var(--surface-3)] rounded-[3px] border border-[var(--border)] ml-1">
                         <Plus className="h-3 w-3 text-[var(--muted)] group-hover/input:text-[var(--text)] transition-colors cursor-pointer" />
                       </div>
                       <textarea
@@ -573,26 +611,31 @@ ${contextItem.type === "editor" ? "MISSION: You are reviewing a live draft. Prov
                         }}
                         placeholder={
                           isTyping
-                            ? "AI is generating..."
-                            : "Research anything..."
+                            ? "NEURAL STREAM ACTIVE..."
+                            : "INITIATE RESEARCH DIRECTIVE..."
                         }
-                        className="flex-1 bg-transparent px-2 py-2.5 text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--muted)]/40 resize-none min-h-[40px] max-h-[200px] scrollbar-none"
+                        className="flex-1 bg-transparent px-3 py-2.5 text-[13px] font-medium text-[var(--text)] outline-none placeholder:text-[var(--muted)]/50 placeholder:uppercase placeholder:tracking-widest resize-none min-h-[40px] max-h-[200px] scrollbar-none"
                         rows={1}
                       />
                       <button
-                        onClick={isTyping ? handleStop : handleSend}
-                        className={`shrink-0 p-2 rounded-full transition-all active:scale-95 ${
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          isTyping ? handleStop() : handleSend();
+                        }}
+                        className={`shrink-0 p-2.5 rounded-[3px] transition-all active:scale-95 ${
                           isTyping
-                            ? "bg-red-500 text-white"
+                            ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30"
                             : input.trim()
-                              ? "bg-[var(--text)] text-[var(--background)]"
-                              : "bg-[var(--surface-3)] text-[var(--muted)]"
+                              ? "bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/30 hover:bg-[var(--accent)]/20"
+                              : "bg-[var(--surface-3)] text-[var(--muted)] border border-[var(--border)]"
                         }`}
                       >
                         {isTyping ? (
-                          <Square className="h-3 w-3 fill-current" />
+                          <Square className="h-4 w-4 fill-current" />
                         ) : (
-                          <Send className="h-3 w-3 fill-current" />
+                          <Send className="h-4 w-4 fill-current" />
                         )}
                       </button>
                     </div>
