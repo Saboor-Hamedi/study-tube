@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Send, Loader2, User, ChevronRight, X, Square, Brain, Plus, RefreshCcw } from 'lucide-react'
+import { Sparkles, Send, Loader2, User, ChevronRight, X, Square, Brain, Plus, RefreshCcw, GripVertical } from 'lucide-react'
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core'
+import { snapCenterToCursor } from '@dnd-kit/modifiers'
+import { DraggableCard } from '../research-vault/DraggableCard'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -94,6 +97,26 @@ ${contextItem.type === 'editor' ? 'MISSION: You are reviewing a live draft. Prov
     isTypingRef.current = false
   }
 
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const [activeDragMessage, setActiveDragMessage] = useState(null)
+
+  const handleDragEnd = async (event) => {
+    const { active } = event
+    setActiveDragMessage(null)
+    if (active?.data.current?.type === 'chat-message') {
+      const item = active.data.current
+      try {
+        const cleanText = item.content.replace(/[#*`~_\[\]()]/g, '').trim()
+        const firstSentence = cleanText.split(/[.!?\n]/).filter(s => s.trim().length > 0)[0] || 'Neural Insight'
+        const finalTitle = firstSentence.length > 50 ? firstSentence.slice(0, 50) + '...' : firstSentence
+        const newEntry = { text: finalTitle, definition: item.content, collection: selectedCollection === 'all' ? '' : (selectedCollection || ''), date: new Date().toISOString(), videoTitle: 'AI Research Insight', loading: false }
+        const newList = [newEntry, ...vocab]
+        setVocab(newList)
+        await api.saveVocab(newList)
+        showToast(`Insight archived to ${selectedCollection || 'Archive Root'}`)
+      } catch (err) { showToast('Capture failed', 'error') }
+    }
+  }
 
   // ── SIDEBAR MODE (inline right rail, editor only) ──────────────────────
   if (sidebarMode) {
@@ -272,6 +295,11 @@ ${contextItem.type === 'editor' ? 'MISSION: You are reviewing a live draft. Prov
               </button>
             </div>
 
+            <DndContext
+              sensors={sensors}
+              onDragEnd={handleDragEnd}
+              onDragStart={(e) => setActiveDragMessage(e.active.data.current)}
+            >
               {/* Primary Dialogue Stream */}
               <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-[var(--background)] to-[var(--surface)]">
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
@@ -305,38 +333,43 @@ ${contextItem.type === 'editor' ? 'MISSION: You are reviewing a live draft. Prov
                         
                         <div className={`flex-1 min-w-0 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
                           {m.role === 'assistant' ? (
-                            <div className="group/msg relative cursor-text select-text">
-                              <div className={`prose prose-sm max-w-none 
-                                prose-p:text-[13px] prose-p:leading-[1.6] prose-p:text-[var(--text)] prose-p:tracking-wide prose-p:font-light prose-p:mb-4
-                                prose-strong:text-[var(--accent)] prose-strong:font-black
-                                prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
-                                prose-code:bg-[var(--surface-3)] prose-code:p-1 prose-code:text-[var(--accent)]
-                                select-text cursor-text`}>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                              </div>
-                              
-                              {contextItem?.type === 'editor' && m.content.includes('[REFINED_BLOCKS]') && (
-                                <div className="mt-4">
-                                  <button 
-                                    onClick={() => {
-                                      try {
-                                        const match = m.content.match(/\[REFINED_BLOCKS\]([\s\S]*?)\[\/REFINED_BLOCKS\]/)
-                                        if (match && match[1]) {
-                                          const blocks = JSON.parse(match[1])
-                                          window.dispatchEvent(new CustomEvent('editor:apply-correction', { detail: { blocks } }))
-                                        }
-                                      } catch (e) {
-                                        showToast('Block Parse Failure', 'error')
-                                      }
-                                    }}
-                                    className="p-1.5 bg-[var(--success)]/10 hover:bg-[var(--success)] text-[var(--success)] hover:text-white transition-all flex items-center gap-2 border border-[var(--success)]/20 rounded-[5px]"
-                                  >
-                                    <RefreshCcw className="h-3 w-3" />
-                                    <span className="text-[8px] font-black uppercase tracking-widest">Apply Correction</span>
-                                  </button>
+                            <DraggableCard id={`msg-${i}`} v={{ ...m, type: 'chat-message' }} useHandle={true}>
+                              {({ listeners, attributes }) => (
+                                <div className="group/msg relative cursor-text select-text">
+                                  <div className={`prose prose-sm max-w-none 
+                                    prose-p:text-[13px] prose-p:leading-[1.6] prose-p:text-[var(--text)] prose-p:tracking-wide prose-p:font-light prose-p:mb-4
+                                    prose-strong:text-[var(--accent)] prose-strong:font-black
+                                    prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
+                                    prose-code:bg-[var(--surface-3)] prose-code:p-1 prose-code:text-[var(--accent)]
+                                    select-text cursor-text`}>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                                  </div>
+                                  <div className="mt-2 flex items-center gap-3 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                                    <div {...listeners} {...attributes} className="p-1.5 bg-transparent hover:bg-[var(--accent)] text-[var(--accent)] hover:text-white cursor-grab active:cursor-grabbing transition-all flex items-center gap-2 border border-[var(--accent)]/20 rounded-[5px]">
+                                      <GripVertical className="h-3 w-3" />
+                                      <span className="text-[8px] font-black uppercase tracking-widest">Archive Insight</span>
+                                    </div>
+                                    {contextItem?.type === 'editor' && m.content.includes('[REFINED_BLOCKS]') && (
+                                      <button 
+                                        onClick={() => {
+                                          try {
+                                            const match = m.content.match(/\[REFINED_BLOCKS\]([\s\S]*?)\[\/REFINED_BLOCKS\]/)
+                                            if (match && match[1]) {
+                                              const blocks = JSON.parse(match[1])
+                                              window.dispatchEvent(new CustomEvent('editor:apply-correction', { detail: { blocks } }))
+                                            }
+                                          } catch (e) { showToast('Block Parse Failure', 'error') }
+                                        }}
+                                        className="p-1.5 bg-[var(--success)]/10 hover:bg-[var(--success)] text-[var(--success)] hover:text-white transition-all flex items-center gap-2 border border-[var(--success)]/20 rounded-[5px]"
+                                      >
+                                        <RefreshCcw className="h-3 w-3" />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">Apply Correction</span>
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               )}
-                            </div>
+                            </DraggableCard>
                           ) : (
                             <p className="text-[13px] leading-[1.6] font-medium text-[var(--text)] tracking-wide mb-2 select-text cursor-text">{m.content}</p>
                           )}
@@ -389,6 +422,16 @@ ${contextItem.type === 'editor' ? 'MISSION: You are reviewing a live draft. Prov
                   </div>
                 </div>
               </div>
+
+              <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
+                {activeDragMessage ? (
+                  <div className="pointer-events-none flex items-center gap-2 bg-[var(--surface-3)] border border-[var(--accent)] py-1 px-3 shadow-2xl w-[160px] opacity-95 rounded-[5px]">
+                    <GripVertical className="h-3 w-3 text-[var(--accent)]" />
+                    <p className="text-[9px] font-black text-[var(--text)] uppercase tracking-widest truncate">Archiving...</p>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           </motion.div>
         </>
       )}

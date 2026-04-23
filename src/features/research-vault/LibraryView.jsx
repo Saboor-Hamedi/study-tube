@@ -6,11 +6,6 @@ import {
   Library, FileText, ChevronRight, X, Maximize2, 
   AlertCircle, Plus, FolderMinus, Download, GripVertical, Download as DownloadIcon
 } from 'lucide-react'
-import { 
-  DndContext, DragOverlay, defaultDropAnimationSideEffects, 
-  PointerSensor, useSensor, useSensors, pointerWithin 
-} from '@dnd-kit/core'
-import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import CardReaderModal from './CardReaderModal'
 import { DroppableFolder, DraggableCard } from './DraggableCard'
 import ReactMarkdown from 'react-markdown'
@@ -29,6 +24,7 @@ export default function LibraryView({
   syncStats,
   stats,
   onExpand,
+  activeDragItem,
   searchInputRef,
   // Elevated Search Logic
   searchQuery, setSearchQuery,
@@ -47,8 +43,6 @@ export default function LibraryView({
   
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
-
-  const [activeDragItem, setActiveDragItem] = useState(null)
 
   // Register Keyboard Shortcuts
   useEffect(() => {
@@ -348,14 +342,8 @@ export default function LibraryView({
     }
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-
-  /**
-   * Organizational Matrix: Handles the DndKit logic for migrating insights between collections.
-   */
   const handleDragEnd = async (event) => {
     const { active, over } = event
-    setActiveDragItem(null)
     if (over && active.data.current?.date) {
       const item = active.data.current
       const itemId = item.id || item.date
@@ -485,12 +473,7 @@ export default function LibraryView({
   ), [visible, activeDragItem])
 
   return (
-    <DndContext 
-      sensors={sensors} 
-      collisionDetection={pointerWithin} 
-      onDragStart={(e) => setActiveDragItem(e.active.data.current)} 
-      onDragEnd={handleDragEnd}
-    >
+    <>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -584,22 +567,7 @@ export default function LibraryView({
           onConfirm={handleDelete}
           onClose={() => setItemToDelete(null)}
         />
-      )}
-
-      <DragOverlay dropAnimation={null} zIndex={500} modifiers={[snapCenterToCursor]}>
-        {activeDragItem ? (
-          <div className="w-[160px] bg-surface-2 border border-accent p-1.5 shadow-2xl opacity-90 scale-90 pointer-events-none rounded-[5px]">
-             <div className="flex items-center gap-1.5">
-                <div className="p-1 bg-accent/10 border border-accent/20 rounded-[3px]">
-                   <FileText className="h-3 w-3 text-accent" />
-                </div>
-                <div className="min-w-0">
-                   <h4 className="text-[9px] font-black text-text uppercase tracking-widest truncate">{activeDragItem.text}</h4>
-                </div>
-             </div>
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+)}
+    </>
   )
 }

@@ -1,3 +1,6 @@
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin } from '@dnd-kit/core'
+import { snapCenterToCursor } from '@dnd-kit/modifiers'
+import { FileText } from 'lucide-react'
 import Activitybar from './components/Activitybar'
 import VideoView from './features/video-intel/VideoView'
 import LibraryView from './features/research-vault/LibraryView'
@@ -16,6 +19,10 @@ import Sidebar from './components/Sidebar'
 
 export default function App() {
   const [isInsightSidebarOpen, setIsInsightSidebarOpen] = useState(false)
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false)
+  const [newCollectionName, setNewCollectionName] = useState('')
+  const [activeDragItem, setActiveDragItem] = useState(null)
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const {
     vocabStats, setVocabStats,
     savePath, setSavePath,
@@ -59,6 +66,28 @@ export default function App() {
       console.error('History Sync Failure', err)
     }
   }, [api])
+
+  const handleDragEnd = useCallback(async (event) => {
+    const { active, over } = event
+    setActiveDragItem(null)
+    if (over && active.data.current?.date) {
+      const item = active.data.current
+      const itemId = item.id || item.date
+      const targetCollection = over.id === 'unorganized' ? null : (over.id === 'all' ? null : over.id)
+      
+      if (item.collection === targetCollection) return
+
+      try {
+        const updated = { ...item, collection: targetCollection }
+        await api.saveVocabItem(updated)
+        setVocab(prev => prev.map(v => (v.id || v.date) === itemId ? updated : v))
+        showToast(`Insight migrated to ${over.id === 'unorganized' ? 'Unorganized' : (over.id === 'all' ? 'Root' : over.id)}`, 'success')
+      } catch (err) {
+        console.error('Failed to persist drag-migration', err)
+        showToast('Neural Archiving Failed', 'error')
+      }
+    }
+  }, [api, setVocab, showToast])
 
   const commitToHistory = async (q) => {
     const query = q?.trim()
@@ -107,7 +136,7 @@ export default function App() {
     // Initial Hydration
     if (api.getTheme) api.getTheme().then(setTheme).catch(() => {})
     api.loadVocab().then(list => setVocab(list || [])).catch(() => {})
-    api.loadCollections().then(list => setCollections(list || [])).catch(() => {})
+    api.loadCollections().then(list => setCollections((list || []).filter(c => c && typeof c === 'string' && c.trim()))).catch(() => {})
     
     syncStats()
     syncHistory()
@@ -221,15 +250,25 @@ export default function App() {
             } : null}
           />
           
-          <div className="flex-1 flex flex-row overflow-hidden relative">
+<div className="flex-1 flex flex-row overflow-hidden relative">
+            <DndContext 
+              sensors={sensors} 
+              collisionDetection={pointerWithin} 
+              onDragStart={(e) => setActiveDragItem(e.active.data.current)} 
+              onDragEnd={handleDragEnd}
+            >
             {view !== 'search' && (
-              <Sidebar 
+               <Sidebar 
                 collections={collections} 
                 selectedCollection={selectedCollection} 
                 setSelectedCollection={setSelectedCollection} 
                 handleDeleteCollection={async (name) => { await api.disbandCollection(name); setCollections(collections.filter(c => c !== name)); if (selectedCollection === name) setSelectedCollection('all'); syncStats(); }}
                 handleRenameCollection={async (old, next) => { await api.migrateCollection(old, next); setCollections(collections.map(c => c === old ? next : c)); if (selectedCollection === old) setSelectedCollection(next); syncStats(); }}
-                handleCreateCollection={async (name) => { const next = [...collections, name]; await api.saveCollections(next); setCollections(next); syncStats(); }}
+                handleCreateCollection={async (name) => { if (!name.trim()) return; const next = [...collections, name.trim()]; await api.saveCollections(next); setCollections(next); setIsCreatingCollection(false); setNewCollectionName(''); syncStats(); }}
+                isCreatingCollection={isCreatingCollection}
+                setIsCreatingCollection={setIsCreatingCollection}
+                newCollectionName={newCollectionName}
+                setNewCollectionName={setNewCollectionName}
                 stats={vocabStats}
                 sortBy={sortBy}
                 setSortBy={setSortBy}
@@ -249,6 +288,7 @@ export default function App() {
                   <motion.div key="vocab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-y-auto scrollbar-thin">
                     <LibraryView 
                       {...libraryProps} 
+                      activeDragItem={activeDragItem}
                       onExpand={(item) => { setSelectedResearchNode(item); setIsInsightSidebarOpen(true); }}
                     />
                   </motion.div>
@@ -286,6 +326,21 @@ export default function App() {
                 )}
               </AnimatePresence>
             </main>
+            <DragOverlay dropAnimation={null} zIndex={500} modifiers={[snapCenterToCursor]}>
+              {activeDragItem ? (
+                <div className="w-[160px] bg-surface-2 border border-accent p-1.5 shadow-2xl opacity-90 scale-90 pointer-events-none rounded-[5px]">
+                   <div className="flex items-center gap-1.5">
+                      <div className="p-1 bg-accent/10 border border-accent/20 rounded-[3px]">
+                         <FileText className="h-3 w-3 text-accent" />
+                      </div>
+                      <div className="min-w-0">
+                         <h4 className="text-[9px] font-black text-text uppercase tracking-widest truncate">{activeDragItem.text}</h4>
+                      </div>
+                   </div>
+                </div>
+              ) : null}
+            </DragOverlay>
+            </DndContext>
           </div>
         </div>
       </div>
