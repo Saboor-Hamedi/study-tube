@@ -184,7 +184,7 @@ export default function App() {
       {/* open setting  */}
         {view === 'settings' && (
           <div className="absolute inset-0">
-            <SettingsView api={api} />
+            <SettingsView api={api} showToast={showToast} />
           </div>
         )}
       </main>

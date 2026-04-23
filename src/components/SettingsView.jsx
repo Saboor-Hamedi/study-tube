@@ -6,7 +6,7 @@ import {
   Activity, Zap, Database, Terminal, Shield
 } from 'lucide-react'
 
-const SettingsView = ({ api }) => {
+const SettingsView = ({ api, showToast }) => {
   const [apiKey, setApiKey] = useState('')
   const [savePath, setSavePath] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -37,6 +37,12 @@ const SettingsView = ({ api }) => {
       const unsubs = api.updater.onUpdateStatus((data) => {
         setUpdateStatus(data.status)
         if (data.info) setUpdateInfo(data.info)
+        if (data.status === 'not-available') {
+          showToast('Neural Shield: No Update Available', 'success')
+        }
+        if (data.status === 'error') {
+          showToast(`Neural Shield: ${data.info || 'Update Error'}`, 'error')
+        }
         if (data.status === 'downloading' && data.info?.percent) {
           setUpdateProgress(Math.round(data.info.percent))
         }
