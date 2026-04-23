@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { 
   Library, Sparkles, Brain, ListChecks, 
   Loader2, Star, RefreshCcw, Pencil, Copy,
-  ExternalLink, MessageSquare
+  ExternalLink
 } from 'lucide-react'
 import ModalCommandHeader from './ModalCommandHeader'
 
@@ -29,14 +29,9 @@ const AnalyticalSidebar = ({
   const isModal = mode === 'modal' || mode === 'capture'
   const isCapture = mode === 'capture'
 
-  const handleOpenChat = () => {
-    if (onOpenCopilot) {
-      onOpenCopilot(item)
-    }
-  }
 
   return (
-    <aside className={`shrink-0 border-l border-border bg-surface-2 flex flex-col relative z-50 ${isModal ? 'w-[280px]' : 'w-[260px] pt-8 overflow-y-auto'} ${isModal && !isMaximized ? 'rounded-r-[5px]' : ''} scrollbar-thin`}>
+    <aside className={`shrink-0 border-l border-border bg-surface-2 flex flex-col relative z-50 ${isModal ? 'w-[280px]' : 'w-[300px] pt-8 overflow-y-auto'} ${isModal && !isMaximized ? 'rounded-r-[5px]' : ''} scrollbar-thin`}>
       
       {isModal && (
         <ModalCommandHeader 
@@ -106,19 +101,6 @@ const AnalyticalSidebar = ({
                 <Brain className="h-3 w-3" /> Logic Blocks
               </p>
               <div className="space-y-2">
-                <button 
-                  onClick={handleOpenChat}
-                  disabled={isEditing}
-                  className="w-full p-3 bg-accent text-white hover:brightness-110 rounded-[5px] flex items-center gap-3 group transition-all disabled:opacity-30 text-left shadow-lg shadow-accent/20"
-                >
-                  <div className="p-1.5 bg-white/20 rounded-[3px]">
-                      <MessageSquare className="h-3 w-3 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest">Neural Dialogue</p>
-                    <p className="text-[8px] text-white/70 uppercase tracking-tight">Contextual Chat</p>
-                  </div>
-                </button>
 
                 <button 
                   onClick={handleGenerateSummary} 

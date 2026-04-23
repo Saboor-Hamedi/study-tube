@@ -31,7 +31,7 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
             autoFocus
           />
         ) : (
-          <h1 className="text-[20px] font-black text-text tracking-normal leading-tight select-text">{item.text}</h1>
+          <h1 className="text-[20px] font-black text-text tracking-normal leading-tight select-text">{titleEditVal}</h1>
         )}
       </div>
 
@@ -56,14 +56,14 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
                 prose-ul:list-disc prose-ul:pl-8 prose-ul:space-y-4 prose-ul:text-accent
                 prose-li:text-text prose-li:leading-relaxed prose-li:pl-2
                 selection:bg-accent/40 select-text font-extralight tracking-wide color-[var(--text)]">
-               {highlights.length > 0 ? renderContentWithHeatmap(item.definition) : (
+               {highlights.length > 0 ? renderContentWithHeatmap(editVal) : (
                   <ReactMarkdown 
                     remarkPlugins={[remarkGfm]}
                     components={neuralComponents}
                   >
-                    {item.definition?.includes('\n') || /^(\d+\.|\s*[-*•])\s/m.test(item.definition || '')
-                      ? item.definition 
-                      : (item.definition || '')
+                    {editVal?.includes('\n') || /^(\d+\.|\s*[-*•])\s/m.test(editVal || '')
+                      ? editVal 
+                      : (editVal || '')
                          .split(/(?<=[.!?])\s+(?=[A-Z])/)
                          .join('\n\n')}
                   </ReactMarkdown>

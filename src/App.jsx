@@ -12,8 +12,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Notification from './components/Notification'
 import { useStore } from './store/useStore'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Sidebar from './components/Sidebar'
 
 export default function App() {
+  const [isInsightSidebarOpen, setIsInsightSidebarOpen] = useState(false)
   const {
     vocabStats, setVocabStats,
     savePath, setSavePath,
@@ -189,7 +191,7 @@ export default function App() {
     searchHistory: libHistory, setSearchHistory: setLibHistory, 
     isHistoryOpen: isLibHistoryOpen, setIsHistoryOpen: setIsLibHistoryOpen, 
     searchInputRef, historyRef: libHistoryRef, 
-    onExpand: (item) => { setSelectedResearchNode(item); setView('research-detail'); }
+    onExpand: (item) => { setSelectedResearchNode(item); setIsInsightSidebarOpen(true); }
   }
 
   return (
@@ -199,9 +201,9 @@ export default function App() {
         <div className="absolute -bottom-[10%] -left-[10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative z-10 flex w-full h-full">
+      <div className="relative z-10 flex w-full h-full flex-row">
         <Activitybar view={view} setView={setView} onExport={handleGlobalExport} theme={theme} onToggleTheme={toggleTheme} stats={vocabStats} />
-        
+
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <Header 
             view={view} setView={setView} item={selectedResearchNode}
@@ -219,59 +221,113 @@ export default function App() {
             } : null}
           />
           
-          <main className="flex-1 relative overflow-hidden">
-            <AnimatePresence mode="wait">
-              {view === 'search' && (
-                <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-                  <VideoView {...videoProps} />
-                </motion.div>
-              )}
-              {view === 'vocab' && (
-                <motion.div key="vocab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-y-auto scrollbar-thin">
-                  <LibraryView {...libraryProps} />
-                </motion.div>
-              )}
-              {view === 'research-detail' && (
-                <motion.div key="detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-                  <InsightDetailView 
-                    item={selectedResearchNode} 
-                    setView={setView} 
-                    showToast={showToast} 
-                    api={api} 
-                    onOpenCopilot={(ctx) => { setCopilotContext(ctx); setIsCopilotOpen(true); }}
-                    collections={collections}
-                    selectedCollection={selectedCollection}
-                    setSelectedCollection={setSelectedCollection}
-                    onUpdate={async (updated) => { await api.saveVocabItem(updated); setSelectedResearchNode(updated); syncStats(); }} 
-                  />
-                </motion.div>
-              )}
-              {view === 'editor' && (
-                <motion.div key="editor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-                  <EditorView api={api} showToast={showToast} />
-                </motion.div>
-              )}
-              {view === 'settings' && (
-                <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-                  <SettingsView api={api} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </main>
+          <div className="flex-1 flex flex-row overflow-hidden relative">
+            {view !== 'search' && (
+              <Sidebar 
+                collections={collections} 
+                selectedCollection={selectedCollection} 
+                setSelectedCollection={setSelectedCollection} 
+                handleDeleteCollection={async (name) => { await api.disbandCollection(name); setCollections(collections.filter(c => c !== name)); if (selectedCollection === name) setSelectedCollection('all'); syncStats(); }}
+                handleRenameCollection={async (old, next) => { await api.migrateCollection(old, next); setCollections(collections.map(c => c === old ? next : c)); if (selectedCollection === old) setSelectedCollection(next); syncStats(); }}
+                handleCreateCollection={async (name) => { const next = [...collections, name]; await api.saveCollections(next); setCollections(next); syncStats(); }}
+                stats={vocabStats}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                side="left"
+                showTrash={true}
+              />
+            )}
+
+            <main className="flex-1 relative overflow-hidden">
+              <AnimatePresence mode="wait">
+                {view === 'search' && (
+                  <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                    <VideoView {...videoProps} />
+                  </motion.div>
+                )}
+                {view === 'vocab' && (
+                  <motion.div key="vocab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-y-auto scrollbar-thin">
+                    <LibraryView 
+                      {...libraryProps} 
+                      onExpand={(item) => { setSelectedResearchNode(item); setIsInsightSidebarOpen(true); }}
+                    />
+                  </motion.div>
+                )}
+                {view === 'research-detail' && (
+                  <motion.div key="detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                    <div className="flex items-center justify-center h-full text-muted text-xs uppercase tracking-widest">
+                      Insight expanded to sidebar.
+                    </div>
+                  </motion.div>
+                )}
+                {view === 'editor' && (
+                  <motion.div key="editor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-row overflow-hidden">
+                    <div className="flex-1 overflow-hidden">
+                      <EditorView api={api} showToast={showToast} />
+                    </div>
+                    <CopilotView
+                      isOpen={isCopilotOpen}
+                      onClose={() => { setIsCopilotOpen(false); setCopilotContext(null); }}
+                      vocab={vocab} setVocab={setVocab}
+                      collections={collections} setCollections={setCollections}
+                      selectedCollection={selectedCollection}
+                      setSelectedCollection={setSelectedCollection}
+                      messages={chatHistory} setMessages={setChatHistory}
+                      contextItem={copilotContext}
+                      api={api} showToast={showToast}
+                      sidebarMode={true}
+                    />
+                  </motion.div>
+                )}
+                {view === 'settings' && (
+                  <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                    <SettingsView api={api} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </main>
+          </div>
         </div>
       </div>
 
-      <CopilotView 
-        isOpen={isCopilotOpen} 
-        onClose={() => { setIsCopilotOpen(false); setCopilotContext(null); }}
-        vocab={vocab} setVocab={setVocab}
-        collections={collections} setCollections={setCollections}
-        selectedCollection={selectedCollection}
-        setSelectedCollection={setSelectedCollection}
-        messages={chatHistory} setMessages={setChatHistory}
-        contextItem={copilotContext}
-        api={api} showToast={showToast}
-      />
+      {view !== 'editor' && (
+        <CopilotView 
+          isOpen={isCopilotOpen} 
+          onClose={() => { setIsCopilotOpen(false); setCopilotContext(null); }}
+          vocab={vocab} setVocab={setVocab}
+          collections={collections} setCollections={setCollections}
+          selectedCollection={selectedCollection}
+          setSelectedCollection={setSelectedCollection}
+          messages={chatHistory} setMessages={setChatHistory}
+          contextItem={copilotContext}
+          api={api} showToast={showToast}
+        />
+      )}
+
+      <AnimatePresence>
+        {isInsightSidebarOpen && selectedResearchNode && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'tween', duration: 0.3 }}
+            className="fixed top-0 right-0 h-full w-[600px] bg-background border-l border-border shadow-2xl z-[200] flex flex-col overflow-hidden"
+          >
+            <InsightDetailView 
+              item={selectedResearchNode} 
+              setView={setView} 
+              showToast={showToast} 
+              api={api} 
+              onClose={() => setIsInsightSidebarOpen(false)}
+              onOpenCopilot={(ctx) => { setCopilotContext(ctx); setIsCopilotOpen(true); }}
+              collections={collections}
+              selectedCollection={selectedCollection}
+              setSelectedCollection={setSelectedCollection}
+              onUpdate={async (updated) => { await api.saveVocabItem(updated); setSelectedResearchNode(updated); syncStats(); }} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <InsightCaptureModal 
         isOpen={isCaptureOpen} 
@@ -287,6 +343,7 @@ export default function App() {
           onOpenCopilot={() => { setCopilotContext(null); setIsCopilotOpen(true); }}
           stats={vocabStats}
           isShifted={isCopilotOpen || isCaptureOpen}
+          view={view}
         />
       )}
 

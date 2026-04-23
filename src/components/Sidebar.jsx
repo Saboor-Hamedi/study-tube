@@ -17,7 +17,8 @@ export default function Sidebar({
   showTrash = false,
   stats,
   sortBy,
-  setSortBy
+  setSortBy,
+  side = 'left'
 }) {
   const [renamingId, setRenamingId] = useState(null)
   const [renamingValue, setRenamingValue] = useState('')
@@ -49,14 +50,14 @@ export default function Sidebar({
     <motion.div 
       initial={false}
       animate={{ width: isCollapsed ? 52 : 208 }}
-      className="h-full border-r border-border bg-surface-2 flex flex-col relative transition-colors duration-500"
+      className={`h-full ${side === 'left' ? 'border-r' : 'border-l'} border-border bg-surface-2 flex flex-col relative transition-colors duration-500`}
     >
       {/* Structural Toggle Hub - Elevated for zero-collision navigation */}
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-4 w-6 h-6 bg-surface-3 border border-border rounded-full flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-all z-[150] shadow-xl"
+        className={`absolute ${side === 'left' ? '-right-3' : '-left-3'} top-4 w-6 h-6 bg-surface-3 border border-border rounded-full flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-all z-[150] shadow-xl`}
       >
-        {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        {isCollapsed ? (side === 'left' ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />) : (side === 'left' ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
       </button>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -92,7 +93,7 @@ export default function Sidebar({
                       <span className="text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1">{item.name}</span>
                     )}
                     {isCollapsed && (
-                      <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]">
+                      <div className={`absolute ${side === 'left' ? 'left-full ml-4' : 'right-full mr-4'} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}>
                         {item.name}
                       </div>
                     )}
@@ -243,7 +244,7 @@ export default function Sidebar({
                     </>
                   )}
                   {isCollapsed && (
-                    <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]">
+                    <div className={`absolute ${side === 'left' ? 'left-full ml-4' : 'right-full mr-4'} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}>
                       {c} ({getCount(c)})
                     </div>
                   )}

@@ -13,7 +13,6 @@ import {
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import CardReaderModal from './CardReaderModal'
 import { DroppableFolder, DraggableCard } from './DraggableCard'
-import Sidebar from '../../components/Sidebar'
 import ReactMarkdown from 'react-markdown'
 import DeleteModal from './DeleteModal'
 import InsightCaptureModal from './InsightCaptureModal'
@@ -388,25 +387,7 @@ export default function LibraryView({
     setIsInsightCaptureModalOpen(true)
   }
 
-  // Top-Level Memoization: Prevents Hook Violations & Isolation Latency
-  const sidebarMemo = useMemo(() => (
-    <Sidebar 
-      collections={collections} 
-      selectedCollection={selectedCollection} 
-      setSelectedCollection={setSelectedCollection} 
-      handleDeleteCollection={handleDeleteCollection}
-      handleRenameCollection={handleRenameCollection}
-      handleCreateCollection={handleCreateCollection}
-      isCreatingCollection={isCreatingCollection}
-      setIsCreatingCollection={setIsCreatingCollection}
-      newCollectionName={newCollectionName}
-      setNewCollectionName={setNewCollectionName}
-      showTrash={true}
-      stats={stats}
-      sortBy={sortBy}
-      setSortBy={setSortBy}
-    />
-  ), [collections, selectedCollection, isCreatingCollection, newCollectionName, stats, sortBy, setSortBy])
+  // Sidebar is now managed by App.jsx globally
 
   const gridMemo = useMemo(() => (
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
@@ -515,7 +496,7 @@ export default function LibraryView({
         animate={{ opacity: 1 }}
         className="flex h-full overflow-hidden text-text bg-background"
       >
-        {sidebarMemo}
+        {/* Sidebar managed by App.jsx */}
         
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto scrollbar-thin p-8">
