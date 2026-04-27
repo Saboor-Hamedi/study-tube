@@ -176,14 +176,26 @@ mark {
   color: var(--accent);
 }
 
-.neural-report h1, .neural-report h2, .neural-report h3, .neural-report h4 {
+.neural-report h1, .neural-report h2, .neural-report h3 {
   font-size: 14px !important;
   font-weight: 800;
   color: var(--accent);
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.neural-report h4, .neural-report h5, .neural-report h6 {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-color);
+  opacity: 0.5;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  display: block;
 }
 
 /* Surgical Diagnostic Tables */

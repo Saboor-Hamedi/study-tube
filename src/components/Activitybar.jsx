@@ -23,7 +23,7 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
   }, [])
 
   const renderTab = (tab) => {
-    const active = view === tab.id
+    const active = view === tab.id || (tab.id === 'vocab' && view === 'research-detail')
     return (
       <button
         key={tab.id}

@@ -20,6 +20,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "../store/useStore";
 
 export default function Sidebar({
+  view,
+  setView,
   collections,
   selectedCollection,
   setSelectedCollection,
@@ -40,6 +42,13 @@ export default function Sidebar({
   const [renamingId, setRenamingId] = useState(null);
   const [renamingValue, setRenamingValue] = useState("");
   const [pinnedItems, setPinnedItems] = useState([]);
+
+  const handleCollectionSelect = (id) => {
+    setSelectedCollection?.(id);
+    if (view === "research-detail" || view === "editor") {
+      setView?.("vocab");
+    }
+  };
 
   const startRename = (name) => {
     setRenamingId(name);
@@ -159,7 +168,7 @@ export default function Sidebar({
                     key={pin.id}
                     id={pin.id}
                     active={selectedCollection === pin.id}
-                    onClick={() => setSelectedCollection?.(pin.id)}
+                    onClick={() => handleCollectionSelect(pin.id)}
                     isCollapsed={isCollapsed}
                   >
                     <div className="flex items-center justify-between w-full">
@@ -212,7 +221,7 @@ export default function Sidebar({
                   key={item.id}
                   id={item.id}
                   active={selectedCollection === item.id}
-                  onClick={() => setSelectedCollection?.(item.id)}
+                  onClick={() => handleCollectionSelect(item.id)}
                   isCollapsed={isCollapsed}
                 >
                   <div className="flex items-center justify-between w-full">
@@ -278,7 +287,7 @@ export default function Sidebar({
                       <DroppableFolder
                         id={c}
                         active={selectedCollection === c}
-                        onClick={() => setSelectedCollection?.(c)}
+                        onClick={() => handleCollectionSelect(c)}
                         isCollapsed={isCollapsed}
                       >
                         <div className="flex items-center justify-between w-full">

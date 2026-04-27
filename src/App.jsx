@@ -446,6 +446,8 @@ export default function App() {
             >
               {view !== "search" && (
                 <Sidebar
+                  view={view}
+                  setView={setView}
                   collections={collections}
                   selectedCollection={selectedCollection}
                   setSelectedCollection={setSelectedCollection}
@@ -532,7 +534,7 @@ export default function App() {
                           api={api}
                           onClose={() => {
                             setView("vocab");
-                            handleCloseCopilot();
+                            setIsCopilotCollapsed(true);
                           }}
                           onOpenCopilot={handleOpenCopilot}
                           collections={collections}

@@ -2,15 +2,18 @@ export const formatNeuralText = (text) => {
   if (!text) return "";
   
   return text
+    // Markers & Headers (Full Spectrum H1-H6) - PRIORITIZED
+    .replace(/^🧠\s*(.*$)/gm, '<span class="marker-header">🧠 $1</span>')
+    .replace(/^✅\s*(.*$)/gm, '<span class="marker-success">✅ $1</span>')
+    .replace(/^❌\s*(.*$)/gm, '<span class="marker-error">❌ $1</span>')
+    .replace(/^(#{1,6})\s*(.*$)/gm, (match, hashes, content) => {
+      const level = hashes.length;
+      return `<h${level}>${content}</h${level}>`;
+    })
+
     // Horizontal Lines (Surgically Tight)
     .replace(/\n\s*[\-\*]{3,}\s*\n/g, '<hr class="neural-hr" />')
     .replace(/^[\-\*]{3,}$/gm, '<hr class="neural-hr" />')
-    
-    // Markers & Headers
-    .replace(/^🧠 (.*$)/gm, '<span class="marker-header">🧠 $1</span>')
-    .replace(/✅ (.*$)/gm, '<span class="marker-success">✅ $1</span>')
-    .replace(/❌ (.*$)/gm, '<span class="marker-error">❌ $1</span>')
-    .replace(/^(#+) (.*$)/gm, '<h3>$2</h3>')
     
     // Bold & Italics
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")

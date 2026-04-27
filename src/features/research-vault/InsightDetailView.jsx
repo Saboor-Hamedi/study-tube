@@ -1,7 +1,14 @@
-import { useState, memo, useEffect, useCallback, useRef } from "react";
+import { useState, memo, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Pencil, X, Save } from "lucide-react";
 import { formatNeuralText } from "../../utils/neuralFormat";
+
+const StaticContent = memo(({ html }) => (
+  <div 
+    className="neural-report select-text cursor-text"
+    dangerouslySetInnerHTML={{ __html: html }}
+  />
+));
 
 const InsightDetailView = ({
   item,
@@ -45,9 +52,14 @@ const InsightDetailView = ({
     hydrate();
   }, [item, api]);
 
+  const renderedHtml = useMemo(() => {
+    return formatNeuralText(editVal || item.definition);
+  }, [editVal, item.definition]);
+
   const handleSelection = useCallback(() => {
     const sel = window.getSelection();
     const selectedText = sel.toString().trim();
+
     if (selectedText && selectedText.length > 5) {
       setSelection(selectedText);
       const range = sel.getRangeAt(0);
@@ -60,6 +72,9 @@ const InsightDetailView = ({
         height: r.height,
       }));
       setSelectionRects(mappedRects);
+    } else {
+      setSelection("");
+      setSelectionRects([]);
     }
   }, []);
 
@@ -142,12 +157,7 @@ const InsightDetailView = ({
               autoFocus
             />
           ) : (
-            <div
-              className="neural-report select-text cursor-text"
-              dangerouslySetInnerHTML={{
-                __html: formatNeuralText(editVal || item.definition),
-              }}
-            />
+            <StaticContent html={renderedHtml} />
           )}
         </div>
 

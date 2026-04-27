@@ -13,7 +13,9 @@ export const useShortcuts = (librarySearch) => {
     isSidebarCollapsed, 
     setIsSidebarCollapsed,
     isCopilotOpen,
-    setIsCopilotOpen
+    setIsCopilotOpen,
+    isCopilotCollapsed,
+    setIsCopilotCollapsed
   } = useStore();
 
   useEffect(() => {
@@ -33,10 +35,11 @@ export const useShortcuts = (librarySearch) => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
       }
 
-      // Ctrl + I: Toggle Copilot
+      // Ctrl + I: Toggle Copilot Collapse (Minimize to Rail)
       if (isCmd && key === 'i') {
         e.preventDefault();
-        setIsCopilotOpen((prev) => !prev);
+        setIsCopilotOpen(true);
+        setIsCopilotCollapsed((prev) => !prev);
       }
 
       // Escape: Neural Reset (Blur all inputs)
@@ -50,5 +53,5 @@ export const useShortcuts = (librarySearch) => {
     // Use capture phase to ensure we override browser defaults (like Print dialog)
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [librarySearch, isSidebarCollapsed, setIsSidebarCollapsed, isCopilotOpen, setIsCopilotOpen]);
+  }, [librarySearch, isSidebarCollapsed, setIsSidebarCollapsed, isCopilotOpen, setIsCopilotOpen, isCopilotCollapsed, setIsCopilotCollapsed]);
 };
