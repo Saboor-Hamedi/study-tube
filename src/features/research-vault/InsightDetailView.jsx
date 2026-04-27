@@ -1,7 +1,7 @@
 import { useState, memo, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { Pencil, X, Save } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { formatNeuralText } from "../../utils/neuralFormat";
 
 const InsightDetailView = ({
   item,
@@ -53,11 +53,11 @@ const InsightDetailView = ({
       const range = sel.getRangeAt(0);
       const rects = Array.from(range.getClientRects());
       const containerRect = contentRef.current.getBoundingClientRect();
-      const mappedRects = rects.map(r => ({
+      const mappedRects = rects.map((r) => ({
         top: r.top - containerRect.top + contentRef.current.scrollTop,
         left: r.left - containerRect.left,
         width: r.width,
-        height: r.height
+        height: r.height,
       }));
       setSelectionRects(mappedRects);
     }
@@ -68,14 +68,18 @@ const InsightDetailView = ({
       if (onOpenCopilot) {
         const currentText = isEditing ? titleEditVal : item?.text || "";
         const currentDef = isEditing ? editVal : item?.definition || "";
-        const activeContext = selection || (currentDef?.length > 1000 ? currentDef.substring(0, 1000) + "..." : currentDef);
+        const activeContext =
+          selection ||
+          (currentDef?.length > 1000
+            ? currentDef.substring(0, 1000) + "..."
+            : currentDef);
         const itemKey = `${item?.id || item?.date}-${currentText}-${activeContext}-${selection}`;
         if (lastSyncedItem.current === itemKey) return;
         onOpenCopilot({
           type: "insight",
           text: currentText,
           definition: activeContext,
-          isClipped: !selection && currentDef?.length > 1000
+          isClipped: !selection && currentDef?.length > 1000,
         });
         lastSyncedItem.current = itemKey;
       }
@@ -92,40 +96,74 @@ const InsightDetailView = ({
   if (!item) return null;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full bg-background overflow-hidden">
-      <div className="h-[56px] shrink-0 flex items-center justify-between px-5 border-b border-border/20 bg-surface">
-        <h2 className="text-[13px] font-black text-text tracking-tight truncate pr-4">{item.text}</h2>
-        <div className="flex items-center gap-1 shrink-0">
-          {isEditing ? (
-            <button onClick={handleSaveEdit} className="p-2 bg-accent text-white hover:brightness-110 transition-all rounded-[5px]">
-              <Save className="h-3.5 w-3.5" />
-            </button>
-          ) : (
-            <button onClick={() => setIsEditing(true)} className="p-2 text-muted hover:text-text hover:bg-surface-3 transition-all rounded-[5px]">
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {onClose && (
-            <button onClick={onClose} className="p-2 text-muted hover:text-text hover:bg-surface-3 transition-all rounded-[5px]">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col h-full bg-background overflow-hidden relative"
+    >
+      {/* Nano-Scale Action Rail */}
+      <div className="absolute top-2 right-12  z-[50] flex items-center gap-1.5 p-1 bg-background/40 backdrop-blur-md rounded-[6px] border border-border/10">
+        {isEditing ? (
+          <button
+            onClick={handleSaveEdit}
+            className="p-1.5 bg-emerald-500 text-white hover:brightness-110 transition-all rounded-[4px] shadow-lg shadow-emerald-500/20"
+          >
+            <Save className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="p-1.5 bg-surface-3 border border-border/10 text-muted hover:text-text hover:bg-surface transition-all rounded-[4px] shadow-sm"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+        <button
+          onClick={() => (isEditing ? setIsEditing(false) : onClose())}
+          className="p-1.5 bg-surface-3 border border-border/10 text-muted hover:text-red-500 hover:bg-red-500/10 transition-all rounded-[4px] shadow-sm"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
 
-      <div ref={contentRef} className="flex-1 overflow-y-auto scrollbar-thin px-6 py-8 selection:bg-accent/40 selection:text-white cursor-text antialiased relative" onMouseUp={handleSelection}>
-        {selectionRects.map((r, i) => (
-          <div key={i} className="absolute bg-accent/20 pointer-events-none rounded-[2px] z-0 animate-in fade-in zoom-in-95 duration-200" style={{ top: r.top, left: r.left, width: r.width, height: r.height }} />
-        ))}
-        <div className="max-w-4xl mx-auto w-full relative z-10">
+      <div
+        className="flex-1 overflow-y-auto scrollbar-thin relative"
+        ref={contentRef}
+        onMouseUp={handleSelection}
+      >
+        <div
+          className={`max-w-4xl mx-auto p-12 bg-white shadow-sm border-x border-border/10 relative z-10 ${isEditing ? "flex flex-col h-full" : "min-h-full"}`}
+        >
           {isEditing ? (
-            <textarea value={editVal} onChange={(e) => setEditVal(e.target.value)} className="w-full bg-surface-2 border border-border/40 rounded-[8px] p-5 text-[14px] leading-relaxed text-text focus:outline-none focus:border-accent/40 min-h-[400px] resize-none scrollbar-thin" />
+            <textarea
+              value={editVal}
+              onChange={(e) => setEditVal(e.target.value)}
+              className="w-full flex-1 bg-surface-2 border border-border/40 rounded-[8px] p-5 text-[14px] leading-relaxed text-text focus:outline-none focus:border-accent/40 resize-none scrollbar-thin"
+              autoFocus
+            />
           ) : (
-            <div className="prose prose-sm prose-invert max-w-none prose-p:text-text/70 prose-p:leading-[1.8] prose-p:font-light prose-p:mb-6 prose-strong:text-accent prose-strong:font-bold prose-headings:text-text prose-headings:font-black prose-li:text-text/70 prose-li:font-light select-text pointer-events-auto cursor-text">
-              <ReactMarkdown>{editVal || item.definition}</ReactMarkdown>
-            </div>
+            <div
+              className="neural-report select-text cursor-text"
+              dangerouslySetInnerHTML={{
+                __html: formatNeuralText(editVal || item.definition),
+              }}
+            />
           )}
         </div>
+
+        {/* Neural Selection Overlay */}
+        {selectionRects.map((rect, i) => (
+          <div
+            key={i}
+            className="absolute bg-accent/10 pointer-events-none z-0"
+            style={{
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height,
+            }}
+          />
+        ))}
       </div>
     </motion.div>
   );

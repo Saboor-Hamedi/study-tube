@@ -7,40 +7,53 @@ import {
   ChevronRight,
   X,
   Square,
+  Bot,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Trash2,
+  ChevronLeft,
 } from "lucide-react";
 import { useStore } from "./../../store/useStore";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { formatNeuralText } from "../../utils/neuralFormat";
 
 // ── MINIMALIST TEXT-ONLY MESSAGE ─────────────────────────────────────
 const NeuralChatMessage = memo(({ message, index, isStreaming }) => {
-  const isAssistant = message.role === "assistant";
-  
+  const isAI = message.role === "assistant";
+
   return (
-    <div className={`flex items-start gap-4 py-2 px-1 ${message.role === "user" ? "flex-row-reverse text-right" : "flex-row text-left"}`}>
-      <div className={`shrink-0 p-1.5 rounded-full mt-1 ${isAssistant ? "bg-emerald-500/10" : "bg-indigo-500/10"}`}>
-        {isAssistant ? <Sparkles className="h-3.5 w-3.5 text-emerald-400" /> : <User className="h-3.5 w-3.5 text-indigo-400" />}
+    <motion.div
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`group flex flex-col gap-1.5 ${isAI ? "" : "items-end"}`}
+    >
+      <div
+        className={`flex items-center gap-2 ${isAI ? "" : "flex-row-reverse opacity-40 group-hover:opacity-100 transition-opacity"}`}
+      >
+        <div
+          className={`h-4 w-4 flex items-center justify-center rounded-full border border-border/10 ${isAI ? "bg-accent/10 text-accent" : "bg-surface-3 text-muted"}`}
+        >
+          {isAI ? <Bot className="h-2 w-2" /> : <User className="h-2 w-2" />}
+        </div>
+        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/40">
+          {isAI ? "Neural Assistant" : "Researcher"}
+        </span>
       </div>
-      <div className={`flex-1 min-w-0 text-[13px] leading-[1.7] font-medium text-text/90 select-text break-words ${message.role === "user" ? "text-indigo-300" : ""}`}>
-        {isAssistant ? (
-          isStreaming ? (
-            <div className="whitespace-pre-wrap">
-              {message.content || (
-                <span className="text-accent animate-pulse font-black uppercase tracking-[0.2em] text-[10px]">Neural Synthesis...</span>
-              )}
-            </div>
-          ) : (
-            <div className="prose prose-sm max-w-none prose-p:m-0 prose-ol:m-0 prose-ul:m-0 prose-li:m-0 prose-hr:my-2 prose-p:text-[13px] prose-p:leading-[1.7] prose-p:text-text/90 prose-strong:text-accent prose-invert overflow-x-hidden whitespace-pre-wrap">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {message.content}
-              </ReactMarkdown>
-            </div>
-          )
-        ) : (
-          <div className="whitespace-pre-wrap font-bold text-text">{message.content}</div>
+
+      <div
+        className={`max-w-full p-0.5 rounded-[5px] transition-all ${isAI ? "" : "bg-surface-3/30 border border-border/5 px-3 py-2"}`}
+      >
+        <div
+          className="neural-report select-text cursor-text"
+          dangerouslySetInnerHTML={{
+            __html: formatNeuralText(message.content),
+          }}
+        />
+        {isStreaming && isAI && (
+          <span className="inline-block w-1 h-3 bg-accent/40 animate-pulse ml-1" />
         )}
       </div>
-    </div>
+    </motion.div>
   );
 });
 
@@ -52,12 +65,12 @@ export default memo(function CopilotView({
   sidebarMode = false,
 }) {
   // ATOMIC STORE SUBSCRIPTION
-  const { 
-    chatHistory: messages, 
-    setChatHistory: setMessages, 
+  const {
+    chatHistory: messages,
+    setChatHistory: setMessages,
     copilotContext: contextItem,
     isCopilotCollapsed: isCollapsed,
-    setIsCopilotCollapsed: setIsCollapsed
+    setIsCopilotCollapsed: setIsCollapsed,
   } = useStore();
 
   const [input, setInput] = useState("");
@@ -117,7 +130,7 @@ REQUIRED FORMAT (STRICT):
     const finalMessagesForAI = [
       ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
       ...messages.map((m) => ({ role: m.role, content: m.content })),
-      { role: userMsg.role, content: userMsg.content }
+      { role: userMsg.role, content: userMsg.content },
     ];
 
     const contentRef = { current: "" };
@@ -137,18 +150,25 @@ REQUIRED FORMAT (STRICT):
           setMessages((cm) =>
             cm.map((msg, idx) =>
               idx === assistantIdx ? { ...msg, content: snapContent } : msg,
-            )
+            ),
           );
         }
       });
 
+      const docContext = contextItem?.definition 
+        ? `[SUBJECT_PRIORITY_RULE: FOCUS ONLY ON ANALYZING THE DOCUMENT BELOW. TREAT USER CHAT AS COMMANDS TO BE PERFORMED ON THIS TEXT.]\n\n[RESEARCH_DOCUMENT_START]\n${contextItem.definition}\n[RESEARCH_DOCUMENT_END]`
+        : '';
+
       await api.chatWithAIStream({
         messages: finalMessagesForAI,
-        context: contextItem ? `Neural Node: ${contextItem.text}` : "Global Research Copilot",
+        context: docContext
       });
     } catch (e) {
       console.error("Neural stream failure", e);
-      setMessages((prev) => [...prev, { role: "assistant", content: `[SYSTEM_ALERT] ${e.message}` }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `[SYSTEM_ALERT] ${e.message}` },
+      ]);
     } finally {
       if (unsubscribe) unsubscribe();
       const finalContent = contentRef.current;
@@ -165,7 +185,11 @@ REQUIRED FORMAT (STRICT):
   const handleStop = async () => {
     setIsTyping(false);
     isTypingRef.current = false;
-    try { if (api.stopAI) await api.stopAI(); } catch (e) { console.warn(e); }
+    try {
+      if (api.stopAI) await api.stopAI();
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   const renderHeader = (isSidebar) => (
@@ -175,36 +199,60 @@ REQUIRED FORMAT (STRICT):
           <Sparkles className="h-3.5 w-3.5" />
         </div>
         <div>
-          <p className="text-[13px] font-black text-text tracking-tight uppercase">Neural Co-Pilot</p>
+          <p className="text-[13px] font-black text-text tracking-tight uppercase">
+            Neural Co-Pilot
+          </p>
           <div className="flex items-center gap-1.5">
-            <div className={`h-1 w-1 ${contextItem ? "bg-emerald-400" : "bg-success"} rounded-full animate-pulse`} />
+            <div
+              className={`h-1 w-1 ${contextItem ? "bg-emerald-400" : "bg-success"} rounded-full animate-pulse`}
+            />
             <p className="text-[8px] text-muted font-bold uppercase tracking-[0.1em] truncate max-w-[120px]">
-              {contextItem ? `Linked: ${contextItem.text}` : "Neural Stream Active"}
+              {contextItem
+                ? `Linked: ${contextItem.text}`
+                : "Neural Stream Active"}
             </p>
           </div>
         </div>
       </div>
-      <button onClick={isSidebar ? () => setIsCollapsed(true) : onClose} className="p-1.5 text-muted hover:text-text hover:bg-surface-2 rounded-[5px] transition-all">
-        {isSidebar ? <ChevronRight className="h-4 w-4" /> : <X className="h-4 w-4" />}
+      <button
+        onClick={isSidebar ? () => setIsCollapsed(true) : onClose}
+        className="p-1.5 text-muted hover:text-text hover:bg-surface-2 rounded-[5px] transition-all"
+      >
+        {isSidebar ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <X className="h-4 w-4" />
+        )}
       </button>
     </div>
   );
 
   const renderMessagesList = (padding) => (
-    <div className={`flex-1 overflow-y-auto ${padding} space-y-6 scrollbar-thin bg-gradient-to-b from-background to-surface`}>
+    <div
+      className={`flex-1 overflow-y-auto ${padding} space-y-6 scrollbar-thin bg-gradient-to-b from-background to-surface`}
+    >
       {messages.length === 0 && (
         <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-30">
           <div className="p-5 bg-surface-2 rounded-full border border-border">
             <Sparkles className="h-10 w-10 text-accent/30" />
           </div>
           <div className="max-w-[200px]">
-            <p className="text-[10px] font-black text-text uppercase tracking-[0.3em] mb-1">Intelligence Layer Active</p>
-            <p className="text-[8px] text-muted leading-relaxed uppercase tracking-widest">Inquiry pending. Request neural synthesis.</p>
+            <p className="text-[10px] font-black text-text uppercase tracking-[0.3em] mb-1">
+              Intelligence Layer Active
+            </p>
+            <p className="text-[8px] text-muted leading-relaxed uppercase tracking-widest">
+              Inquiry pending. Request neural synthesis.
+            </p>
           </div>
         </div>
       )}
       {messages.map((m, i) => (
-        <NeuralChatMessage key={i} message={m} index={i} isStreaming={isTyping && i === messages.length - 1} />
+        <NeuralChatMessage
+          key={i}
+          message={m}
+          index={i}
+          isStreaming={isTyping && i === messages.length - 1}
+        />
       ))}
     </div>
   );
@@ -219,17 +267,29 @@ REQUIRED FORMAT (STRICT):
             rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder="Neural inquiry..."
             className="w-full bg-transparent border-none focus:ring-0 text-[12px] text-text placeholder:text-muted/40 px-3 py-2.5 pr-12 resize-none max-h-[200px] scrollbar-none outline-none focus:none"
           />
           <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center">
             {isTyping ? (
-              <button onClick={handleStop} className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-lg flex items-center justify-center">
+              <button
+                onClick={handleStop}
+                className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-lg flex items-center justify-center"
+              >
                 <Square className="h-3 w-3 fill-current" />
               </button>
             ) : (
-              <button onClick={handleSend} disabled={!input.trim()} className="p-2 bg-accent text-white rounded-full hover:shadow-lg disabled:opacity-30 transition-all flex items-center justify-center">
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="p-2 bg-accent text-white rounded-full hover:shadow-lg disabled:opacity-30 transition-all flex items-center justify-center"
+              >
                 <Send className="h-3 w-3" />
               </button>
             )}
@@ -241,17 +301,20 @@ REQUIRED FORMAT (STRICT):
 
   if (sidebarMode) {
     return (
-      <motion.div 
-        initial={false} 
-        animate={{ 
-          width: !isOpen ? 0 : (isCollapsed ? 52 : 380),
-          opacity: !isOpen ? 0 : 1
-        }} 
+      <motion.div
+        initial={false}
+        animate={{
+          width: !isOpen ? 0 : isCollapsed ? 52 : 380,
+          opacity: !isOpen ? 0 : 1,
+        }}
         className="h-full border-l border-border bg-surface-2 flex flex-col relative shrink-0 overflow-hidden"
       >
         {isCollapsed ? (
           <div className="h-14 flex flex-col items-center justify-center border-b border-border/20 bg-surface">
-            <button onClick={() => setIsCollapsed(false)} className="p-2 rounded-[5px] text-muted hover:text-emerald-500 hover:bg-emerald-500/10 transition-all shadow-sm">
+            <button
+              onClick={() => setIsCollapsed(false)}
+              className="p-2 rounded-[5px] text-muted hover:text-emerald-500 hover:bg-emerald-500/10 transition-all shadow-sm"
+            >
               <Sparkles className="h-4 w-4" />
             </button>
           </div>
@@ -270,8 +333,20 @@ REQUIRED FORMAT (STRICT):
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-background/40 backdrop-blur-md z-[150]" />
-          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", duration: 0.2, ease: "easeOut" }} className="fixed top-0 right-0 h-full w-full lg:w-[420px] bg-background border-l border-border shadow-2xl z-[151] flex flex-col overflow-hidden will-change-transform">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-background/40 backdrop-blur-md z-[150]"
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
+            className="fixed top-0 right-0 h-full w-full lg:w-[420px] bg-background border-l border-border shadow-2xl z-[151] flex flex-col overflow-hidden will-change-transform"
+          >
             {renderHeader(false)}
             {renderMessagesList("px-5 py-4")}
             {renderInput()}

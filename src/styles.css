@@ -158,3 +158,97 @@ mark {
 }
 
 /* End */
+
+/* --- Neural Report Theme (High-Performance Markdown Alternative) --- */
+.neural-report {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  line-height: 1.8;
+  letter-spacing: -0.01em;
+  font-size: 13.5px;
+  color: inherit;
+  font-weight: 300;
+}
+
+.neural-report b, .neural-report strong {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.neural-report h1, .neural-report h2, .neural-report h3, .neural-report h4 {
+  font-size: 14px !important;
+  font-weight: 800;
+  color: var(--accent);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Surgical Diagnostic Tables */
+.neural-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2rem 0;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  table-layout: auto;
+}
+
+.neural-table th {
+  background: rgba(var(--accent-rgb), 0.04);
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 10px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+}
+
+.neural-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.05);
+  color: var(--text-color);
+  font-weight: 300;
+}
+
+.neural-table tr:last-child td {
+  border-bottom: none;
+}
+
+.neural-table tr:nth-child(even) {
+  background: rgba(var(--accent-rgb), 0.01);
+}
+
+.neural-table tr:hover td {
+  background: rgba(var(--accent-rgb), 0.03);
+  color: var(--accent);
+}
+
+.neural-report tr:hover td {
+  background: rgba(var(--accent-rgb), 0.02);
+}
+
+/* Markers */
+.marker-success { color: #10b981; font-weight: 700; }
+.marker-error { color: #ef4444; font-weight: 700; }
+.marker-header { 
+  display: block;
+  font-weight: 900; 
+  text-transform: uppercase; 
+  letter-spacing: 0.2em; 
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+/* Neural Horizontal Line */
+.neural-hr {
+  border: none;
+  border-top: 1px solid rgba(var(--accent-rgb), 0.15);
+  margin: 0.75rem 0;
+  width: 100%;
+}

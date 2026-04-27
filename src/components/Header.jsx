@@ -37,17 +37,9 @@ export default function Header({
   }
 
   return (
-    <div className="w-full shrink-0 flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface z-[100] transition-colors duration-500">
-      <div className="flex items-center gap-4">
-        {view === 'research-detail' && (
-          <button 
-            onClick={() => setView('vocab')}
-            className="p-1.5 bg-surface-2 text-muted hover:text-accent hover:bg-accent/10 transition-all rounded-[3px]"
-            title="Return to Library"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        )}
+    <div className="w-full shrink-0 flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface z-[100] transition-colors duration-500 relative">
+      {/* Left Rail (Fixed Width for Balance) */}
+      <div className="flex items-center gap-4 w-[240px]">
         <div className="p-1.5 bg-accent/10 text-accent transition-all rounded-[3px]">
           <Library className="h-3.5 w-3.5" />
         </div>
@@ -56,8 +48,9 @@ export default function Header({
         </div>
       </div>
 
-      <div className="flex-1 max-w-lg px-4 sm:px-8 lg:px-12 transition-all">
-        {view === 'vocab' && librarySearch && (
+      {/* Centered Search Rail */}
+      <div className="flex-1 max-w-lg px-4 transition-all">
+        {(view === 'vocab' || view === 'research-detail') && librarySearch && (
           <div className="relative group">
             <input 
               ref={librarySearch.searchInputRef}
@@ -98,6 +91,7 @@ export default function Header({
                 if (e.key === 'Escape') {
                   librarySearch.setIsHistoryOpen(false)
                   librarySearch.setSelectedIndex(-1)
+                  e.currentTarget.blur()
                 }
               }}
               onChange={(e) => {
@@ -106,7 +100,7 @@ export default function Header({
                 librarySearch.setSelectedIndex(-1)
               }}
               placeholder="Search neural archive... (Ctrl+F)"
-              className="w-full bg-surface-2/50 border border-border py-2 px-10 text-[11px] text-text outline-none focus:border-accent/60 focus:bg-surface-3 focus:ring-4 focus:ring-accent/5 transition-all placeholder:text-muted/20 rounded-[4px] shadow-sm"
+              className="w-full bg-surface-2/50 border border-border py-2 px-10 text-[11px] text-text outline-none focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[4px] shadow-sm"
             />
             <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
               <SearchIcon className={`h-3.5 w-3.5 transition-colors ${librarySearch.isSearching ? 'text-accent animate-pulse' : 'text-muted group-focus-within:text-accent'}`} />
@@ -116,7 +110,7 @@ export default function Header({
               {librarySearch.isHistoryOpen && (
                 <motion.div 
                   ref={librarySearch.historyRef}
-                  initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="absolute inset-x-0 top-full mt-1.5 bg-surface-3 border border-border shadow-2xl z-[100] backdrop-blur-xl overflow-hidden rounded-[5px]"
                 >
                   <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-black/40">
@@ -236,7 +230,7 @@ export default function Header({
         )}
       </div>
 
-      <div className="flex items-center gap-4 relative" ref={profileRef}>
+      <div className="flex items-center gap-4 relative w-[240px] justify-end" ref={profileRef}>
         <AnimatePresence>
           {isProfileOpen && (
             <motion.div 
