@@ -14,7 +14,7 @@ export const useStore = create((set, get) => ({
   collections: [],
   selectedCollection: 'all',
   chatHistory: [
-    { role: 'assistant', content: 'Hello. I am your studyTube research copilot. I can help you analyze saved words, suggest grammar rules, or create custom research cards. Ask me anything.' }
+    { role: 'assistant', content: 'Your AI copilot for analyzing words, refining grammar, and generating research cards.' }
   ],
   sortBy: 'newest',
   displayLimit: 6,
@@ -22,6 +22,7 @@ export const useStore = create((set, get) => ({
   // --- UI & Interaction State ---
   isCopilotOpen: false,
   isCopilotCollapsed: false,
+  isSidebarCollapsed: false,
   isCaptureOpen: false,
   copilotContext: null,
   toast: null,
@@ -57,6 +58,7 @@ export const useStore = create((set, get) => ({
 
   setIsCopilotOpen: (val) => set((s) => ({ isCopilotOpen: typeof val === 'function' ? val(s.isCopilotOpen) : val })),
   setIsCopilotCollapsed: (val) => set((s) => ({ isCopilotCollapsed: typeof val === 'function' ? val(s.isCopilotCollapsed) : val })),
+  setIsSidebarCollapsed: (val) => set((s) => ({ isSidebarCollapsed: typeof val === 'function' ? val(s.isSidebarCollapsed) : val })),
   setIsCaptureOpen: (val) => set((s) => ({ isCaptureOpen: typeof val === 'function' ? val(s.isCaptureOpen) : val })),
   setCopilotContext: (val) => set((s) => ({ copilotContext: typeof val === 'function' ? val(s.copilotContext) : val })),
   setToast: (val) => set((s) => ({ toast: typeof val === 'function' ? val(s.toast) : val })),

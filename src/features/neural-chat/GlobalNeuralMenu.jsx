@@ -9,25 +9,13 @@ export default function GlobalNeuralMenu({
   view,
   isCollapsed,
 }) {
-  const isSidebarView = view === "editor" || view === "research-detail";
-
-  // Width logic: only matters if Copilot is open
-  let copilotWidth = 0;
-  if (isSidebarView) {
-    copilotWidth = isCollapsed ? 52 : 320;
-  } else {
-    copilotWidth = 340;
-  }
-
   return (
     <motion.div
       initial={false}
       animate={{
-        // Only shift LEFT if Copilot is open
-        right: isCopilotOpen ? copilotWidth + 16 : 10,
-        // Only shift UP if Copilot is open (to avoid blocking input)
-        // If only Capture modal is open, we can move up a little or stay down
-        bottom: isCopilotOpen ? 110 : isCaptureOpen ? 80 : 50,
+        // Reverted to original static position as requested
+        right: 15,
+        bottom: 70,
       }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
       className="fixed z-[250] flex flex-col items-end"

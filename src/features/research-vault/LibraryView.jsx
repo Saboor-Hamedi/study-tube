@@ -42,23 +42,7 @@ export default function LibraryView({
   
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
-
-  // Register Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault()
-        searchInputRef?.current?.focus()
-      }
-      // Ctrl + N: Neural Forge
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault()
-        // setIsInsightCaptureModalOpen(true) // Fixed ref
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [searchInputRef])
+  const lastContextRef = useRef({ collection: selectedCollection, sortBy: sortBy })
 
   const deferredSearchQuery = useDeferredValue(searchQuery)
 
@@ -72,7 +56,7 @@ export default function LibraryView({
       setIsAppending(false);
     }, 6000);
 
-    const minDelay = new Promise(resolve => setTimeout(resolve, showLoader ? 300 : 0));
+    const minDelay = new Promise(resolve => setTimeout(resolve, showLoader && !isAppending ? 300 : 0));
 
     if (showLoader && !isAppending) setLoading(true)
     try {
@@ -142,8 +126,20 @@ export default function LibraryView({
   }, [historyRef, searchInputRef, setIsHistoryOpen])
 
   useEffect(() => {
-    syncLibraryPage(true)
-  }, [syncLibraryPage])
+    // Detect if this is just a limit change or a full context change
+    const contextChanged = lastContextRef.current.collection !== selectedCollection || lastContextRef.current.sortBy !== sortBy;
+    const isLimitChange = !contextChanged && localVocab.length > 0;
+    
+    if (isLimitChange) {
+      // If expanding, show the appending indicator
+      if (displayLimit > localVocab.length) setIsAppending(true);
+      syncLibraryPage(false);
+    } else {
+      syncLibraryPage(true);
+    }
+    
+    lastContextRef.current = { collection: selectedCollection, sortBy: sortBy };
+  }, [selectedCollection, sortBy, displayLimit, syncLibraryPage]);
 
   const visible = localVocab
 
@@ -356,11 +352,7 @@ export default function LibraryView({
                           {localVocab.length >= displayLimit && totalInCollection > displayLimit && (
                             <button 
                               onClick={() => {
-                                setIsAppending(true)
-                                setTimeout(() => {
-                                  setDisplayLimit(prev => prev + 3)
-                                  setIsAppending(false)
-                                }, 600)
+                                setDisplayLimit(prev => prev + 3)
                               }}
                               className="group h-10 px-6 flex items-center gap-2 bg-surface-2 border border-border/10 text-muted/60 hover:text-accent hover:border-accent/30 hover:bg-accent/5 transition-all rounded-full"
                             >

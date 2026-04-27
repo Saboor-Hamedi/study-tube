@@ -1,6 +1,7 @@
 import { Library, Search as SearchIcon, Loader2, ChevronLeft, RefreshCcw, Trash2, X, Sparkles, User as UserIcon, Settings, Sun, Moon, FileDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
+import { useShortcuts } from '../utils/useShortcuts'
 
 export default function Header({ 
   view, 
@@ -11,6 +12,9 @@ export default function Header({
 }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileRef = useRef(null)
+
+  // ATOMIC COMMAND CENTER
+  useShortcuts(librarySearch)
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -56,7 +60,7 @@ export default function Header({
         {view === 'vocab' && librarySearch && (
           <div className="relative group">
             <input 
-              ref={librarySearch.inputRef}
+              ref={librarySearch.searchInputRef}
               type="text"
               value={librarySearch.query}
               onFocus={() => {

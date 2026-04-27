@@ -17,6 +17,7 @@ import {
 import { DroppableFolder } from "../features/research-vault/DraggableCard";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useStore } from "../store/useStore";
 
 export default function Sidebar({
   collections,
@@ -35,9 +36,9 @@ export default function Sidebar({
   setSortBy,
   side = "left",
 }) {
+  const { isSidebarCollapsed: isCollapsed, setIsSidebarCollapsed: setIsCollapsed } = useStore();
   const [renamingId, setRenamingId] = useState(null);
   const [renamingValue, setRenamingValue] = useState("");
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [pinnedItems, setPinnedItems] = useState([]);
 
   const startRename = (name) => {

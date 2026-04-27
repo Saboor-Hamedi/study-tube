@@ -545,24 +545,6 @@ export default function App() {
                           }}
                         />
                       </div>
-                      <CopilotView
-                        isOpen={isCopilotOpen}
-                        onClose={handleCloseCopilot}
-                        vocab={vocab}
-                        setVocab={setVocab}
-                        collections={collections}
-                        setCollections={setCollections}
-                        selectedCollection={selectedCollection}
-                        setSelectedCollection={setSelectedCollection}
-                        messages={chatHistory}
-                        setMessages={setChatHistory}
-                        contextItem={copilotContext}
-                        api={api}
-                        showToast={showToast}
-                        sidebarMode={true}
-                        isCollapsed={isCopilotCollapsed}
-                        setIsCollapsed={setIsCopilotCollapsed}
-                      />
                     </motion.div>
                   )}
                   {view === "editor" && (
@@ -574,26 +556,12 @@ export default function App() {
                       className="absolute inset-0 flex flex-row overflow-hidden"
                     >
                       <div className="flex-1 overflow-hidden">
-                        <EditorView api={api} showToast={showToast} />
+                        <EditorView 
+                          api={api} 
+                          showToast={showToast} 
+                          onOpenCopilot={handleOpenCopilot}
+                        />
                       </div>
-                      <CopilotView
-                        isOpen={isCopilotOpen}
-                        onClose={handleCloseCopilot}
-                        vocab={vocab}
-                        setVocab={setVocab}
-                        collections={collections}
-                        setCollections={setCollections}
-                        selectedCollection={selectedCollection}
-                        setSelectedCollection={setSelectedCollection}
-                        messages={chatHistory}
-                        setMessages={setChatHistory}
-                        contextItem={copilotContext}
-                        api={api}
-                        showToast={showToast}
-                        sidebarMode={true}
-                        isCollapsed={isCopilotCollapsed}
-                        setIsCollapsed={setIsCopilotCollapsed}
-                      />
                     </motion.div>
                   )}
                   {view === "settings" && (
@@ -602,13 +570,27 @@ export default function App() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="absolute inset-0"
+                      className="absolute inset-0 overflow-y-auto"
                     >
-                      <SettingsView api={api} />
+                      <SettingsModal 
+                        api={api} 
+                        showToast={showToast} 
+                        onClose={() => setView('search')}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </main>
+
+              {/* UNIFIED GLOBAL COPILOT SIDEBAR */}
+              <CopilotView
+                isOpen={isCopilotOpen}
+                onClose={handleCloseCopilot}
+                api={api}
+                showToast={showToast}
+                sidebarMode={view !== 'search' && view !== 'settings'}
+              />
+
               <DragOverlay
                 dropAnimation={null}
                 zIndex={500}
@@ -634,23 +616,6 @@ export default function App() {
         </div>
       </div>
 
-      {view !== "editor" && view !== "research-detail" && (
-        <CopilotView
-          isOpen={isCopilotOpen}
-          onClose={handleCloseCopilot}
-          vocab={vocab}
-          setVocab={setVocab}
-          collections={collections}
-          setCollections={setCollections}
-          selectedCollection={selectedCollection}
-          setSelectedCollection={setSelectedCollection}
-          messages={chatHistory}
-          setMessages={setChatHistory}
-          contextItem={copilotContext}
-          api={api}
-          showToast={showToast}
-        />
-      )}
 
       <InsightCaptureModal
         isOpen={isCaptureOpen}
