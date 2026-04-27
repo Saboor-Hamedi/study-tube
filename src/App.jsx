@@ -25,7 +25,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
 
 export default function App() {
-  const [isInsightSidebarOpen, setIsInsightSidebarOpen] = useState(false);
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [activeDragItem, setActiveDragItem] = useState(null);
@@ -55,6 +54,8 @@ export default function App() {
     setDisplayLimit,
     isCopilotOpen,
     setIsCopilotOpen,
+    isCopilotCollapsed,
+    setIsCopilotCollapsed,
     isCaptureOpen,
     setIsCaptureOpen,
     copilotContext,
@@ -254,6 +255,14 @@ export default function App() {
     api.setTheme(next);
   };
 
+  // Neural Transition Guard: Prevents sidebar-to-overlay jump scares during navigation
+  useEffect(() => {
+    if (view === "vocab" || view === "search" || view === "settings") {
+      setIsCopilotOpen(false);
+      setCopilotContext(null);
+    }
+  }, [view, setIsCopilotOpen, setCopilotContext]);
+
   const addVocab = async (item) => {
     const basicItem = {
       ...item,
@@ -289,6 +298,16 @@ export default function App() {
       console.error("AI Enrichment failed", e);
     }
   };
+  
+  const handleOpenCopilot = useCallback((ctx) => {
+    setCopilotContext(ctx);
+    setIsCopilotOpen(true);
+  }, [setCopilotContext, setIsCopilotOpen]);
+
+  const handleCloseCopilot = useCallback(() => {
+    setIsCopilotOpen(false);
+    setCopilotContext(null);
+  }, [setIsCopilotOpen, setCopilotContext]);
 
   const handleGlobalExport = async () => {
     if (vocab.length === 0) return;
@@ -355,7 +374,7 @@ export default function App() {
     historyRef: libHistoryRef,
     onExpand: (item) => {
       setSelectedResearchNode(item);
-      setIsInsightSidebarOpen(true);
+      setView("research-detail");
     },
   };
 
@@ -492,7 +511,7 @@ export default function App() {
                         activeDragItem={activeDragItem}
                         onExpand={(item) => {
                           setSelectedResearchNode(item);
-                          setIsInsightSidebarOpen(true);
+                          setView("research-detail");
                         }}
                       />
                     </motion.div>
@@ -503,11 +522,47 @@ export default function App() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="absolute inset-0"
+                      className="absolute inset-0 flex flex-row overflow-hidden bg-background"
                     >
-                      <div className="flex items-center justify-center h-full text-muted text-xs uppercase tracking-widest">
-                        Insight expanded to sidebar.
+                      <div className="flex-1 overflow-hidden">
+                        <InsightDetailView
+                          item={selectedResearchNode}
+                          setView={setView}
+                          showToast={showToast}
+                          api={api}
+                          onClose={() => {
+                            setView("vocab");
+                            handleCloseCopilot();
+                          }}
+                          onOpenCopilot={handleOpenCopilot}
+                          collections={collections}
+                          selectedCollection={selectedCollection}
+                          setSelectedCollection={setSelectedCollection}
+                          onUpdate={async (updated) => {
+                            await api.saveVocabItem(updated);
+                            setSelectedResearchNode(updated);
+                            syncStats();
+                          }}
+                        />
                       </div>
+                      <CopilotView
+                        isOpen={isCopilotOpen}
+                        onClose={handleCloseCopilot}
+                        vocab={vocab}
+                        setVocab={setVocab}
+                        collections={collections}
+                        setCollections={setCollections}
+                        selectedCollection={selectedCollection}
+                        setSelectedCollection={setSelectedCollection}
+                        messages={chatHistory}
+                        setMessages={setChatHistory}
+                        contextItem={copilotContext}
+                        api={api}
+                        showToast={showToast}
+                        sidebarMode={true}
+                        isCollapsed={isCopilotCollapsed}
+                        setIsCollapsed={setIsCopilotCollapsed}
+                      />
                     </motion.div>
                   )}
                   {view === "editor" && (
@@ -523,10 +578,7 @@ export default function App() {
                       </div>
                       <CopilotView
                         isOpen={isCopilotOpen}
-                        onClose={() => {
-                          setIsCopilotOpen(false);
-                          setCopilotContext(null);
-                        }}
+                        onClose={handleCloseCopilot}
                         vocab={vocab}
                         setVocab={setVocab}
                         collections={collections}
@@ -539,6 +591,8 @@ export default function App() {
                         api={api}
                         showToast={showToast}
                         sidebarMode={true}
+                        isCollapsed={isCopilotCollapsed}
+                        setIsCollapsed={setIsCopilotCollapsed}
                       />
                     </motion.div>
                   )}
@@ -580,13 +634,10 @@ export default function App() {
         </div>
       </div>
 
-      {view !== "editor" && (
+      {view !== "editor" && view !== "research-detail" && (
         <CopilotView
           isOpen={isCopilotOpen}
-          onClose={() => {
-            setIsCopilotOpen(false);
-            setCopilotContext(null);
-          }}
+          onClose={handleCloseCopilot}
           vocab={vocab}
           setVocab={setVocab}
           collections={collections}
@@ -600,38 +651,6 @@ export default function App() {
           showToast={showToast}
         />
       )}
-
-      <AnimatePresence>
-        {isInsightSidebarOpen && selectedResearchNode && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "tween", duration: 0.3 }}
-            className="fixed top-0 right-0 h-full w-[600px] bg-background border-l border-border shadow-2xl z-[200] flex flex-col overflow-hidden"
-          >
-            <InsightDetailView
-              item={selectedResearchNode}
-              setView={setView}
-              showToast={showToast}
-              api={api}
-              onClose={() => setIsInsightSidebarOpen(false)}
-              onOpenCopilot={(ctx) => {
-                setCopilotContext(ctx);
-                setIsCopilotOpen(true);
-              }}
-              collections={collections}
-              selectedCollection={selectedCollection}
-              setSelectedCollection={setSelectedCollection}
-              onUpdate={async (updated) => {
-                await api.saveVocabItem(updated);
-                setSelectedResearchNode(updated);
-                syncStats();
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <InsightCaptureModal
         isOpen={isCaptureOpen}
@@ -649,7 +668,9 @@ export default function App() {
             setIsCopilotOpen(true);
           }}
           stats={vocabStats}
-          isShifted={isCopilotOpen || isCaptureOpen}
+          isCopilotOpen={isCopilotOpen}
+          isCaptureOpen={isCaptureOpen}
+          isCollapsed={isCopilotCollapsed}
           view={view}
         />
       )}

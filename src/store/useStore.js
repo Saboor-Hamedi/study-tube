@@ -21,6 +21,7 @@ export const useStore = create((set, get) => ({
 
   // --- UI & Interaction State ---
   isCopilotOpen: false,
+  isCopilotCollapsed: false,
   isCaptureOpen: false,
   copilotContext: null,
   toast: null,
@@ -55,6 +56,7 @@ export const useStore = create((set, get) => ({
   setDisplayLimit: (val) => set((s) => ({ displayLimit: typeof val === 'function' ? val(s.displayLimit) : val })),
 
   setIsCopilotOpen: (val) => set((s) => ({ isCopilotOpen: typeof val === 'function' ? val(s.isCopilotOpen) : val })),
+  setIsCopilotCollapsed: (val) => set((s) => ({ isCopilotCollapsed: typeof val === 'function' ? val(s.isCopilotCollapsed) : val })),
   setIsCaptureOpen: (val) => set((s) => ({ isCaptureOpen: typeof val === 'function' ? val(s.isCaptureOpen) : val })),
   setCopilotContext: (val) => set((s) => ({ copilotContext: typeof val === 'function' ? val(s.copilotContext) : val })),
   setToast: (val) => set((s) => ({ toast: typeof val === 'function' ? val(s.toast) : val })),

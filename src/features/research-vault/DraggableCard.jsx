@@ -30,13 +30,13 @@ export const DroppableFolder = memo(
           style={isCollapsed ? { width: "40px", height: "40px" } : {}}
           className={`flex items-center transition-all duration-200 text-left shrink-0 ${
             isCollapsed
-              ? `justify-center rounded-full border-0 ${isOver ? "text-text" : active ? "text-text" : "bg-transparent text-muted hover:bg-surface-3 hover:text-text"}`
+              ? `justify-center rounded-full border-0 ${isOver ? "text-text" : active ? "text-text" : " text-muted hover:bg-red-800/30 hover:text-text"}`
               : `w-full gap-2.5 px-3 py-1.5 rounded-[5px] border border-transparent ${
                   isOver
-                     ? "text-text font-bold z-10 border border-accent/30"
+                    ? "text-text font-bold z-10 border border-accent/30 bg-red-900/10"
                     : active
-                       ? "text-text font-bold"
-                      : "text-muted hover:bg-surface-3 hover:text-text"
+                      ? "text-text font-bold"
+                      : "text-muted hover:bg-red-900/10 hover:text-text"
                 }`
           }`}
         >
