@@ -113,16 +113,14 @@ REQUIRED FORMAT (STRICT):
 📊 Band: [Score]
 📝 Summary
 [Summary text]
-━━━━━━━━━━━━━━━━━━━
-🔍 Key Corrections
+━━━ 🔍 Key Corrections ━━━
 1. ❌ "[Original sentence from text]"
    ✅ "[Corrected, natural version]"
    ⚠️ [Issues list]
 2. ❌ "[Original sentence]"
    ✅ "[Corrected version]"
    ⚠️ [Issue list]
-━━━━━━━━━━━━━━━━━━━
-🚀 Vocabulary Boost
+━━━ 🚀 Vocabulary Boost ━━━
 [Vocabulary words]
 (Use single newlines ONLY. No empty lines between sections.)`
       : null;
@@ -155,13 +153,13 @@ REQUIRED FORMAT (STRICT):
         }
       });
 
-      const docContext = contextItem?.definition 
+      const docContext = contextItem?.definition
         ? `[SUBJECT_PRIORITY_RULE: FOCUS ONLY ON ANALYZING THE DOCUMENT BELOW. TREAT USER CHAT AS COMMANDS TO BE PERFORMED ON THIS TEXT.]\n\n[RESEARCH_DOCUMENT_START]\n${contextItem.definition}\n[RESEARCH_DOCUMENT_END]`
-        : '';
+        : "";
 
       await api.chatWithAIStream({
         messages: finalMessagesForAI,
-        context: docContext
+        context: docContext,
       });
     } catch (e) {
       console.error("Neural stream failure", e);

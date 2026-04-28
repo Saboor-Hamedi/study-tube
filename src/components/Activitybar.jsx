@@ -1,8 +1,8 @@
-import { Search, BookOpen, Settings, Sparkles, FileDown, Sun, Moon, FileText, User as UserIcon, LogOut, Shield } from 'lucide-react'
+import { Search, BookOpen, Settings, Sparkles, FileDown, Sun, Moon, FileText, User as UserIcon, LogOut, Shield, GraduationCap } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
 
-export default function Activitybar({ view, setView, onExport, theme, onToggleTheme }) {
+export default function Activitybar({ view, setView, onExport, theme, onToggleTheme, onOpenGrammar }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -45,9 +45,25 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
   }
 
   return (
-    <div className="w-[68px] h-full shrink-0 bg-surface-3 border-r border-border flex flex-col items-center pt-1 pb-6 relative z-[100] transition-colors duration-500">
-      <div className="flex flex-col gap-6 w-full items-center">
+    <div className="w-[68px] h-full shrink-0 bg-surface-3 border-r border-border flex flex-col items-center pt-2 pb-6 relative z-[100] transition-colors duration-500">
+      <div className="flex flex-col gap-1 w-full items-center">
         {mainTabs.map(renderTab)}
+        
+        <button
+          onClick={onOpenGrammar}
+          className={`relative w-12 h-12 flex items-center justify-center transition-all duration-300 group ${view === 'grammar' ? 'bg-accent/10 text-accent' : 'text-muted/40 hover:bg-surface-2 hover:text-text'}`}
+        >
+          <GraduationCap className="h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6" />
+          {view === 'grammar' && (
+            <motion.div 
+              layoutId="sidebar-active" 
+              className="absolute left-0 top-2 w-0.5 h-8 bg-accent" 
+            />
+          )}
+          <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-bold uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[200]">
+            Grammar Archive
+          </div>
+        </button>
       </div>
 
       <div className="mt-auto w-full flex flex-col items-center relative" ref={dropdownRef}>

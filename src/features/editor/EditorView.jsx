@@ -33,8 +33,10 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
       try {
         const textContent = blocks
           .map((b) => {
-            if (b.type === "header") return `${"#".repeat(b.data.level)} ${b.data.text}`;
-            if (b.type === "list") return b.data.items.map((i) => `- ${i}`).join("\n");
+            if (b.type === "header")
+              return `${"#".repeat(b.data.level)} ${b.data.text}`;
+            if (b.type === "list")
+              return b.data.items.map((i) => `- ${i}`).join("\n");
             return b.data.text || "";
           })
           .join("\n\n");
@@ -50,7 +52,7 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
         console.warn("Context sync failed", e);
       }
     },
-    [setCopilotContext]
+    [setCopilotContext],
   );
 
   useEffect(() => {
@@ -69,14 +71,25 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
         holder: "editorjs",
         placeholder: "Neural drafting active...",
         tools: {
-          header: { class: Header, inlineToolbar: true, config: { levels: [1, 2, 3, 4], defaultLevel: 2 } },
-          list: { class: List, inlineToolbar: true, config: { defaultStyle: "unordered" } },
+          header: {
+            class: Header,
+            inlineToolbar: true,
+            config: { levels: [1, 2, 3, 4], defaultLevel: 2 },
+          },
+          list: {
+            class: List,
+            inlineToolbar: true,
+            config: { defaultStyle: "unordered" },
+          },
           checklist: { class: Checklist, inlineToolbar: true },
           quote: { class: Quote, inlineToolbar: true },
           code: Code,
           marker: Marker,
         },
-        data: (savedData && Array.isArray(savedData.blocks)) ? savedData : { blocks: [] },
+        data:
+          savedData && Array.isArray(savedData.blocks)
+            ? savedData
+            : { blocks: [] },
         onReady: () => {
           setIsInitializing(false);
           editorInstance.current = editor;
@@ -84,12 +97,17 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
         onChange: () => {
           if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
           autoSaveTimer.current = setTimeout(async () => {
-            if (editorInstance.current && typeof editorInstance.current.save === "function") {
+            if (
+              editorInstance.current &&
+              typeof editorInstance.current.save === "function"
+            ) {
               try {
                 const data = await editorInstance.current.save();
                 await api.saveNotes(data);
                 if (isCopilotOpenRef.current) syncToCopilot(data.blocks);
-              } catch (e) { console.warn(e); }
+              } catch (e) {
+                console.warn(e);
+              }
             }
           }, 1000);
         },
@@ -98,7 +116,10 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
 
     initEditor();
     return () => {
-      if (editorInstance.current && typeof editorInstance.current.destroy === "function") {
+      if (
+        editorInstance.current &&
+        typeof editorInstance.current.destroy === "function"
+      ) {
         editorInstance.current.destroy();
         editorInstance.current = null;
       }
@@ -110,7 +131,11 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
     setIsRefining(true);
     try {
       const data = await editorInstance.current.save();
-      window.dispatchEvent(new CustomEvent("editor:start-refine", { detail: { blocks: data.blocks } }));
+      window.dispatchEvent(
+        new CustomEvent("editor:start-refine", {
+          detail: { blocks: data.blocks },
+        }),
+      );
     } catch (e) {
       showToast("Neural Forge Interrupted", "error");
     } finally {
@@ -137,14 +162,20 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
         editorInstance.current.render({ blocks });
         await api.saveNotes({ blocks });
         showToast("Neural Correction Applied", "success");
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+      }
     },
-    [api, showToast]
+    [api, showToast],
   );
 
   useEffect(() => {
     window.addEventListener("editor:apply-correction", handleApplyCorrection);
-    return () => window.removeEventListener("editor:apply-correction", handleApplyCorrection);
+    return () =>
+      window.removeEventListener(
+        "editor:apply-correction",
+        handleApplyCorrection,
+      );
   }, [handleApplyCorrection]);
 
   const handleClear = async () => {
@@ -153,7 +184,9 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
       await api.saveNotes({ blocks: [] });
       editorInstance.current.render({ blocks: [] });
       showToast("Editor Cleared");
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
     setShowDeleteModal(false);
   };
 
@@ -165,17 +198,26 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
             <FileText className="h-3.5 w-3.5" />
           </div>
           <div>
-            <p className="text-[13px] font-black text-text tracking-tight uppercase">Neural Synthesis</p>
-            <p className="text-[8px] text-muted font-bold uppercase tracking-[0.1em]">Drafting Laboratory</p>
+            <p className="text-[13px] font-black text-text tracking-tight uppercase">
+              Neural Synthesis
+            </p>
+            <p className="text-[8px] text-muted font-bold uppercase tracking-[0.1em]">
+              Drafting Laboratory
+            </p>
           </div>
         </div>
-        <button onClick={() => setShowDeleteModal(true)} className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-[5px] transition-all">
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-[5px] transition-all"
+        >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </header>
 
       <div className="flex flex-row flex-1 overflow-hidden">
-        <div className={`flex-1 overflow-y-auto scrollbar-thin px-8 py-10 transition-all relative ${isCopilotOpen ? 'lg:pr-6 lg:pl-8' : 'lg:px-16 xl:px-24'}`}>
+        <div
+          className={`flex-1 overflow-y-auto scrollbar-thin px-8 py-10 transition-all relative ${isCopilotOpen ? "pr-[25px] pl-8" : "lg:px-16 xl:px-24"}`}
+        >
           {isInitializing && (
             <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
               <Loader2 className="h-6 w-6 animate-spin text-accent" />
@@ -184,7 +226,9 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-3 mb-12 opacity-30">
               <Sparkles className="h-4 w-4 text-accent" />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Neural Text Interface</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em]">
+                Neural Text Interface
+              </span>
             </div>
             <div className="prose prose-invert prose-lg max-w-none editor-js-override">
               <div id="editorjs" className="min-h-[200px]" />

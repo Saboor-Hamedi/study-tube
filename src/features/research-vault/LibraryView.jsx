@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Loader2, Trash2, Search as SearchIcon, RefreshCcw, 
   Library, FileText, ChevronRight, X, Maximize2, 
-  AlertCircle, Plus, FolderMinus, Download, GripVertical, Download as DownloadIcon
+  AlertCircle, Plus, FolderMinus, Download, GripVertical, Download as DownloadIcon, MinusCircle
 } from 'lucide-react'
 import CardReaderModal from './CardReaderModal'
 import { DroppableFolder, DraggableCard } from './DraggableCard'
@@ -23,6 +23,7 @@ export default function LibraryView({
   syncStats,
   stats,
   onExpand,
+  onUpdateStats,
   activeDragItem,
   searchInputRef,
   // Elevated Search Logic
@@ -156,16 +157,34 @@ export default function LibraryView({
       await api.saveVocabItem(updated)
       setLocalVocab(prev => {
         const isTrashView = selectedCollection === 'trash';
-        const itemBelongs = isTrashView ? updated.archived : !updated.archived;
+        const isAllView = selectedCollection === 'all';
+        
+        let itemBelongs = true;
+        if (isTrashView) {
+          itemBelongs = updated.archived;
+        } else if (isAllView) {
+          itemBelongs = !updated.archived;
+        } else {
+          // Custom Collection View
+          itemBelongs = updated.collection === selectedCollection && !updated.archived;
+        }
         
         if (!itemBelongs) {
           return prev.filter(item => (item.id || item.date) !== (updated.id || updated.date));
         }
         return prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item);
       });
-      if (syncStats) syncStats()
+
+      // Optimistic Stat Update
+      const originalItem = vocab.find(i => (i.id || i.date) === (updated.id || updated.date));
+      if (onUpdateStats && originalItem && originalItem.collection !== updated.collection) {
+        onUpdateStats(originalItem.collection, updated.collection);
+      }
+
+      if (syncStats) syncStats();
       if (setVocab) setVocab(prev => prev.map(item => (item.id || item.date) === (updated.id || updated.date) ? updated : item))
-      syncLibraryPage(false)
+      if (selectedCard) setSelectedCard(updated)
+      // Removal of premature sync: Trust optimistic local state for content updates
     } catch (err) {
       console.error('Update failure', err)
       showToast('Nexus Synchrony Failure: Update not persistent', 'error')
@@ -203,8 +222,14 @@ export default function LibraryView({
       }
       setLocalVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
       if (setVocab) setVocab(prev => prev.filter(v => (v.id || v.date) !== itemId))
+      
+      // Optimistic Stat Decelerator
+      if (onUpdateStats && itemToDelete.collection) {
+        onUpdateStats(itemToDelete.collection, null);
+      }
+
       await syncLibraryPage(false)
-      if (syncStats) syncStats()
+      if (syncStats) syncStats();
       setItemToDelete(null)
     } catch (err) {
       console.error('System refusal: Delete failed', err)
@@ -218,7 +243,7 @@ export default function LibraryView({
   }
 
   const gridMemo = useMemo(() => (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
+    <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5 ${activeDragItem ? '[&_*]:transition-none [&_*]:duration-0 select-none' : ''}`}>
       {visible.map((v, i) => (
         <DraggableCard key={(v.id || v.date) || i} id={(v.id || v.date) || i} v={v} useHandle={true}>
           {({ listeners, attributes }) => (
@@ -274,27 +299,28 @@ export default function LibraryView({
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                    <button 
                      onClick={(i_e) => { i_e.stopPropagation(); handleExportItem(v) }}
-                     className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all "
+                     className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent transition-all rounded-[5px]"
                    >
                       <DownloadIcon className="h-3.5 w-3.5" />
                    </button>
                    {v.archived ? (
                       <button 
                         onClick={(i_e) => { i_e.stopPropagation(); handleRestore(v) }}
-                        className="p-1.5 hover:bg-accent/10 text-accent  transition-all"
+                        className="p-1.5 hover:bg-accent/10 text-accent transition-all rounded-[5px]"
                       >
                         <RefreshCcw className="h-3.5 w-3.5" />
                       </button>
-                   ) : v.collection && (
+                   ) : (v.collection && selectedCollection !== 'all' && selectedCollection !== 'trash') && (
                       <button 
                        onClick={(i_e) => {
                          i_e.stopPropagation()
                          handleUpdateItem({ ...v, collection: null })
-                         showToast(`Removed from ${v.collection}`)
+                         showToast(`Released to Neural Archive`)
                        }}
-                        className="p-1.5 hover:bg-surface-3 text-muted/20 hover:text-accent  transition-all"
+                        className="p-1.5 hover:bg-accent/10 text-accent/40 hover:text-accent transition-all rounded-[5px]"
+                        title="Remove from Collection"
                       >
-                       <FolderMinus className="h-3.5 w-3.5" />
+                       <MinusCircle className="h-3.5 w-3.5" />
                       </button>
                    )}
                    <button 
@@ -302,7 +328,7 @@ export default function LibraryView({
                        i_e.stopPropagation()
                        setItemToDelete(v)
                      }}
-                     className={`p-1.5  transition-all ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
+                     className={`p-1.5 transition-all rounded-[5px] ${v.archived ? 'hover:bg-red-500 text-red-500 hover:text-white' : 'hover:bg-red-500/10 text-muted/20 hover:text-red-500'}`}
                    >
                      <Trash2 className="h-3.5 w-3.5" />
                    </button>

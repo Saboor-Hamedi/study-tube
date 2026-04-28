@@ -23,14 +23,19 @@ import Notification from "./components/Notification";
 import { useStore } from "./store/useStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
+import GrammarView from "./features/grammar/GrammarView";
 
 export default function App() {
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [activeDragItem, setActiveDragItem] = useState(null);
+
+  const [grammars, setGrammars] = useState([]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
+
   const {
     vocabStats,
     setVocabStats,
@@ -86,12 +91,17 @@ export default function App() {
     setIsLibHistoryOpen,
     libSelectedIndex,
     setLibSelectedIndex,
+    isVideoBusy,
+    setIsVideoBusy,
     showToast,
   } = useStore();
 
   const searchInputRef = useRef(null);
   const libHistoryRef = useRef(null);
   const api = window.youtubeAPI;
+
+  const [isEditingDetail, setIsEditingDetail] = useState(false);
+  const [detailSaveTrigger, setDetailSaveTrigger] = useState(0);
 
   const syncHistory = useCallback(async () => {
     if (!api) return;
@@ -112,6 +122,39 @@ export default function App() {
       console.error("Failed to sync neural density", err);
     }
   }, [api]);
+
+  const updateStatsOptimistically = useCallback(
+    (oldCollection, newCollection) => {
+      setVocabStats((prev) => {
+        if (!prev)
+          return { total: 1, collections: [{ name: newCollection, count: 1 }] };
+
+        let collections = [...(prev.collections || [])];
+
+        // Update Old
+        if (oldCollection) {
+          collections = collections.map((c) =>
+            c.name === oldCollection
+              ? { ...c, count: Math.max(0, c.count - 1) }
+              : c,
+          );
+        }
+
+        // Update New
+        const exists = collections.find((c) => c.name === newCollection);
+        if (exists) {
+          collections = collections.map((c) =>
+            c.name === newCollection ? { ...c, count: c.count + 1 } : c,
+          );
+        } else if (newCollection) {
+          collections.push({ name: newCollection, count: 1 });
+        }
+
+        return { ...prev, collections };
+      });
+    },
+    [],
+  );
 
   const handleDragEnd = useCallback(
     async (event) => {
@@ -146,7 +189,7 @@ export default function App() {
           };
 
           await api.saveVocabItem(newEntry);
-          syncStats();
+          updateStatsOptimistically(null, targetCollection);
           setVocab((prev) => [newEntry, ...prev]);
           showToast(
             `Insight archived to ${targetCollection || "Root"}`,
@@ -169,6 +212,7 @@ export default function App() {
         try {
           const updated = { ...item, collection: targetCollection };
           await api.saveVocabItem(updated);
+          updateStatsOptimistically(item.collection, targetCollection);
           setVocab((prev) =>
             prev.map((v) => ((v.id || v.date) === itemId ? updated : v)),
           );
@@ -176,6 +220,7 @@ export default function App() {
             `Insight migrated to ${over.id === "unorganized" ? "Unorganized" : over.id === "all" ? "Root" : over.id}`,
             "success",
           );
+          syncStats();
         } catch (err) {
           console.error("Failed to persist drag-migration", err);
           showToast("Neural Archiving Failed", "error");
@@ -195,7 +240,20 @@ export default function App() {
       console.error("Archival Persistence Error", err);
     }
   };
+  // Grammar
+  useEffect(() => {
+    const initGrammars = async () => {
+      try {
+        const data = await api.checkGrammar();
+        console.log("Grammars loaded:", data);
+        setGrammars(data);
+      } catch (err) {
+        console.error("Failed to load grammars", err);
+      }
+    };
 
+    if (api) initGrammars();
+  }, [api]);
   const removeFromHistory = async (q) => {
     try {
       await api.deleteSearchLog(q);
@@ -298,11 +356,14 @@ export default function App() {
       console.error("AI Enrichment failed", e);
     }
   };
-  
-  const handleOpenCopilot = useCallback((ctx) => {
-    setCopilotContext(ctx);
-    setIsCopilotOpen(true);
-  }, [setCopilotContext, setIsCopilotOpen]);
+
+  const handleOpenCopilot = useCallback(
+    (ctx) => {
+      setCopilotContext(ctx);
+      setIsCopilotOpen(true);
+    },
+    [setCopilotContext, setIsCopilotOpen],
+  );
 
   const handleCloseCopilot = useCallback(() => {
     setIsCopilotOpen(false);
@@ -343,6 +404,8 @@ export default function App() {
     setLoadingTranscript,
     showToast,
     searchInputRef,
+    busy: isVideoBusy,
+    setBusy: setIsVideoBusy,
   };
 
   const libraryProps = {
@@ -360,6 +423,7 @@ export default function App() {
     showToast,
     syncStats,
     stats: vocabStats,
+    onUpdateStats: updateStatsOptimistically,
     searchQuery: libQuery,
     setSearchQuery: setLibQuery,
     searchResults: libResults,
@@ -393,6 +457,7 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
           stats={vocabStats}
+          onOpenGrammar={() => setView("grammar")}
         />
 
         <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -412,7 +477,10 @@ export default function App() {
                 : null
             }
             librarySearch={
-              view === "vocab" || view === "research-detail"
+              view === "vocab" ||
+              view === "research-detail" ||
+              view === "editor" ||
+              view === "grammar"
                 ? {
                     ...libraryProps,
                     query: libQuery,
@@ -540,6 +608,12 @@ export default function App() {
                           collections={collections}
                           selectedCollection={selectedCollection}
                           setSelectedCollection={setSelectedCollection}
+                          isCopilotOpen={isCopilotOpen}
+                          isCopilotCollapsed={isCopilotCollapsed}
+                          onOpenCapture={() => setIsCaptureOpen(true)}
+                          isEditing={isEditingDetail}
+                          setIsEditing={setIsEditingDetail}
+                          saveTrigger={detailSaveTrigger}
                           onUpdate={async (updated) => {
                             await api.saveVocabItem(updated);
                             setSelectedResearchNode(updated);
@@ -558,9 +632,9 @@ export default function App() {
                       className="absolute inset-0 flex flex-row overflow-hidden"
                     >
                       <div className="flex-1 overflow-hidden">
-                        <EditorView 
-                          api={api} 
-                          showToast={showToast} 
+                        <EditorView
+                          api={api}
+                          showToast={showToast}
                           onOpenCopilot={handleOpenCopilot}
                         />
                       </div>
@@ -574,11 +648,22 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0 overflow-y-auto"
                     >
-                      <SettingsModal 
-                        api={api} 
-                        showToast={showToast} 
-                        onClose={() => setView('search')}
+                      <SettingsModal
+                        api={api}
+                        showToast={showToast}
+                        onClose={() => setView("search")}
                       />
+                    </motion.div>
+                  )}
+                  {view === "grammar" && (
+                    <motion.div
+                      key="grammar"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 overflow-y-auto"
+                    >
+                      <GrammarView grammars={grammars} setView={setView} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -586,11 +671,11 @@ export default function App() {
 
               {/* UNIFIED GLOBAL COPILOT SIDEBAR */}
               <CopilotView
-                isOpen={isCopilotOpen}
+                isOpen={isCopilotOpen && view !== "grammar"}
                 onClose={handleCloseCopilot}
                 api={api}
                 showToast={showToast}
-                sidebarMode={view !== 'search' && view !== 'settings'}
+                sidebarMode={view !== "search" && view !== "settings"}
               />
 
               <DragOverlay
@@ -618,7 +703,6 @@ export default function App() {
         </div>
       </div>
 
-
       <InsightCaptureModal
         isOpen={isCaptureOpen}
         onClose={() => setIsCaptureOpen(false)}
@@ -627,7 +711,7 @@ export default function App() {
         api={api}
       />
 
-      {view !== "settings" && (
+      {view !== "settings" && view !== "grammar" && (
         <GlobalNeuralMenu
           onOpenCapture={() => setIsCaptureOpen(true)}
           onOpenCopilot={() => {
@@ -639,6 +723,17 @@ export default function App() {
           isCaptureOpen={isCaptureOpen}
           isCollapsed={isCopilotCollapsed}
           view={view}
+          // Card Actions
+          isEditing={isEditingDetail}
+          onEdit={
+            view === "research-detail" ? () => setIsEditingDetail(true) : null
+          }
+          onSave={
+            view === "research-detail"
+              ? () => setDetailSaveTrigger((t) => t + 1)
+              : null
+          }
+          onClose={view === "research-detail" ? () => setView("vocab") : null}
         />
       )}
 

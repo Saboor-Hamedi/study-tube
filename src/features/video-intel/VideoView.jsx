@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { Search, Loader2, Tv2, Play, X, ChevronLeft, Library } from 'lucide-react'
+import { Search, Loader2, Tv2, Play, X, ChevronLeft, Library, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import VideoPreviewCard from './VideoPreviewCard'
 
@@ -20,10 +20,10 @@ export default function VideoView({
   transcript, setTranscript,
   loadingTranscript, setLoadingTranscript,
   showToast,
-  searchInputRef
+  searchInputRef,
+  busy, setBusy
 }) {
   const api = window.youtubeAPI
-  const [busy, setBusy] = useState(false)
 
   const [quality, setQuality] = useState('')
   const [progress, setProgress] = useState({})
@@ -98,11 +98,12 @@ export default function VideoView({
     }
   }
 
-  async function search() {
-    if (!api || !query.trim() || isUrl) return
+  async function search(overrideQuery = null) {
+    const activeQuery = (overrideQuery || query).trim()
+    if (!api || !activeQuery || isUrl) return
     setBusy(true)
     try {
-      const vids = await api.search(query.trim())
+      const vids = await api.search(activeQuery)
       setResults(vids)
       setPreview(null)
     } catch (e) {
@@ -112,7 +113,11 @@ export default function VideoView({
     }
   }
 
-  function onEnter(e) { if (e.key === 'Enter') isUrl ? loadUrl(query.trim()) : search() }
+  function handleReset() {
+    setResults([])
+    setPreview(null)
+    setQuery('')
+  }
 
   async function pickPath() {
     if (!api) return
@@ -161,8 +166,6 @@ export default function VideoView({
     try {
       const fullMeta = await api.metadata(v.url)
       
-      // Strict title selection: prioritise fullMeta if it's substantial, 
-      // otherwise stick with search result title (v.title)
       const isGeneric = (t) => !t || t.toLowerCase() === 'youtube video'
       const finalTitle = isGeneric(fullMeta.title) ? v.title : fullMeta.title
 
@@ -176,14 +179,6 @@ export default function VideoView({
       console.error(e)
     }
   }
-
-  // Handle exiting preview and doing the search
-  function doExternalSearch(e) {
-    const val = e.target.value;
-    setQuery(val);
-  }
-
-  const videoViewSubtext = preview ? `Analyzing Content...` : (busy ? 'Scanning YouTube...' : 'Ready for deep search')
 
 
   return (
@@ -213,36 +208,78 @@ export default function VideoView({
         <div className="flex-1 overflow-y-auto px-4 lg:px-6 pt-6 pb-20 scrollbar-thin">
           <div className="max-w-7xl mx-auto">
             {results.length > 0 ? (
-              <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {results.map((item, i) => (
-                  <motion.div key={item.id}
-                    initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03, duration: 0.4 }}
-                    className="flex flex-col gap-3 group cursor-pointer"
-                    onClick={() => selectResult(item)}
+              <div className="flex flex-col gap-8">
+                <div className="flex items-center justify-between border-b border-border/5 pb-4">
+                  <button 
+                    onClick={handleReset}
+                    className="flex items-center gap-2 text-muted hover:text-accent transition-colors group"
                   >
-                    <div className="relative aspect-video overflow-hidden bg-surface-2 border border-border transition-all group-hover:border-accent/40">
-                      <img src={`https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                      <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-[10px] font-bold text-white tracking-widest">{item.duration}</div>
-                      <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors" />
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-[12px] font-bold text-text line-clamp-2 leading-snug group-hover:text-accent transition-colors">{item.title}</h3>
-                      <div className="flex items-center gap-2 text-[10px] text-muted font-medium uppercase tracking-wider">
-                        <span>Analysis Ready</span>
-                        <span className="w-1 h-1 bg-muted/20 rounded-full" />
-                        <span>High Fidelity</span>
+                    <ArrowLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Return to Discovery</span>
+                  </button>
+                  <div className="flex items-center gap-2 opacity-30">
+                    <div className="h-1.5 w-1.5 bg-accent rounded-full animate-pulse" />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted italic">Discovery Log: {results.length} Nodes</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {results.map((item, i) => (
+                    <motion.div key={item.id}
+                      initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.03, duration: 0.4 }}
+                      className="flex flex-col gap-3 group cursor-pointer"
+                      onClick={() => selectResult(item)}
+                    >
+                      <div className="relative aspect-video overflow-hidden bg-surface-2 border border-border transition-all group-hover:border-accent/40 rounded-[5px]">
+                        <img src={`https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-[10px] font-bold text-white tracking-widest">{item.duration}</div>
+                        <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors" />
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="space-y-1">
+                        <h3 className="text-[12px] font-bold text-text line-clamp-2 leading-snug group-hover:text-accent transition-colors">{item.title}</h3>
+                        <div className="flex items-center gap-2 text-[10px] text-muted font-medium uppercase tracking-wider">
+                          <span>Analysis Ready</span>
+                          <span className="w-1 h-1 bg-muted/20 rounded-full" />
+                          <span>High Fidelity</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             ) : !busy && (
-              <div className="flex flex-col items-center justify-center py-40 text-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-surface-2 border border-border flex items-center justify-center">
-                  <Search className="h-6 w-6 text-muted" />
+              <div className="flex flex-col items-center justify-center py-40 text-center gap-8">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="w-16 h-16 rounded-3xl bg-surface-2 border border-border flex items-center justify-center shadow-2xl">
+                    <Tv2 className="h-6 w-6 text-accent animate-pulse" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[12px] font-black text-text uppercase tracking-[0.4em]">Neural Discovery active</p>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest opacity-40">Paste a URL or select a discovery prompt below</p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted max-w-sm">Search for a video or paste a URL to begin.</p>
+
+                <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
+                  {[
+                    "Luke's English Podcast",
+                    "English Grammar Masterclass",
+                    "How to write academic essays",
+                    "IELTS Speaking Practice",
+                    "BBC Learning English"
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => {
+                        setQuery(suggestion);
+                        search(suggestion);
+                      }}
+                      className="px-4 py-2 bg-surface-2 border border-border/10 text-[10px] font-bold text-muted uppercase tracking-widest hover:border-accent/40 hover:text-accent hover:bg-accent/5 transition-all rounded-[5px]"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

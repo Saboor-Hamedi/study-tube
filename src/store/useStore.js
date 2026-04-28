@@ -34,6 +34,7 @@ export const useStore = create((set, get) => ({
   videoPreview: null,
   videoTranscript: null,
   loadingTranscript: false,
+  isVideoBusy: false,
 
   // --- Library Search Intelligence ---
   libQuery: '',
@@ -74,6 +75,7 @@ export const useStore = create((set, get) => ({
   setVideoPreview: (val) => set((s) => ({ videoPreview: typeof val === 'function' ? val(s.videoPreview) : val })),
   setVideoTranscript: (val) => set((s) => ({ videoTranscript: typeof val === 'function' ? val(s.videoTranscript) : val })),
   setLoadingTranscript: (val) => set((s) => ({ loadingTranscript: typeof val === 'function' ? val(s.loadingTranscript) : val })),
+  setIsVideoBusy: (val) => set((s) => ({ isVideoBusy: typeof val === 'function' ? val(s.isVideoBusy) : val })),
 
   // Library Search Setters
   setLibQuery: (val) => set((s) => ({ libQuery: typeof val === 'function' ? val(s.libQuery) : val })),

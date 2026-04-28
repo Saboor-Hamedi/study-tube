@@ -12,15 +12,23 @@ export const formatNeuralText = (text) => {
     })
 
     // Horizontal Lines (Surgically Tight)
-    .replace(/\n\s*[\-\*]{3,}\s*\n/g, '<hr class="neural-hr" />')
-    .replace(/^[\-\*]{3,}$/gm, '<hr class="neural-hr" />')
+    .replace(/\n\s*[━\-\*]{3,}\s*\n/g, '<hr class="neural-hr" />')
+    .replace(/^[━\-\*]{3,}$/gm, '<hr class="neural-hr" />')
+    .replace(/^(━━━.*━━━)$/gm, '<div class="neural-divider">$1</div>')
     
     // Bold & Italics
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.*?)\*/g, "<em>$1</em>")
     
-    // Simple Lists
-    .replace(/^\- (.*$)/gm, '<div style="display: flex; gap: 8px; margin-bottom: 4px;"><span style="opacity: 0.3">•</span><span>$1</span></div>')
+    // Simple Lists & Numbered Lists
+    .replace(/^\- (.*$)/gm, '<div class="neural-list-item"><span>•</span><span>$1</span></div>')
+    .replace(/^(\d+)\.\s*(.*$)/gm, '<div class="neural-list-item"><span class="neural-list-num">$1.</span><span>$2</span></div>')
+
+    // Paragraphs & Line Breaks (Final Pass)
+    .split('\n\n').map(p => {
+      if (p.trim().startsWith('<')) return p; // Already formatted
+      return `<p>${p.replace(/\n/g, '<br />')}</p>`;
+    }).join('\n')
     
     // Tables (Flexible Markdown Parsing)
     .replace(/((?:.*\|.*(?:\r?\n)?)+)/g, (match) => {

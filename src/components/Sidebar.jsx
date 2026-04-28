@@ -45,7 +45,7 @@ export default function Sidebar({
 
   const handleCollectionSelect = (id) => {
     setSelectedCollection?.(id);
-    if (view === "research-detail" || view === "editor") {
+    if (view !== "vocab") {
       setView?.("vocab");
     }
   };

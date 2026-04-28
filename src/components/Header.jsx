@@ -50,7 +50,7 @@ export default function Header({
 
       {/* Centered Search Rail */}
       <div className="flex-1 max-w-lg px-4 transition-all">
-        {(view === 'vocab' || view === 'research-detail') && librarySearch && (
+        {(view === 'vocab' || view === 'research-detail' || view === 'editor' || view === 'grammar') && librarySearch && (
           <div className="relative group">
             <input 
               ref={librarySearch.searchInputRef}
@@ -221,9 +221,9 @@ export default function Header({
               onChange={(e) => videoSearch.setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && videoSearch.onSearch()}
               placeholder={videoSearch.preview ? "Search for another video..." : "Paste URL or keywords..."}
-              className="w-full bg-surface-2 border border-border py-1.5 px-9 text-[11px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[3px]"
+              className="w-full bg-surface-2 border border-border py-1.5 pl-4 pr-10 text-[11px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[3px]"
             />
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
                {videoSearch.busy ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" /> : <SearchIcon className="h-3.5 w-3.5 text-muted group-focus-within:text-accent" />}
             </div>
           </div>

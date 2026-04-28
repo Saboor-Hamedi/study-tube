@@ -427,6 +427,11 @@ function registerIpcHandlers() {
       return { id: videoId, title: '', duration: 0, thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, url: canonical, author: '', views: 0, qualityOptions: DEFAULT_QUALITY_OPTIONS, metaError: e.message }
     }
   })
+  // Register the handler
+  ipcMain.handle('grammar:check', async () => {
+    return loadGrammars(); 
+  });
+
 
   ipcMain.handle('download:start', async (event, payload) => {
     const { taskId, url, format, savePath, title } = payload
@@ -807,4 +812,24 @@ app.whenReady().then(() => {
   }
 })
 
+// Grammar 
+
+function loadGrammars() {
+  const dir = path.join(__dirname, "grammars");
+  if (!fs.existsSync(dir)) return [];
+  
+  const files = fs.readdirSync(dir);
+  
+  // Sort: Move introduction.md to the front
+  const sortedFiles = files.sort((a, b) => {
+    if (a.toLowerCase() === 'introduction.md') return -1;
+    if (b.toLowerCase() === 'introduction.md') return 1;
+    return a.localeCompare(b);
+  });
+
+  return sortedFiles.map(file => ({
+    name: file,
+    content: fs.readFileSync(path.join(dir, file), "utf-8")
+  }));
+}
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })

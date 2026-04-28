@@ -16,23 +16,29 @@ const neuralComponents = {
 }
 
 // Memoized Content Area for high-precision performance
-const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, editVal, setEditVal, highlights, renderContentWithHeatmap, isMaximized }) => {
+const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, editVal, setEditVal, highlights, renderContentWithHeatmap, isMaximized, summary, stats }) => {
   return (
     <div className={`flex-1 flex flex-col overflow-hidden bg-surface transition-all duration-500 ${isMaximized ? 'rounded-none' : 'rounded-l-[5px]'}`}>
       
       {/* Locked Title Hub (Aligned with Sidebar Header) */}
-      <div className={`w-full h-[72px] shrink-0 border-b border-border/10 flex items-center px-6 lg:px-12`}>
-        {isEditing ? (
-          <input 
-            value={titleEditVal}
-            onChange={e => setTitleEditVal(e.target.value)}
-            className="w-full bg-transparent text-[20px] font-black tracking-normal text-text outline-none py-0 transition-all "
-            placeholder="Subject name..."
-            autoFocus
-          />
-        ) : (
-          <h1 className="text-[20px] font-black text-text tracking-normal leading-tight select-text">{titleEditVal}</h1>
-        )}
+      <div className={`w-full h-[72px] shrink-0 border-b border-border/10 flex items-center px-6 lg:px-12 justify-between`}>
+        <div className="flex flex-col gap-0.5">
+          {isEditing ? (
+            <input 
+              value={titleEditVal}
+              onChange={e => setTitleEditVal(e.target.value)}
+              className="w-full bg-transparent text-[18px] font-black tracking-normal text-text outline-none py-0 transition-all "
+              placeholder="Subject name..."
+              autoFocus
+            />
+          ) : (
+            <h1 className="text-[18px] font-black text-text tracking-normal leading-tight select-text">{titleEditVal}</h1>
+          )}
+          <div className="flex items-center gap-2">
+             <span className="text-[9px] text-muted/40 font-mono tracking-tighter uppercase">{new Date(item.date).toLocaleDateString()}</span>
+             <span className="text-[9px] text-accent/40 font-black uppercase tracking-[0.2em]">{stats.charCount} chars • {stats.readTime}m read</span>
+          </div>
+        </div>
       </div>
 
       {/* Independent Scroll Content Stream */}
@@ -72,14 +78,14 @@ const ContentArea = memo(({ item, isEditing, titleEditVal, setTitleEditVal, edit
           )}
           
           {/* Synthesis Abstract (Positioned at bottom of scroll stream) */}
-          {item.summary && !isEditing && (
-            <div className="mt-12 p-8 bg-accent/5 border border-border space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 select-text cursor-text ">
+          {summary && !isEditing && (
+            <div className="mt-12 p-8 bg-accent/5 border border-border space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 select-text cursor-text rounded-[5px]">
                <div className="flex items-center gap-2 text-accent select-none">
                   <Sparkles className="h-4 w-4" />
                   <span className="text-[11px] font-black uppercase tracking-[0.4em]">Final Neural Synthesis</span>
                </div>
                <div className="text-[15px] text-muted leading-relaxed font-light space-y-3 prose-p:mb-2 select-text cursor-text">
-                  {item.summary.split('\n').map((l, i) => (
+                  {summary.split('\n').map((l, i) => (
                     <p key={i} className="flex gap-4 select-text cursor-text text-text">
                       <span className="text-accent/30 font-black flex-shrink-0 select-none">/</span>
                       {l.replace(/^[•\-\d\.]+\s*/, '')}
@@ -105,6 +111,14 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   const [isMaximized, setIsMaximized] = useState(() => {
     return localStorage.getItem('studytube_reader_maximized') !== 'false' // Default to true as before
   })
+
+  const stats = useMemo(() => {
+    const text = editVal || item?.definition || "";
+    const charCount = text.length;
+    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const readTime = Math.max(1, Math.ceil(wordCount / 200));
+    return { charCount, wordCount, readTime };
+  }, [editVal, item?.definition]);
 
   const [isHydrated, setIsHydrated] = useState(false)
 
@@ -155,31 +169,33 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
    * Archive Modification: Persists manual edits back to the neural stack.
    */
   const handleSaveEdit = () => {
-    onUpdate({ ...item, text: titleEditVal, definition: editVal })
-    setIsEditing(false)
-    showToast('Archive Permanently Updated')
+    const updated = { ...item, text: titleEditVal, definition: editVal, summary };
+    onUpdate(updated);
+    setIsEditing(false);
+    showToast('Archive Permanently Updated');
   }
   
   /**
    * Synthesis Abstract: Generates an AI-powered summary of the research content.
    */
   const handleGenerateSummary = async () => {
-    if (isSummarizing) return
-    setIsSummarizing(true)
+    if (isSummarizing) return;
+    setIsSummarizing(true);
     
     // Shield Logic: Timeout Promise
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('AI Request Timed Out')), 45000))
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('AI Request Timed Out')), 45000));
 
     try {
       const chatPromise = api.chatWithAI({ 
         messages: [{ role: 'user', content: `Summarize in 5 bullet points (No markdown/bold): ${editVal.slice(0, 8000)}` }] 
-      })
+      });
       
-      const response = await Promise.race([chatPromise, timeout])
-      const cleaned = response.replace(/[#*`~_]/g, '').replace(/^(Sure|Of course|Here is).+?(:|\.)/i, '').trim()
+      const response = await Promise.race([chatPromise, timeout]);
+      const cleaned = response.replace(/[#*`~_]/g, '').replace(/^(Sure|Of course|Here is).+?(:|\.)/i, '').trim();
       
-      setSummary(cleaned)
-      onUpdate({ ...item, summary: cleaned }) // Auto-sync to persistence
+      setSummary(cleaned);
+      onUpdate({ ...item, text: titleEditVal, definition: editVal, summary: cleaned }); // Auto-sync to persistence
+      showToast('Synthesis Synchronized');
     } catch (e) {
       showToast(e.message === 'AI Request Timed Out' ? 'Synthesis Time Out' : 'Synthesis Interrupted', 'error')
     } finally {
@@ -267,6 +283,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
                 titleEditVal={titleEditVal} setTitleEditVal={setTitleEditVal}
                 editVal={editVal} setEditVal={setEditVal}
                 highlights={highlights} renderContentWithHeatmap={renderContentWithHeatmap}
+                summary={summary} stats={stats}
               />
 
               <AnalyticalSidebar 
