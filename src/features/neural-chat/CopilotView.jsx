@@ -187,7 +187,7 @@ GUIDELINES:
   };
 
   const renderHeader = (isSidebar) => (
-    <div className="h-14 shrink-0 px-5 border-b border-border/20 flex items-center justify-between bg-surface">
+    <div className="h-12 shrink-0 px-5 flex items-center justify-between bg-surface">
       <div className="flex items-center gap-3">
         <div className="p-1.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)] text-white rounded-[5px]">
           <Sparkles className="h-3.5 w-3.5" />
@@ -305,7 +305,7 @@ GUIDELINES:
       >
         {!isOpen ? (
           <div className="flex-1 h-full flex flex-col items-center border-l border-border/10 group pointer-events-none bg-surface">
-            <div className="h-14 w-full flex items-center justify-center border-b border-border/20">
+            <div className="h-12 w-full flex items-center justify-center">
               <div
                 className="flex items-center justify-center text-accent/40 group-hover:text-accent cursor-pointer pointer-events-auto transition-all p-2 hover:bg-accent/10 rounded-[4px]"
                 onClick={() => onOpen && onOpen()}
@@ -315,7 +315,7 @@ GUIDELINES:
             </div>
           </div>
         ) : isCollapsed ? (
-          <div className="h-14 flex flex-col items-center justify-center border-b border-border/20 bg-surface">
+          <div className="h-12 flex flex-col items-center justify-center bg-surface">
             <button
               onClick={() => setIsCollapsed(false)}
               className="p-2 rounded-[5px] text-muted hover:text-emerald-500 hover:bg-emerald-500/10 transition-all shadow-sm"
