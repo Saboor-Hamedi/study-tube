@@ -41,7 +41,7 @@ const NeuralChatMessage = memo(({ message, index, isStreaming }) => {
       </div>
 
       <div
-        className={`max-w-full p-0.5 rounded-[5px] transition-all ${isAI ? "" : "bg-surface-3/30 border border-border/5 px-3 py-2"}`}
+        className={`max-w-full p-0.5 rounded-[5px] transition-all dense-report ${isAI ? "" : "bg-surface-3/30 border border-border/5 px-3 py-2"}`}
       >
         <div
           className="neural-report select-text cursor-text"
@@ -98,32 +98,27 @@ export default memo(function CopilotView({
     isTypingRef.current = true;
 
     const systemPrompt = contextItem
-      ? `You are the StudyTube Neural Assistant and IELTS Examiner.
+      ? `You are the StudyTube Neural Research Assistant & Linguistic Expert.
 
-PRIMARY TARGET FOR AUDIT: "${contextItem.definition}"
-NODE TITLE: "${contextItem.text}"
+PRIMARY RESEARCH CONTEXT:
+- Node Title: "${contextItem.text}"
+- Source Content: "${contextItem.definition}"
 
-USER INSTRUCTION/COMMAND: "${input}"
+MANDATE:
+Examine the PRIMARY RESEARCH CONTEXT provided above. Your primary goal is to fulfill the USER INSTRUCTION below with surgical precision. 
 
-DIAGNOSTIC MANDATE:
-Focus your "Neural Audit" EXCLUSIVELY on the PRIMARY TARGET text provided above. Your goal is to score and correct the research content from the document, using the User Instruction only as a guide for your focus.
+USER INSTRUCTION: "${input}"
 
-REQUIRED FORMAT (STRICT):
-🧠 IELTS NEURAL AUDIT
-📊 Band: [Score]
-📝 Summary
-[Summary text]
-━━━ 🔍 Key Corrections ━━━
-1. ❌ "[Original sentence from text]"
-   ✅ "[Corrected, natural version]"
-   ⚠️ [Issues list]
-2. ❌ "[Original sentence]"
-   ✅ "[Corrected version]"
-   ⚠️ [Issue list]
-━━━ 🚀 Vocabulary Boost ━━━
-[Vocabulary words]
-(Use single newlines ONLY. No empty lines between sections.)`
-      : null;
+GUIDELINES:
+1. TERMINOLOGY: When the user says "the document", "the script", "the file", or "the English script", they are referring EXCLUSIVELY to the PRIMARY RESEARCH CONTEXT provided below.
+2. If the user asks for analysis or scoring, provide a "🧠 NEURAL AUDIT" (Band score, Summary, Corrections, Vocabulary).
+3. If the user asks for extraction (e.g., "give me 3 words"), DO NOT provide an audit; simply perform the extraction accurately.
+4. Use the industrial formatting rules: 
+   - Use '🔍 SECTION TITLE' for headers.
+   - Use '1. ❌ "[Original]" / ✅ "[Corrected]"' for linguistic edits.
+   - Use '•' for lists.
+5. Keep explanations concise, professional, and high-fidelity.`
+      : `You are the StudyTube Neural Assistant. Fulfill the user's request with surgical precision. User Instruction: "${input}"`;
 
     const finalMessagesForAI = [
       ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),

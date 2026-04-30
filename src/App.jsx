@@ -13,6 +13,7 @@ import VideoView from "./features/video-intel/VideoView";
 import LibraryView from "./features/research-vault/LibraryView";
 import CopilotView from "./features/neural-chat/CopilotView";
 import SettingsView from "./features/settings/SettingsView";
+import Profile from "./features/users/Profile";
 import EditorView from "./features/editor/EditorView";
 import InsightDetailView from "./features/research-vault/InsightDetailView";
 import Header from "./components/Header";
@@ -450,7 +451,7 @@ export default function App() {
       </div>
 
       <div className="relative z-10 flex w-full h-full flex-row">
-        <Activitybar
+        {/* <Activitybar
           view={view}
           setView={setView}
           onExport={handleGlobalExport}
@@ -458,13 +459,15 @@ export default function App() {
           onToggleTheme={toggleTheme}
           stats={vocabStats}
           onOpenGrammar={() => setView("grammar")}
-        />
+        /> */}
 
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <Header
             view={view}
             setView={setView}
             item={selectedResearchNode}
+            theme={theme}
+            onToggleTheme={toggleTheme}
             videoSearch={
               view === "search"
                 ? {
@@ -512,48 +515,49 @@ export default function App() {
               onDragStart={(e) => setActiveDragItem(e.active.data.current)}
               onDragEnd={handleDragEnd}
             >
-              {view !== "search" && (
-                <Sidebar
-                  view={view}
-                  setView={setView}
-                  collections={collections}
-                  selectedCollection={selectedCollection}
-                  setSelectedCollection={setSelectedCollection}
-                  handleDeleteCollection={async (name) => {
-                    await api.disbandCollection(name);
-                    setCollections(collections.filter((c) => c !== name));
-                    if (selectedCollection === name)
-                      setSelectedCollection("all");
-                    syncStats();
-                  }}
-                  handleRenameCollection={async (old, next) => {
-                    await api.migrateCollection(old, next);
-                    setCollections(
-                      collections.map((c) => (c === old ? next : c)),
-                    );
-                    if (selectedCollection === old) setSelectedCollection(next);
-                    syncStats();
-                  }}
-                  handleCreateCollection={async (name) => {
-                    if (!name.trim()) return;
-                    const next = [...collections, name.trim()];
-                    await api.saveCollections(next);
-                    setCollections(next);
-                    setIsCreatingCollection(false);
-                    setNewCollectionName("");
-                    syncStats();
-                  }}
-                  isCreatingCollection={isCreatingCollection}
-                  setIsCreatingCollection={setIsCreatingCollection}
-                  newCollectionName={newCollectionName}
-                  setNewCollectionName={setNewCollectionName}
-                  stats={vocabStats}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                  side="left"
-                  showTrash={true}
-                />
-              )}
+              <Sidebar
+                view={view}
+                setView={setView}
+                collections={collections}
+                selectedCollection={selectedCollection}
+                setSelectedCollection={setSelectedCollection}
+                handleDeleteCollection={async (name) => {
+                  await api.disbandCollection(name);
+                  setCollections(collections.filter((c) => c !== name));
+                  if (selectedCollection === name)
+                    setSelectedCollection("all");
+                  syncStats();
+                }}
+                handleRenameCollection={async (old, next) => {
+                  await api.migrateCollection(old, next);
+                  setCollections(
+                    collections.map((c) => (c === old ? next : c)),
+                  );
+                  if (selectedCollection === old) setSelectedCollection(next);
+                  syncStats();
+                }}
+                handleCreateCollection={async (name) => {
+                  if (!name.trim()) return;
+                  const next = [...collections, name.trim()];
+                  await api.saveCollections(next);
+                  setCollections(next);
+                  setIsCreatingCollection(false);
+                  setNewCollectionName("");
+                  syncStats();
+                }}
+                isCreatingCollection={isCreatingCollection}
+                setIsCreatingCollection={setIsCreatingCollection}
+                newCollectionName={newCollectionName}
+                setNewCollectionName={setNewCollectionName}
+                stats={vocabStats}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                side="left"
+                showTrash={true}
+                onExport={handleGlobalExport}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
 
               <main className="flex-1 relative overflow-hidden">
                 <AnimatePresence mode="wait">
@@ -648,11 +652,25 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0 overflow-y-auto"
                     >
-                      <SettingsModal
+                      <SettingsView
                         api={api}
+                        theme={theme}
+                        onToggleTheme={toggleTheme}
+                        onExport={handleGlobalExport}
                         showToast={showToast}
                         onClose={() => setView("search")}
                       />
+                    </motion.div>
+                  )}
+                  {view === "profile" && (
+                    <motion.div
+                      key="profile"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0"
+                    >
+                      <Profile {...libraryProps} />
                     </motion.div>
                   )}
                   {view === "grammar" && (

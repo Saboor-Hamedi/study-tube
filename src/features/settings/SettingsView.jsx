@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Key, Folder, ShieldCheck, Cpu, ExternalLink, 
   Save, RefreshCcw, Download, CheckCircle, AlertCircle, Rocket,
-  Activity, Zap, Database, Terminal, Shield
+  Activity, Zap, Database, Terminal, Shield, Sun, Moon, FileDown
 } from 'lucide-react'
 
-const SettingsView = ({ api }) => {
+const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
   const [apiKey, setApiKey] = useState('')
   const [savePath, setSavePath] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -205,6 +205,66 @@ const SettingsView = ({ api }) => {
                       </button>
                    </div>
                  </div>
+               </div>
+            </motion.section>
+
+            {/* NEURAL AESTHETICS (THEME) */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="group relative bg-surface border border-border p-5 space-y-4 shadow-xl transition-all hover:bg-surface-2 flex flex-col rounded-[5px]"
+            >
+               <div className="flex items-center justify-between border-b border-border pb-4">
+                 <div className="flex items-center gap-3">
+                   <div className="p-1.5 bg-surface-3 text-text rounded-[5px] border border-border">
+                     {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                   </div>
+                   <div>
+                     <h2 className="text-sm font-black text-text uppercase tracking-tight">Neural Aesthetics</h2>
+                     <p className="text-[8px] text-muted font-black uppercase tracking-widest">Interface Mode</p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="space-y-4 flex-1">
+                 <button 
+                   onClick={onToggleTheme}
+                   className="w-full py-3.5 bg-surface-3 border border-border text-[9px] font-black text-text uppercase tracking-widest hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-2 rounded-[5px]"
+                 >
+                   {theme === 'dark' ? <Sun className="h-3.5 w-3.5 text-orange-400" /> : <Moon className="h-3.5 w-3.5 text-accent" />}
+                   Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
+                 </button>
+               </div>
+            </motion.section>
+
+            {/* DOSSIER ENGINE (EXPORT) */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18 }}
+              className="group relative bg-surface border border-border p-5 space-y-4 shadow-xl transition-all hover:bg-surface-2 flex flex-col rounded-[5px]"
+            >
+               <div className="flex items-center justify-between border-b border-border pb-4">
+                 <div className="flex items-center gap-3">
+                   <div className="p-1.5 bg-surface-3 text-text rounded-[5px] border border-border">
+                     <FileDown className="h-4 w-4" />
+                   </div>
+                   <div>
+                     <h2 className="text-sm font-black text-text uppercase tracking-tight">Dossier Engine</h2>
+                     <p className="text-[8px] text-muted font-black uppercase tracking-widest">Global Archive Export</p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="space-y-4 flex-1">
+                 <button 
+                   onClick={onExport}
+                   className="w-full py-3.5 bg-text text-background font-black text-[9px] uppercase tracking-widest hover:bg-accent hover:text-white transition-all flex items-center justify-center gap-2 rounded-[5px]"
+                 >
+                   <FileDown className="h-3.5 w-3.5" />
+                   Generate Research Dossier
+                 </button>
                </div>
             </motion.section>
 

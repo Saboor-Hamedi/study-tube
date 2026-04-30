@@ -13,6 +13,13 @@ import {
   Calendar,
   Type,
   Star,
+  Search,
+  Settings,
+  Sun,
+  Moon,
+  FileDown,
+  GraduationCap,
+  User as UserIcon,
 } from "lucide-react";
 import { DroppableFolder } from "../features/research-vault/DraggableCard";
 import { useState, useMemo } from "react";
@@ -37,6 +44,9 @@ export default function Sidebar({
   sortBy,
   setSortBy,
   side = "left",
+  onExport,
+  theme,
+  onToggleTheme,
 }) {
   const { isSidebarCollapsed: isCollapsed, setIsSidebarCollapsed: setIsCollapsed } = useStore();
   const [renamingId, setRenamingId] = useState(null);
@@ -99,58 +109,114 @@ export default function Sidebar({
         <div
           className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin p-3 transition-all duration-300 ${isCollapsed ? "space-y-4" : "space-y-8"}`}
         >
-          {/* Analytical Sort Matrix */}
+          {/* Main Navigation Hub */}
           <div className="space-y-3">
             {!isCollapsed && (
               <div className="px-2">
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
-                  Sort Index
+                  Navigation
                 </p>
               </div>
             )}
             <div className="space-y-1">
               {[
-                { id: "newest", name: "Newest", icon: Calendar },
-                { id: "alpha", name: "Oldest", icon: Type },
-              ].map((item) => (
-                <div
-                  key={item.id}
-                  className="group relative flex justify-center"
-                >
-                  {!isCollapsed && (
-                    <div
-                      className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${sortBy === item.id ? "bg-accent opacity-100" : "bg-transparent opacity-0"}`}
-                    />
-                  )}
-                  <button
-                    onClick={() => setSortBy?.(item.id)}
-                    style={isCollapsed ? { width: "40px", height: "40px" } : {}}
-                    className={`flex items-center transition-all duration-200 text-left shrink-0 ${
-                      isCollapsed
-                        ? `justify-center rounded-full border-0 ${sortBy === item.id ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
-                        : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${sortBy === item.id ? "text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
-                    }`}
-                  >
-                    <item.icon
-                      className={`h-3.5 w-3.5 shrink-0 ${sortBy === item.id ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
-                    />
+                { id: "search", name: "Discover", icon: Search },
+                { id: "editor", name: "Synthesis", icon: FileText },
+                { id: "grammar", name: "Grammar", icon: GraduationCap },
+              ].map((item) => {
+                const active = view === item.id;
+                return (
+                  <div key={item.id} className="group relative flex justify-center">
                     {!isCollapsed && (
-                      <span className="text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1">
-                        {item.name}
-                      </span>
-                    )}
-                    {isCollapsed && (
                       <div
-                        className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
-                      >
-                        {item.name}
-                      </div>
+                        className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${active ? "bg-accent opacity-100" : "bg-transparent opacity-0"}`}
+                      />
                     )}
-                  </button>
-                </div>
-              ))}
+                    <button
+                      onClick={() => setView?.(item.id)}
+                      style={isCollapsed ? { width: "40px", height: "40px" } : {}}
+                      className={`flex items-center transition-all duration-200 text-left shrink-0 ${
+                        isCollapsed
+                          ? `justify-center rounded-full border-0 ${active ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
+                          : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${active ? "text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
+                      }`}
+                    >
+                      <item.icon
+                        className={`h-3.5 w-3.5 shrink-0 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
+                      />
+                      {!isCollapsed && (
+                        <span className="text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1">
+                          {item.name}
+                        </span>
+                      )}
+                      {isCollapsed && (
+                        <div
+                          className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
+                        >
+                          {item.name}
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
+
+          {/* Analytical Sort Matrix - Contextual Visibility */}
+          {(view === "vocab" || view === "research-detail") && (
+            <div className="space-y-3 animate-in fade-in slide-in-from-left-2 duration-300">
+              {!isCollapsed && (
+                <div className="px-2">
+                  <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
+                    Sort Index
+                  </p>
+                </div>
+              )}
+              <div className="space-y-1">
+                {[
+                  { id: "newest", name: "Newest", icon: Calendar },
+                  { id: "alpha", name: "Oldest", icon: Type },
+                ].map((item) => (
+                  <div
+                    key={item.id}
+                    className="group relative flex justify-center"
+                  >
+                    {!isCollapsed && (
+                      <div
+                        className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${sortBy === item.id ? "bg-accent opacity-100" : "bg-transparent opacity-0"}`}
+                      />
+                    )}
+                    <button
+                      onClick={() => setSortBy?.(item.id)}
+                      style={isCollapsed ? { width: "40px", height: "40px" } : {}}
+                      className={`flex items-center transition-all duration-200 text-left shrink-0 ${
+                        isCollapsed
+                          ? `justify-center rounded-full border-0 ${sortBy === item.id ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
+                          : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${sortBy === item.id ? "text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
+                      }`}
+                    >
+                      <item.icon
+                        className={`h-3.5 w-3.5 shrink-0 ${sortBy === item.id ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
+                      />
+                      {!isCollapsed && (
+                        <span className="text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1">
+                          {item.name}
+                        </span>
+                      )}
+                      {isCollapsed && (
+                        <div
+                          className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
+                        >
+                          {item.name}
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Neural Pins - Bridge Section */}
           <div className="space-y-3">
@@ -213,9 +279,6 @@ export default function Sidebar({
             <div className="space-y-1">
               {[
                 { id: "all", name: "All Research", icon: Library },
-                ...(showTrash
-                  ? [{ id: "trash", name: "Neural Trash", icon: Trash2 }]
-                  : []),
               ].map((item) => (
                 <DroppableFolder
                   key={item.id}
@@ -373,18 +436,22 @@ export default function Sidebar({
         </div>
 
         <div
-          className={`p-4 border-t border-border bg-surface-3 transition-colors duration-500 ${isCollapsed ? "flex justify-center" : ""}`}
+          className={`p-3 border-t border-border bg-surface-3 transition-colors duration-500 flex flex-col gap-2 ${isCollapsed ? "items-center" : ""}`}
         >
-          {!isCollapsed ? (
-            <div className="flex items-center gap-3 px-2 py-1 opacity-40">
-              <div className="h-1.5 w-1.5 bg-accent animate-pulse rounded-full" />
-              <span className="text-[8px] font-bold uppercase tracking-widest text-text">
-                Archive Encrypted
-              </span>
-            </div>
-          ) : (
-            <div className="h-2 w-2 bg-accent animate-pulse rounded-full" />
-          )}
+          <div className="flex flex-col gap-1 w-full">
+            <button
+              onClick={() => setView('settings')}
+              style={isCollapsed ? { width: "40px", height: "40px" } : {}}
+              className={`flex items-center transition-all duration-200 text-left ${
+                isCollapsed
+                  ? "justify-center rounded-full text-muted/40 hover:bg-surface-2 hover:text-text"
+                  : "w-full gap-3 px-3 py-2 rounded-[5px] text-muted hover:bg-surface-2 hover:text-text"
+              }`}
+            >
+              <Settings className="h-3.5 w-3.5 shrink-0" />
+              {!isCollapsed && <span className="text-[10px] uppercase font-black tracking-[0.2em]">Settings</span>}
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

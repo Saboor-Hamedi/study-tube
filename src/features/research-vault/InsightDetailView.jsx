@@ -97,18 +97,14 @@ const InsightDetailView = ({
       if (onOpenCopilot) {
         const currentText = isEditing ? titleEditVal : item?.text || "";
         const currentDef = isEditing ? editVal : item?.definition || "";
-        const activeContext =
-          selection ||
-          (currentDef?.length > 1000
-            ? currentDef.substring(0, 1000) + "..."
-            : currentDef);
+        const activeContext = selection || currentDef;
         const itemKey = `${item?.id || item?.date}-${currentText}-${activeContext}-${selection}`;
         if (lastSyncedItem.current === itemKey) return;
         onOpenCopilot({
           type: "insight",
           text: currentText,
           definition: activeContext,
-          isClipped: !selection && currentDef?.length > 1000,
+          isClipped: false,
         });
         lastSyncedItem.current = itemKey;
       }
