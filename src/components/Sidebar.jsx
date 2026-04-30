@@ -20,6 +20,8 @@ import {
   FileDown,
   GraduationCap,
   User as UserIcon,
+  BarChart2,
+  Cpu,
 } from "lucide-react";
 import { DroppableFolder } from "../features/research-vault/DraggableCard";
 import { useState, useMemo } from "react";
@@ -113,23 +115,29 @@ export default function Sidebar({
           <div className="space-y-3">
             {!isCollapsed && (
               <div className="px-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
+                <p className="text-[10px] font-black text-muted/20">
                   Navigation
                 </p>
               </div>
             )}
             <div className="space-y-1">
               {[
-                { id: "search", name: "Discover", icon: Search },
-                { id: "editor", name: "Synthesis", icon: FileText },
-                { id: "grammar", name: "Grammar", icon: GraduationCap },
+                { id: "search", name: "Home", icon: Search },
+                { id: "class", name: "My Class", icon: GraduationCap },
+                { id: "editor", name: "Analytical Writing", icon: FileText },
+                { id: "assignment", name: "Writing Assignment", icon: Pencil },
+                { id: "review", name: "Review Assignment", icon: Check },
+                { id: "grammar", name: "Grammar list", icon: GraduationCap },
+                { id: "ai-detection", name: "AI Detection", icon: Cpu },
+                { id: "plagiarism", name: "Plagiarism", icon: Hash },
+                { id: "report", name: "Report", icon: BarChart2 },
               ].map((item) => {
                 const active = view === item.id;
                 return (
                   <div key={item.id} className="group relative flex justify-center">
                     {!isCollapsed && (
                       <div
-                        className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${active ? "bg-accent opacity-100" : "bg-transparent opacity-0"}`}
+                        className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${active ? "bg-blue-400 opacity-100" : "bg-transparent opacity-0"}`}
                       />
                     )}
                     <button
@@ -137,21 +145,21 @@ export default function Sidebar({
                       style={isCollapsed ? { width: "40px", height: "40px" } : {}}
                       className={`flex items-center transition-all duration-200 text-left shrink-0 ${
                         isCollapsed
-                          ? `justify-center rounded-full border-0 ${active ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
-                          : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${active ? "text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
+                          ? `justify-center rounded-full border-0 ${active ? "bg-blue-500/10 text-blue-400" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
+                          : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${active ? "bg-blue-500/10 text-blue-400 font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
                       }`}
                     >
                       <item.icon
-                        className={`h-3.5 w-3.5 shrink-0 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
+                        className={`h-3.5 w-3.5 shrink-0 ${active ? "text-blue-400" : "opacity-40 group-hover:opacity-100"}`}
                       />
                       {!isCollapsed && (
-                        <span className="text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1">
+                        <span className="text-[11px] font-black truncate flex-1">
                           {item.name}
                         </span>
                       )}
                       {isCollapsed && (
                         <div
-                          className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
+                          className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[10px] font-black opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
                         >
                           {item.name}
                         </div>
@@ -163,276 +171,6 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* Analytical Sort Matrix - Contextual Visibility */}
-          {(view === "vocab" || view === "research-detail") && (
-            <div className="space-y-3 animate-in fade-in slide-in-from-left-2 duration-300">
-              {!isCollapsed && (
-                <div className="px-2">
-                  <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
-                    Sort Index
-                  </p>
-                </div>
-              )}
-              <div className="space-y-1">
-                {[
-                  { id: "newest", name: "Newest", icon: Calendar },
-                  { id: "alpha", name: "Oldest", icon: Type },
-                ].map((item) => (
-                  <div
-                    key={item.id}
-                    className="group relative flex justify-center"
-                  >
-                    {!isCollapsed && (
-                      <div
-                        className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${sortBy === item.id ? "bg-accent opacity-100" : "bg-transparent opacity-0"}`}
-                      />
-                    )}
-                    <button
-                      onClick={() => setSortBy?.(item.id)}
-                      style={isCollapsed ? { width: "40px", height: "40px" } : {}}
-                      className={`flex items-center transition-all duration-200 text-left shrink-0 ${
-                        isCollapsed
-                          ? `justify-center rounded-full border-0 ${sortBy === item.id ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
-                          : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${sortBy === item.id ? "text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
-                      }`}
-                    >
-                      <item.icon
-                        className={`h-3.5 w-3.5 shrink-0 ${sortBy === item.id ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
-                      />
-                      {!isCollapsed && (
-                        <span className="text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1">
-                          {item.name}
-                        </span>
-                      )}
-                      {isCollapsed && (
-                        <div
-                          className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
-                        >
-                          {item.name}
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Neural Pins - Bridge Section */}
-          <div className="space-y-3">
-            {!isCollapsed && (
-              <div className="px-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
-                  Neural Pins
-                </p>
-              </div>
-            )}
-            <div className="space-y-1">
-              {pinnedItems.length > 0 ? (
-                pinnedItems.map((pin) => (
-                  <DroppableFolder
-                    key={pin.id}
-                    id={pin.id}
-                    active={selectedCollection === pin.id}
-                    onClick={() => handleCollectionSelect(pin.id)}
-                    isCollapsed={isCollapsed}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span>{pin.name}</span>
-                      {!isCollapsed && (
-                        <span className="text-[9px] font-black tabular-nums text-text/40 bg-surface-3 px-1.5 py-0.5 rounded-full min-w-[16px] text-center">
-                          {getCount(pin.id)}
-                        </span>
-                      )}
-                    </div>
-                  </DroppableFolder>
-                ))
-              ) : (
-                <div
-                  className={`flex items-center transition-all duration-200 text-muted/20 ${isCollapsed ? "justify-center w-full" : "gap-3 px-3 py-2 rounded-[5px] w-full"}`}
-                >
-                  <div
-                    style={isCollapsed ? { width: "40px", height: "40px" } : {}}
-                    className={`flex items-center justify-center shrink-0`}
-                  >
-                    <Star className="h-3.5 w-3.5" />
-                  </div>
-                  {!isCollapsed && (
-                    <span className="text-[10px] uppercase font-black tracking-[0.2em] truncate flex-1 italic">
-                      Empty Void
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* System Folders */}
-          <div className="space-y-3">
-            {!isCollapsed && (
-              <div className="px-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
-                  System Root
-                </p>
-              </div>
-            )}
-            <div className="space-y-1">
-              {[
-                { id: "all", name: "All Research", icon: Library },
-              ].map((item) => (
-                <DroppableFolder
-                  key={item.id}
-                  id={item.id}
-                  active={selectedCollection === item.id}
-                  onClick={() => handleCollectionSelect(item.id)}
-                  isCollapsed={isCollapsed}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="truncate">{item.name}</span>
-                    {!isCollapsed && (
-                      <span className="text-[9px] font-black tabular-nums text-accent bg-accent/10 px-1.5 py-0.5 rounded-full">
-                        {getCount(item.id)}
-                      </span>
-                    )}
-                  </div>
-                </DroppableFolder>
-              ))}
-            </div>
-          </div>
-
-          {/* User Collections */}
-          <div className="space-y-3">
-            <div
-              className={`flex items-center px-2 ${isCollapsed ? "justify-center" : "justify-between"}`}
-            >
-              {!isCollapsed && (
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
-                  Collections
-                </p>
-              )}
-              {setIsCreatingCollection && (
-                <button
-                  onClick={() => setIsCreatingCollection(true)}
-                  style={isCollapsed ? { width: "40px", height: "40px" } : {}}
-                  className={`flex items-center justify-center text-muted hover:text-accent transition-all duration-300 shrink-0 ${isCollapsed ? "rounded-full" : "h-5 w-5 rounded-[5px]"}`}
-                >
-                  <Plus className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              {collections.filter(c => c && typeof c === 'string' && c.trim()).map((c) => (
-                <div
-                  key={c}
-                  className="group/folder relative flex justify-center"
-                >
-                  {renamingId === c && !isCollapsed ? (
-                    <div className="mx-1 p-1 bg-surface-3 border border-border flex items-center gap-1 overflow-hidden rounded-[5px] px-2 shadow-inner">
-                      <input
-                        autoFocus
-                        value={renamingValue}
-                        onChange={(e) => setRenamingValue(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && submitRename()}
-                        onBlur={submitRename}
-                        placeholder="Rename Collection"
-                        className="flex-1 bg-transparent px-2 py-1 text-[10px] text-text outline-none"
-                      />
-                      <button
-                        onClick={submitRename}
-                        className="p-1 text-accent hover:bg-accent/10 shrink-0 rounded-sm"
-                      >
-                        <Check className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <DroppableFolder
-                        id={c}
-                        active={selectedCollection === c}
-                        onClick={() => handleCollectionSelect(c)}
-                        isCollapsed={isCollapsed}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="truncate flex-1">{c}</span>
-                          {!isCollapsed && (
-                            <span className="text-[9px] font-black tabular-nums text-text/40 bg-surface-3 px-1.5 py-0.5 rounded-full min-w-[16px] text-center group-hover/folder:opacity-0 transition-opacity">
-                              {getCount(c)}
-                            </span>
-                          )}
-                        </div>
-                      </DroppableFolder>
-
-                      {!isCollapsed && (
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/folder:opacity-100 transition-opacity bg-surface-2/95 backdrop-blur-md pl-1 pr-1 py-1 rounded-[5px] shadow-xl z-20">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startRename(c);
-                            }}
-                            className="p-1.5 hover:bg-accent/10 text-muted/40 hover:text-accent rounded-[5px] transition-all"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCollection?.(c);
-                            }}
-                            className="p-1.5 hover:bg-red-500/10 text-muted/40 hover:text-red-500 rounded-[5px] transition-all"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {isCollapsed && (
-                    <div
-                      className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[9px] font-black uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
-                    >
-                      {c} ({getCount(c)})
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {isCreatingCollection && !isCollapsed && (
-                <div className="mx-1 mt-2 p-2 border border-border animate-in fade-in zoom-in-95 duration-200 rounded-[5px]">
-                  <input
-                    autoFocus
-                    value={newCollectionName}
-                    onChange={(e) => setNewCollectionName(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      newCollectionName.trim() &&
-                      handleCreateCollection(newCollectionName)
-                    }
-                    placeholder="New folder..."
-                    className="w-full bg-background border border-border px-2 py-1.5 text-[10px] text-text outline-none focus:border-accent/30 transition-all placeholder:text-muted/20 rounded-[5px]"
-                  />
-                  <div className="flex gap-1 mt-2">
-                    <button
-                      onClick={() => {
-                        console.log("Create collection:", newCollectionName);
-                        newCollectionName.trim() &&
-                          handleCreateCollection(newCollectionName);
-                      }}
-                      className="flex-1 py-1 border border-border text-text text-[9px] font-black uppercase tracking-widest hover:border-accent hover:text-accent active:scale-95 transition-all rounded-[5px]"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setIsCreatingCollection(false)}
-                      className="px-3 py-1 bg-surface-3 text-muted text-[9px] font-black uppercase tracking-widest hover:text-text transition-all border border-border rounded-[5px]"
-                    >
-                      X
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         <div
@@ -449,7 +187,7 @@ export default function Sidebar({
               }`}
             >
               <Settings className="h-3.5 w-3.5 shrink-0" />
-              {!isCollapsed && <span className="text-[10px] uppercase font-black tracking-[0.2em]">Settings</span>}
+              {!isCollapsed && <span className="text-[11px] font-black">Settings</span>}
             </button>
           </div>
         </div>

@@ -35,8 +35,8 @@ const NeuralChatMessage = memo(({ message, index, isStreaming }) => {
         >
           {isAI ? <Bot className="h-2 w-2" /> : <User className="h-2 w-2" />}
         </div>
-        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/40">
-          {isAI ? "Neural Assistant" : "Researcher"}
+        <span className="text-[9px] font-black text-muted/40">
+          {isAI ? "Neural assistant" : "Researcher"}
         </span>
       </div>
 
@@ -193,17 +193,17 @@ GUIDELINES:
           <Sparkles className="h-3.5 w-3.5" />
         </div>
         <div>
-          <p className="text-[13px] font-black text-text tracking-tight uppercase">
-            Neural Co-Pilot
+          <p className="text-[14px] font-black text-text tracking-tight">
+            Neural Co-pilot
           </p>
           <div className="flex items-center gap-1.5">
             <div
               className={`h-1 w-1 ${contextItem ? "bg-emerald-400" : "bg-success"} rounded-full animate-pulse`}
             />
-            <p className="text-[8px] text-muted font-bold uppercase tracking-[0.1em] truncate max-w-[120px]">
+            <p className="text-[9px] text-muted font-bold tracking-tight truncate max-w-[120px]">
               {contextItem
                 ? `Linked: ${contextItem.text}`
-                : "Neural Stream Active"}
+                : "Neural stream active"}
             </p>
           </div>
         </div>
@@ -231,10 +231,10 @@ GUIDELINES:
             <Sparkles className="h-10 w-10 text-accent/30" />
           </div>
           <div className="max-w-[200px]">
-            <p className="text-[10px] font-black text-text uppercase tracking-[0.3em] mb-1">
-              Intelligence Layer Active
+            <p className="text-[11px] font-black text-text tracking-tight mb-1">
+              Intelligence layer active
             </p>
-            <p className="text-[8px] text-muted leading-relaxed uppercase tracking-widest">
+            <p className="text-[9px] text-muted leading-relaxed tracking-tight">
               Inquiry pending. Request neural synthesis.
             </p>
           </div>

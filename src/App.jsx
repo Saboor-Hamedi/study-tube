@@ -25,6 +25,8 @@ import { useStore } from "./store/useStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
 import GrammarView from "./features/grammar/GrammarView";
+import AIDetectionView from "./features/AI/AIDetectionView";
+import PlagiarismView from "./features/AI/PlagiarismView";
 
 export default function App() {
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
@@ -524,8 +526,7 @@ export default function App() {
                 handleDeleteCollection={async (name) => {
                   await api.disbandCollection(name);
                   setCollections(collections.filter((c) => c !== name));
-                  if (selectedCollection === name)
-                    setSelectedCollection("all");
+                  if (selectedCollection === name) setSelectedCollection("all");
                   syncStats();
                 }}
                 handleRenameCollection={async (old, next) => {
@@ -682,6 +683,28 @@ export default function App() {
                       className="absolute inset-0 overflow-y-auto"
                     >
                       <GrammarView grammars={grammars} setView={setView} />
+                    </motion.div>
+                  )}
+                  {view === "ai-detection" && (
+                    <motion.div
+                      key="ai-detection"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0"
+                    >
+                      <AIDetectionView />
+                    </motion.div>
+                  )}
+                  {view === "plagiarism" && (
+                    <motion.div
+                      key="plagiarism"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0"
+                    >
+                      <PlagiarismView />
                     </motion.div>
                   )}
                 </AnimatePresence>

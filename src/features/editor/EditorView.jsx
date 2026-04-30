@@ -192,17 +192,17 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      <header className="h-14 shrink-0 flex items-center justify-between px-5 border-b border-border/20 bg-surface">
+      <header className="h-12 shrink-0 flex items-center justify-between px-5 border-b border-border/20 bg-surface">
         <div className="flex items-center gap-3">
           <div className="p-1.5 bg-accent/10 text-accent rounded-[5px]">
             <FileText className="h-3.5 w-3.5" />
           </div>
           <div>
-            <p className="text-[13px] font-black text-text tracking-tight uppercase">
-              Neural Synthesis
+            <p className="text-[14px] font-black text-text tracking-tight">
+              Neural synthesis
             </p>
-            <p className="text-[8px] text-muted font-bold uppercase tracking-[0.1em]">
-              Drafting Laboratory
+            <p className="text-[9px] text-muted font-bold tracking-tight">
+              Drafting laboratory
             </p>
           </div>
         </div>
@@ -226,8 +226,8 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-3 mb-12 opacity-30">
               <Sparkles className="h-4 w-4 text-accent" />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em]">
-                Neural Text Interface
+              <span className="text-[11px] font-black tracking-tight">
+                Neural text interface
               </span>
             </div>
             <div className="prose prose-invert prose-lg max-w-none editor-js-override">

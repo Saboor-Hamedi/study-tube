@@ -182,18 +182,18 @@ export default function Profile({
                           {tab.id === "profile" ? "Saboor" : tab.label}
                         </span>
                         {activeTab === tab.id && (
-                          <span className="text-[8px] font-black text-muted/30 uppercase tracking-[0.2em] border-l border-border/20 pl-2">
-                            {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}
+                          <span className="text-[9px] font-black text-muted/30 border-l border-border/20 pl-2">
+                            {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
                         )}
                       </div>
                       {tab.id === "profile" && (
-                        <span className="text-[8px] font-black text-accent bg-accent/10 px-1 py-0.5 rounded-[3px] mt-0.5 tracking-wide">
+                        <span className="text-[9px] font-black text-accent bg-accent/10 px-1 py-0.5 rounded-[3px] mt-0.5 tracking-tight">
                           Neural Analyst
                         </span>
                       )}
                       {tab.id !== "profile" && (
-                        <span className="text-[8px] font-bold text-muted/40 tracking-wide mt-0.5">
+                        <span className="text-[9px] font-bold text-muted/40 mt-0.5">
                           Workspace
                         </span>
                       )}
@@ -434,14 +434,14 @@ export default function Profile({
           <div className="h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
             <div className="flex items-center gap-3">
               <MessageSquare className="h-4 w-4 text-accent" />
-              <h2 className="text-[11px] font-black tracking-widest uppercase">
+              <h2 className="text-[12px] font-black tracking-tight">
                 Neural Feedback Hub
               </h2>
             </div>
             <div className="flex items-center gap-2">
               <Zap className="h-3.5 w-3.5 text-accent animate-pulse" />
-              <span className="text-[9px] font-black text-accent uppercase tracking-widest">
-                Active Scan
+              <span className="text-[10px] font-black text-accent tracking-tight">
+                Active scan
               </span>
             </div>
           </div>
@@ -617,7 +617,7 @@ export default function Profile({
                             </span>
                           </div>
                           <div className="flex items-baseline gap-2 pt-1 border-t border-border/5">
-                            <span className="text-[7px] font-black uppercase tracking-widest opacity-30 shrink-0 w-10 text-accent">
+                            <span className="text-[8px] font-black opacity-30 shrink-0 w-10 text-accent">
                               Audit
                             </span>
                             <span className="text-[9px] font-medium text-text/50 leading-tight italic line-clamp-2">
@@ -646,25 +646,25 @@ export default function Profile({
                 else handleDeepAnalyze();
               }}
               disabled={isNeuralScanning || (!forgeContent && !isAnalyzing)}
-              className={`flex-1 h-11 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[9px] uppercase tracking-[0.15em] shadow-xl ${isNeuralScanning ? "bg-accent/20 text-accent animate-pulse" : isAnalyzing ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4" : "bg-accent text-white hover:brightness-110 shadow-accent/20"}`}
+              className={`flex-1 h-11 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[11px] tracking-tight shadow-xl ${isNeuralScanning ? "bg-accent/20 text-accent animate-pulse" : isAnalyzing ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4" : "bg-accent text-white hover:brightness-110 shadow-accent/20"}`}
             >
               {isNeuralScanning ? (
                 <Activity className="h-4 w-4 animate-spin" />
               ) : isAnalyzing ? (
                 <>
-                  <Pencil className="h-4 w-4" /> Edit Draft
+                  <Pencil className="h-4 w-4" /> Edit draft
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-4 w-4" /> Terapkan Saran
+                  <CheckCircle className="h-4 w-4" /> Terapkan saran
                 </>
               )}
             </button>
             <button
               onClick={handleSaveDraft}
-              className="flex-1 h-11 rounded-[10px] border border-accent/20 text-accent hover:bg-accent/5 transition-all font-black text-[9px] uppercase tracking-[0.15em] flex items-center justify-center gap-2"
+              className="flex-1 h-11 rounded-[10px] border border-accent/20 text-accent hover:bg-accent/5 transition-all font-black text-[11px] tracking-tight flex items-center justify-center gap-2"
             >
-              <Archive className="h-3.5 w-3.5" /> Archive Research
+              <Archive className="h-3.5 w-3.5" /> Archive research
             </button>
           </div>
         </div>
