@@ -92,26 +92,6 @@ const InsightDetailView = ({
     }
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (onOpenCopilot) {
-        const currentText = isEditing ? titleEditVal : item?.text || "";
-        const currentDef = isEditing ? editVal : item?.definition || "";
-        const activeContext = selection || currentDef;
-        const itemKey = `${item?.id || item?.date}-${currentText}-${activeContext}-${selection}`;
-        if (lastSyncedItem.current === itemKey) return;
-        onOpenCopilot({
-          type: "insight",
-          text: currentText,
-          definition: activeContext,
-          isClipped: false,
-        });
-        lastSyncedItem.current = itemKey;
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [item, isEditing, editVal, titleEditVal, selection, onOpenCopilot]);
-
   const lastHandledSave = useRef(0);
 
   const handleSaveEdit = useCallback(() => {

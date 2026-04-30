@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   MessageSquare,
@@ -20,84 +20,67 @@ import {
   Layout,
   Trash2,
   Pencil,
+  AlertCircle,
+  ClipboardCheck,
+  Zap,
+  Info,
+  Type,
+  Maximize2,
 } from "lucide-react";
 import PulseLoader from "../research-vault/PulseLoader";
 import LibraryTrash from "./LibraryTrash";
+import LibraryView from "../research-vault/LibraryView";
 import DeleteModal from "../research-vault/DeleteModal";
 
-export default function Profile({ vocab = [], setVocab, onExpand, api = window.youtubeAPI }) {
+export default function Profile({
+  vocab = [],
+  setVocab,
+  onExpand,
+  api = window.youtubeAPI,
+}) {
   const [activeTab, setActiveTab] = useState("forge");
   const [forgeContent, setForgeContent] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isNeuralScanning, setIsNeuralScanning] = useState(false);
   const [displayLimit, setDisplayLimit] = useState(6);
   const [isAppending, setIsAppending] = useState(false);
   const [openActionId, setOpenActionId] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [diagnostics, setDiagnostics] = useState({
-    grammar: 98,
-    spelling: 0,
-    academic: 85,
-    index: 72,
-    highlights: []
+
+  // Library State for LibraryView integration
+  const [collections, setCollections] = useState([]);
+  const [selectedCollection, setSelectedCollection] = useState("all");
+  const [sortBy, setSortBy] = useState("date_desc");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [stats, setStats] = useState({
+    all: vocab.length,
+    trash: 0,
+    collections: [],
   });
 
-  // AI ANALYSIS ENGINE (Manual Trigger)
-  const handleDeepAnalyze = async () => {
-    if (!forgeContent) return;
-    
-    setIsAnalyzing(true);
-    
-    // Simulate Neural Latency
-    await new Promise(r => setTimeout(r, 1200));
+  const searchInputRef = useRef(null);
+  const historyRef = useRef(null);
 
-    // Diagnostic Logic
-    const content = forgeContent || "";
-    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
-    const characters = content.length;
-    
-    // 1. Detect Spelling
-    const commonMistakes = ['thier', 'recieve', 'accomodate', 'definitly', 'occured', 'untill', 'definately', 'seperate', 'goverment'];
-    const foundMistakes = [];
-    commonMistakes.forEach(mistake => {
-      const regex = new RegExp(`\\b${mistake}\\b`, 'gi');
-      let match;
-      while ((match = regex.exec(content)) !== null) {
-        foundMistakes.push({ start: match.index, end: match.index + mistake.length, type: 'spelling' });
-      }
-    });
-
-    // 2. Detect Grammar
-    const passiveRegex = /\b(is|am|are|was|were|be|been|being)\b\s+\w+ed\b/gi;
-    let gramMatch;
-    while ((gramMatch = passiveRegex.exec(content)) !== null) {
-      foundMistakes.push({ start: gramMatch.index, end: gramMatch.index + gramMatch[0].length, type: 'grammar' });
-    }
-
-    // 3. Calculate AI-Driven Scores
-    const spellCount = foundMistakes.filter(m => m.type === 'spelling').length;
-    const gramMistakes = foundMistakes.filter(m => m.type === 'grammar').length;
-    
-    const spellScore = spellCount;
-    const gramScore = Math.min(100, Math.max(0, 100 - (gramMistakes * 5)));
-    const academicScore = Math.min(95, 60 + (words / 10));
-    const readabilityIndex = Math.min(100, 40 + (characters / 50));
-    const writingScore = Math.min(100, (gramScore + academicScore + readabilityIndex) / 3);
-
-    setDiagnostics({
-      grammar: gramScore,
-      spelling: spellScore,
-      academic: Math.floor(academicScore),
-      index: Math.floor(readabilityIndex),
-      writing: Math.floor(writingScore),
-      highlights: foundMistakes
-    });
-  };
-
-  const truncate = (str, n = 20) => {
-    if (!str) return "";
-    const words = str.split(" ");
-    return words.length > n ? words.slice(0, n).join(" ") + "..." : str;
-  };
+  const [diagnostics, setDiagnostics] = useState({
+    grammar: 100,
+    spelling: 0,
+    diction: 0,
+    tone: 0,
+    academic: 0,
+    index: 0,
+    writing: 0,
+    highlights: [],
+    marketTrends: [
+      "Linguistic Precision Up",
+      "Academic Synthesis Demand",
+      "Neural Drafting Trends",
+      "Peer Review Latency",
+    ],
+  });
 
   const tabs = [
     { id: "reviews", label: "English 1A", icon: Clock },
@@ -131,557 +114,773 @@ export default function Profile({ vocab = [], setVocab, onExpand, api = window.y
       time: "1d ago",
       tab: "archive",
     },
+    {
+      id: 4,
+      student: "Alex M.",
+      title: "Industrial Revolution Impact",
+      status: "Pending",
+      time: "3h ago",
+      tab: "submissions",
+    },
+    {
+      id: 5,
+      student: "David L.",
+      title: "Quantum Physics Introduction",
+      status: "In Review",
+      time: "6h ago",
+      tab: "reviews",
+    },
+    {
+      id: 6,
+      student: "Lisa V.",
+      title: "Digital Marketing Trends",
+      status: "Completed",
+      time: "2d ago",
+      tab: "archive",
+    },
   ];
 
-  const displayItems =
-    activeTab === "library"
-      ? vocab.map((v) => ({
-          id: v.id,
-          title: v.text || "Neural Fragment",
-          student: v.collection || "General Vault",
-          status: "In Vault",
-          time: v.translation || "Resource Entry",
-        }))
-      : essays.filter((e) => e.tab === activeTab);
+  // AI ANALYSIS ENGINE (Industrial Forensic Pipeline)
+  const handleDeepAnalyze = async () => {
+    if (!forgeContent) return;
 
-  const paginatedItems = displayItems.slice(0, displayLimit);
+    setIsNeuralScanning(true);
+    await new Promise((r) => setTimeout(r, 1500));
 
-  const handleLoadMore = () => {
-    setIsAppending(true);
-    setTimeout(() => {
-      setDisplayLimit((prev) => prev + 6);
-      setIsAppending(false);
-    }, 800);
+    const content = forgeContent.trim();
+    const words = content.split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+    const charCount = content.length;
+    const highlights = [];
+
+    // 1. SPELLING & PUNCTUATION
+    const patternRegex = /\b\w*(\w)\1{1,}\b/gi;
+    let patternMatch;
+    while ((patternMatch = patternRegex.exec(content)) !== null) {
+      const word = patternMatch[0].toLowerCase();
+      const legitimateDoubles = [
+        "better",
+        "apple",
+        "common",
+        "grammar",
+        "academic",
+        "furthermore",
+        "nevertheless",
+        "been",
+        "will",
+        "all",
+        "well",
+        "see",
+        "look",
+        "book",
+        "need",
+        "feel",
+        "seem",
+        "keep",
+        "school",
+        "today",
+        "success",
+        "opportunity",
+        "every",
+        "think",
+        "class",
+        "process",
+        "assess",
+        "across",
+        "addition",
+        "address",
+        "apply",
+        "assist",
+        "assume",
+        "attach",
+        "between",
+        "cannot",
+        "carry",
+        "collect",
+        "connect",
+        "current",
+        "decision",
+        "degree",
+        "differ",
+        "effect",
+        "effort",
+        "error",
+        "essay",
+        "essential",
+        "follow",
+        "happen",
+        "issue",
+        "letter",
+        "little",
+        "matter",
+        "message",
+        "middle",
+        "necessary",
+        "occur",
+        "offer",
+        "office",
+        "official",
+        "pass",
+        "passage",
+        "possible",
+        "press",
+        "pressure",
+        "professor",
+        "progress",
+        "really",
+        "recall",
+        "small",
+        "staff",
+        "still",
+        "street",
+        "stress",
+        "suppose",
+        "tell",
+        "unless",
+        "upper",
+      ];
+      if (!legitimateDoubles.includes(word)) {
+        highlights.push({
+          start: patternMatch.index,
+          end: patternMatch.index + patternMatch[0].length,
+          type: "spelling",
+          reason: "Linguistic Anomaly",
+          suggestion: word.replace(/(.)\1{1,}$/, "$1"),
+          explanation: "Redundant character repetition detected.",
+        });
+      }
+    }
+
+    const commonMistakes = [
+      { m: "everyday", c: "every day" },
+      { m: "sometime", c: "sometimes" },
+      { m: "dont", c: "don't" },
+      { m: "tech", c: "teach" },
+      { m: "confuse", c: "confused" },
+      { m: "studing", c: "studying" },
+      { m: "easyer", c: "easier" },
+      { m: "nobodye", c: "nobody" },
+    ];
+    commonMistakes.forEach((pair) => {
+      const regex = new RegExp(`\\b${pair.m}\\b`, "gi");
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        highlights.push({
+          start: match.index,
+          end: match.index + pair.m.length,
+          type: "spelling",
+          reason: "Spelling Anomaly",
+          suggestion: pair.c,
+          explanation: "Standard academic spelling mismatch.",
+        });
+      }
+    });
+
+    // 2. GRAMMAR & VERB AGREEMENT
+    const grammarChecks = [
+      {
+        regex: /\b(i)\b/g,
+        reason: "Capitalization",
+        suggestion: "I",
+        explanation: 'Personal pronoun "I" must be capitalized.',
+      },
+      {
+        regex: /\b(i|you|we|they)\s+([a-z]+es|[a-z]+s)\b/gi,
+        reason: "Verb Agreement",
+        suggestion: "Verb Fix",
+        explanation: "Subject-verb agreement mismatch for plural pronoun.",
+      },
+      {
+        regex: /\b(he|she|it)\s+([a-z]{3,})(?<!s|es)\b/gi,
+        reason: "Verb Agreement",
+        suggestion: "Verb Fix",
+        explanation: "Singular subject requires third-person verb form.",
+      },
+      {
+        regex: /\b(are|is)\b\s+not\b\s+\w+ing\b/gi,
+        reason: "Verb Form",
+        suggestion: "Verb Fix",
+        explanation: "Check verb tense consistency.",
+      },
+    ];
+    grammarChecks.forEach((check) => {
+      let match;
+      while ((match = check.regex.exec(content)) !== null) {
+        if (!highlights.find((h) => h.start === match.index)) {
+          highlights.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            type: "grammar",
+            reason: check.reason,
+            suggestion: check.suggestion,
+            explanation: check.explanation,
+          });
+        }
+      }
+    });
+
+    // 3. DICTION & TONE
+    const dictionChecks = [
+      {
+        regex: /\b(very|extremely|really|quite)\b/gi,
+        type: "diction",
+        reason: "Weak Adverb",
+        suggestion: "Omit",
+        explanation: "Weak adverbs reduce academic impact.",
+      },
+      {
+        regex: /\b(things|stuff|nice|good|bad)\b/gi,
+        type: "diction",
+        reason: "Vague Diction",
+        suggestion: "Specific Term",
+        explanation: "Replace vague terms with precise academic vocabulary.",
+      },
+      {
+        regex: /\b(is|am|are|was|were|be|been|being)\b\s+\w+ed\b/gi,
+        type: "tone",
+        reason: "Passive Voice",
+        suggestion: "Active Voice",
+        explanation: "Active voice is preferred for academic clarity.",
+      },
+    ];
+    dictionChecks.forEach((check) => {
+      let match;
+      while ((match = check.regex.exec(content)) !== null) {
+        if (!highlights.find((h) => h.start === match.index)) {
+          highlights.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            type: check.type,
+            reason: check.reason,
+            suggestion: check.suggestion,
+            explanation: check.explanation,
+          });
+        }
+      }
+    });
+
+    const spellCount = highlights.filter((h) => h.type === "spelling").length;
+    const gramCount = highlights.filter((h) => h.type === "grammar").length;
+    const dictionCount = highlights.filter((h) => h.type === "diction").length;
+    const toneCount = highlights.filter((h) => h.type === "tone").length;
+
+    const academicHits = words.filter((w) =>
+      [
+        "furthermore",
+        "nevertheless",
+        "consequently",
+        "methodology",
+        "empirical",
+        "theoretical",
+      ].includes(w.toLowerCase().replace(/[.,]/g, "")),
+    ).length;
+    const gramScore = Math.max(0, 100 - (gramCount + spellCount) * 5);
+    const academicScore = Math.min(
+      100,
+      academicHits * 15 + Math.min(25, wordCount / 4),
+    );
+    const readabilityIndex = Math.min(100, (charCount / (wordCount || 1)) * 8);
+    const writingScore = Math.round(
+      gramScore * 0.4 + academicScore * 0.4 + readabilityIndex * 0.2,
+    );
+
+    setDiagnostics({
+      grammar: Math.round(gramScore),
+      spelling: spellCount,
+      diction: dictionCount,
+      tone: toneCount,
+      academic: Math.round(academicScore),
+      index: Math.round(readabilityIndex),
+      writing: Math.max(0, Math.round(writingScore)),
+      highlights,
+      marketTrends: words
+        .filter((w) => w.length > 6)
+        .slice(0, 4)
+        .map((w) => `${w.charAt(0).toUpperCase() + w.slice(1)} Context Found`),
+    });
+
+    setIsNeuralScanning(false);
+    setIsAnalyzing(true);
   };
 
-  const feedbacks = [
-    {
-      id: 1,
-      user: "Sarah J.",
-      text: "Thank you for the detailed comments on my draft!",
-      time: "10m ago",
-    },
-    {
-      id: 2,
-      user: "Alex M.",
-      text: "The suggested revisions for the thesis statement were helpful.",
-      time: "2h ago",
-    },
-    {
-      id: 3,
-      user: "John D.",
-      text: "When is the next office hour for essay planning?",
-      time: "4h ago",
-    },
-  ];
+  const getCategoryColor = (type) => {
+    switch (type) {
+      case "grammar":
+        return "bg-blue-500";
+      case "diction":
+        return "bg-orange-500";
+      case "tone":
+        return "bg-purple-500";
+      case "spelling":
+        return "bg-red-500";
+      default:
+        return "bg-accent";
+    }
+  };
+
+  const getCategoryBg = (type) => {
+    switch (type) {
+      case "grammar":
+        return "bg-blue-500/10";
+      case "diction":
+        return "bg-orange-500/10";
+      case "tone":
+        return "bg-purple-500/10";
+      case "spelling":
+        return "bg-red-500/10";
+      default:
+        return "bg-accent/10";
+    }
+  };
 
   return (
-    <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans">
-      {/* ROW 2: SPLIT CONTENT AREA */}
+    <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans select-text">
       <div className="flex-1 flex overflow-hidden">
-        {/* LEFT COLUMN: STUDENT ESSAY SECTION */}
-        <div className="flex-1 flex flex-col bg-surface-2/30">
+        {/* LEFT COLUMN */}
+        <div className="flex-1 flex flex-col bg-surface-2/30 border-r border-border overflow-hidden">
           {/* TABS HEADER */}
-          <div className="h-11 px-4 border-b border-border bg-surface flex items-center justify-between shrink-0">
+          <div className="h-14 px-4 border-b border-border bg-surface flex items-center justify-between shrink-0">
             <div className="flex gap-4 h-full">
-              {/* IDENTITY CLUSTER */}
-              <button 
+              <button
                 onClick={() => setActiveTab("forge")}
-                className={`flex items-center gap-2 pr-4 border-r border-border/20 group transition-all h-full ${activeTab === "forge" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+                className={`flex items-center gap-3 pr-4 border-r border-border/20 group transition-all h-full ${activeTab === "forge" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
               >
-                <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${activeTab === "forge" ? "bg-accent border-accent" : "bg-accent/10 border-accent/20 group-hover:border-accent/40"}`}>
-                  <User className={`h-2.5 w-2.5 ${activeTab === "forge" ? "text-white" : "text-accent"}`} />
+                <div
+                  className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-all ${activeTab === "forge" ? "bg-accent border-accent" : "bg-accent/10 border-accent/20"}`}
+                >
+                  <User
+                    className={`h-3 w-3 ${activeTab === "forge" ? "text-white" : "text-accent"}`}
+                  />
                 </div>
-                <div className="flex flex-col items-start relative">
-                  <span className={`text-[9px] font-black tracking-widest leading-none uppercase transition-colors ${activeTab === "forge" ? "text-accent" : "text-text"}`}>
-                    Saboor
+                <span
+                  className={`text-[11px] font-black tracking-widest uppercase ${activeTab === "forge" ? "text-accent" : "text-text"}`}
+                >
+                  Saboor
+                </span>
+              </button>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`h-full relative flex items-center gap-1.5 transition-all ${activeTab === tab.id ? "text-accent" : "text-muted hover:text-text"}`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  <span className="text-[10px] font-black tracking-widest uppercase">
+                    {tab.label}
                   </span>
-                  {activeTab === "forge" && (
-                    <motion.div 
+                  {activeTab === tab.id && (
+                    <motion.div
                       layoutId="profile-tab"
-                      className="absolute bottom-[-16px] left-0 right-0 h-0.5 bg-accent"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
                     />
                   )}
-                </div>
-              </button>
-
-              {tabs.map((tab, idx) => (
-                <React.Fragment key={tab.id}>
-                  <button
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`h-full relative flex items-center gap-1.5 transition-all ${activeTab === tab.id ? "text-accent" : "text-muted hover:text-text"}`}
-                  >
-                    <tab.icon className="h-3 w-3" />
-                    <span className="text-[9px] font-black tracking-widest uppercase">
-                      {tab.label}
-                    </span>
-                    {activeTab === tab.id && (
-                      <motion.div
-                        layoutId="profile-tab"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
-                      />
-                    )}
-                  </button>
-                  {idx < tabs.length - 1 && (
-                    <span className="text-[10px] text-border/20 font-thin self-center select-none">|</span>
-                  )}
-                </React.Fragment>
+                </button>
               ))}
-            </div>
-
-            {/* TIME & DATE CLUSTER */}
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="text-[9px] font-black text-text tracking-widest uppercase">
-                  {new Date().toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  })}
-                </span>
-                <span className="text-[7px] font-bold text-accent uppercase tracking-[0.1em] opacity-60">
-                  {new Date().toLocaleDateString([], {
-                    weekday: "short",
-                    month: "short",
-                  })}
-                </span>
-              </div>
-              <div className="h-6 w-px bg-border/20" />
-              <div className="px-2 py-1 bg-accent/5 border border-accent/10 rounded-[2px]">
-                <span className="text-[8px] font-black text-accent uppercase tracking-widest">
-                  Live
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* TAB CONTENT */}
-          <div className="flex-1 overflow-y-auto custom-scroll">
-            <div className="h-full">
-              <AnimatePresence mode="wait">
-                {activeTab === "forge" ? (
-                  <motion.div
-                    key="forge"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="h-full flex flex-col"
-                  >
-                    <div className="flex-1 bg-surface flex flex-col">
-                      <div className="flex items-center justify-between px-12 h-20 border-b border-border/10 shrink-0">
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="p-2 bg-accent/10 rounded-[4px]">
-                            {isAnalyzing ? (
-                              <Brain className="h-4 w-4 text-accent animate-pulse" />
-                            ) : (
-                              <Plus className="h-4 w-4 text-accent" />
-                            )}
-                          </div>
-                          <span className="text-[10px] font-black text-muted uppercase tracking-[0.3em]">
-                            {isAnalyzing ? "Neural Analysis Active" : "Drafting Pipeline"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => {
-                              if (isAnalyzing) {
-                                setIsAnalyzing(false);
-                              } else {
-                                handleDeepAnalyze();
-                              }
-                            }}
-                            disabled={!forgeContent && !isAnalyzing}
-                            className={`h-8 px-5 rounded-[4px] text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${
-                              isAnalyzing 
-                                ? "bg-surface-3 text-text hover:bg-surface-4 border border-border/10" 
-                                : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20"
-                            }`}
-                          >
-                            {isAnalyzing ? (
-                              <>
-                                <Pencil className="h-3 w-3" />
-                                Edit Draft
-                              </>
-                            ) : (
-                              <>
-                                <Brain className="h-3 w-3" />
-                                Analyze Draft
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 w-full overflow-y-auto custom-scroll bg-surface relative">
-                        {isAnalyzing ? (
-                          <div 
-                            className="w-full px-12 py-10 text-[16px] leading-[1.8] font-light tracking-wide whitespace-pre-wrap break-words select-text cursor-default neural-report"
-                          >
-                            {(() => {
-                              if (!forgeContent) return <span className="text-muted/40 italic">Initialize drafting to begin analysis...</span>;
-                              let lastIndex = 0;
-                              const elements = [];
-                              const sortedHighlights = [...diagnostics.highlights].sort((a, b) => a.start - b.start);
-
-                              sortedHighlights.forEach((hl, i) => {
-                                if (hl.start > lastIndex) {
-                                  elements.push(forgeContent.substring(lastIndex, hl.start));
-                                }
-                                elements.push(
-                                  <span 
-                                    key={i} 
-                                    className={`transition-all duration-300 px-0.5 rounded-[2px] ${
-                                      hl.type === 'spelling' 
-                                        ? 'bg-red-500/10 text-red-500 border-b border-red-500/30' 
-                                        : 'bg-accent/10 text-accent border-b border-accent/30'
-                                    }`}
+          <div className="flex-1 flex flex-col overflow-hidden relative">
+            <AnimatePresence mode="wait">
+              {activeTab === "forge" ? (
+                <motion.div
+                  key="forge"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="h-full flex flex-col overflow-hidden"
+                >
+                  <div className="flex-1 overflow-y-auto custom-scroll p-12">
+                    {isAnalyzing ? (
+                      <div className="space-y-8 max-w-5xl mx-auto">
+                        <div className="text-[18px] text-text/90 leading-[2.2] font-light tracking-wide whitespace-pre-wrap font-outfit select-text">
+                          {(() => {
+                            let lastIndex = 0;
+                            const elements = [];
+                            const sorted = [...diagnostics.highlights].sort(
+                              (a, b) => a.start - b.start,
+                            );
+                            sorted.forEach((hl, i) => {
+                              elements.push(
+                                forgeContent.substring(lastIndex, hl.start),
+                              );
+                              elements.push(
+                                <span
+                                  key={i}
+                                  className={`relative inline-block px-1 rounded-[4px] mx-0.5 ${getCategoryBg(hl.type)}`}
+                                >
+                                  <span
+                                    className={`absolute -top-3 -right-2 w-4 h-4 rounded-full ${getCategoryColor(hl.type)} text-white text-[8px] font-black flex items-center justify-center shadow-lg cursor-help`}
+                                    title={`Anomaly ID: ${i + 1}`}
+                                  >
+                                    {i + 1}
+                                  </span>
+                                  <span
+                                    className={`font-bold ${getCategoryColor(hl.type).replace("bg-", "text-")}`}
                                   >
                                     {forgeContent.substring(hl.start, hl.end)}
                                   </span>
-                                );
-                                lastIndex = hl.end;
-                              });
-                              if (lastIndex < forgeContent.length) {
-                                elements.push(forgeContent.substring(lastIndex));
-                              }
-                              return elements;
-                            })()}
-                          </div>
-                        ) : (
-                          <textarea
-                            value={forgeContent}
-                            onChange={(e) => setForgeContent(e.target.value)}
-                            className="w-full h-full bg-transparent border-none px-12 py-10 text-[16px] text-text/90 leading-[1.8] font-light tracking-wide outline-none resize-none caret-accent selection:bg-accent/20"
-                            placeholder="Initialize academic drafting pipeline..."
-                            autoFocus
-                          />
-                        )}
+                                </span>,
+                              );
+                              lastIndex = hl.end;
+                            });
+                            elements.push(forgeContent.substring(lastIndex));
+                            return elements;
+                          })()}
+                        </div>
                       </div>
+                    ) : (
+                      <textarea
+                        value={forgeContent}
+                        onChange={(e) => setForgeContent(e.target.value)}
+                        className="w-full h-full bg-transparent border-none text-[16px] text-text/90 leading-[1.8] font-light tracking-wide outline-none resize-none caret-accent selection:bg-accent/20 font-outfit"
+                        placeholder="Initialize academic drafting pipeline..."
+                        autoFocus
+                      />
+                    )}
+                  </div>
 
-                      <div className="h-14 px-6 border-t border-border/10 bg-surface-2 flex items-center justify-between shrink-0">
-                        <div className="flex items-center gap-2">
-                          {[
-                            { label: "ACADEMIC", score: diagnostics.academic.toString(), icon: GraduationCap, color: "text-accent" },
-                            { label: "GRAMMAR", score: diagnostics.grammar.toString(), color: "text-green-500" },
-                            { label: "INDEX", score: diagnostics.index.toString(), color: "text-orange-500" },
-                            { label: "WRITING", score: diagnostics.writing?.toString() || "0", color: "text-accent" },
-                            { label: "SPILL", score: diagnostics.spelling.toString(), color: "text-red-500/60" },
-                          ].map((item) => (
-                            <div 
-                              key={item.label} 
-                              className="group/metric h-10 px-3 bg-surface-3 border border-border/5 rounded-[6px] flex flex-col justify-center gap-0.5 hover:border-accent/20 hover:bg-surface-4 transition-all"
-                            >
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[6px] font-black text-muted/60 uppercase tracking-[0.2em]">
-                                  {item.label}
-                                </span>
-                                {item.icon && <item.icon className="h-2 w-2 text-accent/40" />}
-                              </div>
-                              <div className="flex items-end gap-1">
-                                <span className={`text-[11px] font-black tracking-tight leading-none ${item.color}`}>
-                                  {item.score}
-                                  {item.label !== "SPILL" && <span className="text-[7px] ml-0.5 opacity-40">%</span>}
-                                </span>
-                                {/* MICRO INDICATOR */}
-                                <div className="h-0.5 flex-1 min-w-[20px] bg-border/10 rounded-full overflow-hidden mb-[3px]">
-                                  <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: item.label === "SPILL" ? `${Math.min(parseFloat(item.score) * 10, 100)}%` : `${Math.min(parseFloat(item.score), 100)}%` }}
-                                    className={`h-full ${item.color.replace('text-', 'bg-')}`}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                  {/* MINI BOTTOM HUD */}
+                  {isAnalyzing && (
+                    <div className="px-6 py-3 border-t border-border/10 bg-surface flex items-center justify-between gap-6 shrink-0">
+                      <div className="flex items-center gap-6 ml-auto">
+                        <div className="flex flex-col items-end">
+                          <span className="text-[9px] font-black text-text/80 uppercase">
+                            Draft 2 dari 3
+                          </span>
+                          <span className="text-[8px] font-bold text-muted/60 uppercase tracking-tighter">
+                            Deadline: 30 Mei 2024
+                          </span>
                         </div>
-
-                        <div className="flex items-center gap-4 pl-6 border-l border-border/10 h-8">
-                          <button className="flex flex-col items-end gap-0.5 group">
-                            <span className="text-[7px] font-black text-muted/40 uppercase tracking-[0.2em] group-hover:text-accent transition-all">
-                              Classification
-                            </span>
-                            <div className="flex items-center gap-2 px-2 py-0.5 bg-accent/5 border border-accent/10 rounded-[4px]">
-                              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                              <span className="text-[9px] font-black text-accent uppercase tracking-widest">
-                                Pending
-                              </span>
-                            </div>
-                          </button>
-                        </div>
+                        <span className="px-2 py-1 bg-orange-500/10 text-orange-500 text-[8px] font-black rounded-[4px] uppercase border border-orange-500/20">
+                          Perlu Revisi
+                        </span>
                       </div>
                     </div>
-                  </motion.div>
-                ) : activeTab === "trash" ? (
-                  <motion.div
-                    key="trash"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="h-full"
-                  >
-                    <LibraryTrash 
-                      api={window.youtubeAPI} 
-                      onRestore={async (item) => {
-                        await api.saveVocabItem({ ...item, archived: 0 });
-                        if (setVocab) {
-                          setVocab(prev => {
-                            if (prev.find(v => v.id === item.id)) return prev;
-                            return [item, ...prev];
-                          });
-                        }
-                      }}
-                      onDeletePermanent={async (id) => {
-                        await window.youtubeAPI.deleteVocabItem(id);
-                      }}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-3 p-8"
-                  >
-                    {paginatedItems.map((item) => (
+                  )}
+
+                  {/* SYNCED FOOTER METRICS */}
+                  <div className="h-14 px-6 border-t border-border/10 bg-surface-2 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                      {[
+                        {
+                          label: "ACADEMIC",
+                          score: diagnostics.academic,
+                          color: "text-purple-500",
+                        },
+                        {
+                          label: "GRAMMAR",
+                          score: diagnostics.grammar,
+                          color: "text-blue-500",
+                        },
+                        {
+                          label: "INDEX",
+                          score: diagnostics.index,
+                          color: "text-green-500",
+                        },
+                        {
+                          label: "WRITING",
+                          score: diagnostics.writing,
+                          color: "text-accent",
+                        },
+                      ].map((item) => (
+                        <div
+                          key={item.label}
+                          className="h-10 px-3 bg-surface-3 border border-border/5 rounded-[6px] flex flex-col justify-center gap-0.5"
+                        >
+                          <span className="text-[6px] font-black text-muted/60 uppercase tracking-[0.2em]">
+                            {item.label}
+                          </span>
+                          <span
+                            className={`text-[11px] font-black ${item.color}`}
+                          >
+                            {item.score}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-[8px] font-black text-muted/30 uppercase tracking-[0.2em]">
+                      Neural Synthesis Grid
+                    </div>
+                  </div>
+                </motion.div>
+              ) : activeTab === "trash" ? (
+                <LibraryTrash
+                  api={api}
+                  onRestore={() => {}}
+                  onDeletePermanent={() => {}}
+                />
+              ) : activeTab === "library" ? (
+                <LibraryView
+                  vocab={vocab}
+                  setVocab={setVocab}
+                  collections={collections}
+                  setCollections={setCollections}
+                  selectedCollection={selectedCollection}
+                  setSelectedCollection={setSelectedCollection}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  displayLimit={displayLimit}
+                  setDisplayLimit={setDisplayLimit}
+                  api={api}
+                  showToast={(msg) => console.log(msg)}
+                  stats={stats}
+                  onExpand={onExpand}
+                  searchInputRef={searchInputRef}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  searchResults={searchResults}
+                  setSearchResults={setSearchResults}
+                  isSearching={isSearching}
+                  setIsSearching={setIsSearching}
+                  searchHistory={searchHistory}
+                  setSearchHistory={setSearchHistory}
+                  isHistoryOpen={isHistoryOpen}
+                  setIsHistoryOpen={setIsHistoryOpen}
+                  historyRef={historyRef}
+                />
+              ) : (
+                <div className="p-6 space-y-4 overflow-y-auto custom-scroll">
+                  {essays
+                    .filter((e) => e.tab === activeTab)
+                    .map((item) => (
                       <div
                         key={item.id}
-                        onClick={() => {
-                          if (activeTab === "library" && onExpand) {
-                            const originalItem = vocab.find(
-                              (v) => v.id === item.id,
-                            );
-                            if (originalItem) onExpand(originalItem);
-                          }
-                        }}
-                        className={`group flex items-center justify-between p-5 bg-surface border border-border hover:border-accent/40 transition-all rounded-[10px] relative ${
-                          activeTab === "library" ? "cursor-pointer" : ""
-                        }`}
+                        className="p-4 bg-surface border border-border rounded-[8px] flex items-center justify-between group hover:border-accent/40 transition-all"
                       >
-                        <div className="absolute top-0 left-0 bottom-0 w-1 bg-accent/10 group-hover:bg-accent transition-colors rounded-l-[10px]" />
-
-                        <div className="flex items-center gap-6">
-                          <div className="w-12 h-12 rounded-[8px] bg-surface-2 border border-border flex items-center justify-center shrink-0">
-                            {activeTab === "library" ? (
-                              <LibraryIcon className="h-5 w-5 text-muted group-hover:text-accent transition-colors" />
-                            ) : (
-                              <FileText className="h-5 w-5 text-muted group-hover:text-accent transition-colors" />
-                            )}
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border">
+                            <FileText className="h-4 w-4 text-muted group-hover:text-accent transition-colors" />
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <h4 className="text-sm font-black text-text tracking-tight group-hover:text-accent transition-colors">
-                              {truncate(item.title, 20)}
+                          <div>
+                            <h4 className="text-[12px] font-black text-text">
+                              {item.title}
                             </h4>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[10px] font-bold text-accent uppercase tracking-widest">
-                                {item.student}
-                              </span>
-                              <span className="text-[10px] text-muted">•</span>
-                              <span className="text-[10px] text-muted font-medium italic">
-                                {item.time}
-                              </span>
-                            </div>
-
-                            {activeTab === "library" && (
-                              <div className="flex items-center gap-1 mt-1 opacity-100 transition-all translate-y-0">
-                                <span className="text-[7px] font-black text-accent uppercase tracking-[0.2em]">
-                                  Read More
-                                </span>
-                                <ChevronRight className="h-2 w-2 text-accent" />
-                              </div>
-                            )}
+                            <span className="text-[10px] text-muted font-bold uppercase tracking-widest">
+                              {item.student}
+                            </span>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-8">
-                          {activeTab !== "library" && (
-                            <div className="flex flex-col items-end gap-1">
-                              <div
-                                className={`px-2 py-0.5 rounded-[2px] border ${
-                                  item.status === "Completed"
-                                    ? "bg-green-500/10 border-green-500/20 text-green-500"
-                                    : "bg-orange-500/10 border-orange-500/20 text-orange-500"
-                                }`}
-                              >
-                                <span className="text-[8px] font-black uppercase tracking-widest">
-                                  {item.status}
-                                </span>
-                              </div>
-                              <span className="text-[9px] font-bold text-muted/40 uppercase tracking-widest">
-                                Global Status
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="relative">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenActionId(openActionId === item.id ? null : item.id);
-                              }}
-                              className="p-2 text-muted hover:text-text hover:bg-surface-3 rounded-[4px] transition-all"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </button>
-                            
-                            <AnimatePresence>
-                              {openActionId === item.id && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  className="absolute right-0 top-full mt-2 w-32 bg-surface-2 border border-border rounded-[6px] shadow-2xl z-[100] overflow-hidden"
-                                >
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenActionId(null);
-                                      if (activeTab === "library" && onExpand) {
-                                        const originalItem = vocab.find(v => v.id === item.id);
-                                        if (originalItem) onExpand(originalItem);
-                                      }
-                                    }}
-                                    className="w-full px-4 py-2 text-[10px] font-black text-left uppercase tracking-widest text-muted hover:text-accent hover:bg-accent/5 transition-all flex items-center gap-2"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                    Edit
-                                  </button>
-                                  <button 
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      setOpenActionId(null);
-                                      if (activeTab === "library") {
-                                        setItemToDelete(item.id);
-                                      }
-                                    }}
-                                    className="w-full px-4 py-2 text-[10px] font-black text-left uppercase tracking-widest text-muted hover:text-red-500 hover:bg-red-500/5 transition-all border-t border-border/10 flex items-center gap-2"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                    Delete
-                                  </button>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted group-hover:text-accent" />
                       </div>
                     ))}
-
-                    {/* DELETE CONFIRMATION MODAL */}
-                    <DeleteModal 
-                      isOpen={!!itemToDelete}
-                      onClose={() => setItemToDelete(null)}
-                      title="Archive Fragment"
-                      message="Decommission this research node to the trash vault?"
-                      onConfirm={async () => {
-                        const originalItem = vocab.find(v => v.id === itemToDelete);
-                        if (originalItem) {
-                          await api.saveVocabItem({ ...originalItem, archived: 1 });
-                          if (setVocab) {
-                            setVocab(prev => prev.filter(v => v.id !== itemToDelete));
-                          }
-                        }
-                        setItemToDelete(null);
-                      }}
-                    />
-
-                    <div className="mt-8 flex flex-col items-center gap-6 pb-12">
-                      {isAppending ? (
-                        <PulseLoader message="Expanding Neural Archive..." />
-                      ) : (
-                        <div className="flex items-center gap-4">
-                          {displayItems.length > displayLimit && (
-                            <button
-                              onClick={handleLoadMore}
-                              className="group h-8 px-5 flex items-center gap-2 bg-surface border border-border/10 text-muted/60 hover:text-accent hover:border-accent/30 hover:bg-accent/5 transition-all rounded-full"
-                            >
-                              <Plus className="h-2.5 w-2.5 group-hover:rotate-90 transition-transform duration-500" />
-                              <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                                Load more
-                              </span>
-                            </button>
-                          )}
-
-                          {displayLimit > 6 && (
-                            <button
-                              onClick={() => setDisplayLimit(6)}
-                              className="h-8 px-5 flex items-center bg-transparent border border-transparent hover:border-accent/10 text-muted/30 hover:text-accent/60 transition-all rounded-full"
-                            >
-                              <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                                collapsed
-                              </span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: FEEDBACK LOOP */}
-        <div className="w-[320px] shrink-0 border-l border-border bg-surface flex flex-col">
-          <div className="h-11 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
+        {/* RIGHT COLUMN */}
+        <div className="w-[380px] shrink-0 bg-surface flex flex-col border-l border-border">
+          <div className="h-14 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
             <div className="flex items-center gap-3">
-              <MessageSquare className="h-3.5 w-3.5 text-accent" />
-              <h2 className="text-[10px] font-black tracking-widest">
-                Feedback Loop
+              <MessageSquare className="h-4 w-4 text-accent" />
+              <h2 className="text-[11px] font-black tracking-widest uppercase">
+                Neural Feedback Hub
               </h2>
             </div>
-            <div className="h-1.5 w-1.5 bg-accent rounded-full animate-pulse" />
+            <div className="flex items-center gap-2">
+              <Zap className="h-3.5 w-3.5 text-accent animate-pulse" />
+              <span className="text-[9px] font-black text-accent uppercase tracking-widest">
+                Active Scan
+              </span>
+            </div>
           </div>
 
-          {/* MIGRATED STATS */}
-          <div className="p-5 border-b border-border bg-surface-2/50 grid grid-cols-2 gap-4 shrink-0">
-            {[
-              { label: "Essays Reviewed", value: "142" },
-              { label: "Avg. Response", value: "4.2h" },
-              { label: "Student Rating", value: "4.9/5" },
-            ].map((stat) => (
-              <div key={stat.label} className="flex flex-col gap-0.5">
-                <span className="text-lg font-black text-text tracking-tight">
-                  {stat.value}
-                </span>
-                <span className="text-[8px] font-bold text-muted uppercase tracking-widest opacity-60">
-                  {stat.label}
+          <div className="flex-1 overflow-y-auto custom-scroll flex flex-col">
+            {/* SYNCED HUB METRICS (2 ROWS) */}
+            <div className="p-4 border-b border-border bg-surface-2/30 shrink-0">
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  {
+                    label: "Grammar",
+                    score: diagnostics.grammar,
+                    icon: CheckCircle,
+                    color: "text-blue-500",
+                    bg: "bg-blue-500/5",
+                    border: "border-blue-500/10",
+                  },
+                  {
+                    label: "Academic",
+                    score: diagnostics.academic,
+                    icon: GraduationCap,
+                    color: "text-purple-500",
+                    bg: "bg-purple-500/5",
+                    border: "border-purple-500/10",
+                  },
+                  {
+                    label: "Index",
+                    score: diagnostics.index,
+                    icon: Activity,
+                    color: "text-green-500",
+                    bg: "bg-green-500/5",
+                    border: "border-green-500/10",
+                  },
+                  {
+                    label: "Writing",
+                    score: diagnostics.writing,
+                    icon: Zap,
+                    color: "text-accent",
+                    bg: "bg-accent/5",
+                    border: "border-accent/10",
+                  },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className={`p-3 rounded-[8px] border ${stat.bg} ${stat.border} flex flex-col gap-2 transition-all hover:scale-[1.02] cursor-default`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`p-1 rounded-[4px] ${stat.bg.replace("/5", "/20")}`}
+                      >
+                        <stat.icon className={`h-3 w-3 ${stat.color}`} />
+                      </div>
+                      <span className="text-[7px] font-black text-muted uppercase tracking-widest">
+                        {stat.label}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-0.5">
+                      <span
+                        className={`text-[16px] font-black leading-none ${stat.color}`}
+                      >
+                        {stat.score}
+                      </span>
+                      <span className="text-[8px] font-bold text-muted/40">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FEEDBACK HUB */}
+            <div className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[9px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Brain className="h-3.5 w-3.5 text-accent" />
+                  Explainable Feedback
+                </h3>
+                <span className="text-[9px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                  {diagnostics.highlights.length} Anomalies
                 </span>
               </div>
-            ))}
+
+              <div className="space-y-6">
+                {diagnostics.highlights.length > 0 ? (
+                  diagnostics.highlights.map((hl, i) => {
+                    const word = forgeContent.substring(hl.start, hl.end);
+                    return (
+                      <div
+                        key={i}
+                        className="relative bg-surface border border-border/10 rounded-[12px] p-5 shadow-xl hover:shadow-2xl transition-all group/card overflow-hidden"
+                      >
+                        <div
+                          className={`absolute top-0 left-0 w-1 h-full ${getCategoryColor(hl.type)}`}
+                        />
+                        <div className="flex items-start justify-between mb-4">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black ${getCategoryColor(hl.type)} text-white shadow-lg`}
+                          >
+                            {i + 1}
+                          </div>
+                          <div className="flex items-center gap-2 opacity-40">
+                            <Maximize2 className="h-3 w-3" />
+                            <span className="text-[8px] font-black uppercase tracking-widest">
+                              Scope: {word.length} chars
+                            </span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 opacity-40">
+                              <Type className="h-2.5 w-2.5" />
+                              <span className="text-[7px] font-black uppercase tracking-widest">
+                                Issue
+                              </span>
+                            </div>
+                            <span className="text-[13px] font-bold text-text line-through opacity-60 italic">
+                              {word}
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 opacity-40">
+                              <Info className="h-2.5 w-2.5" />
+                              <span className="text-[7px] font-black uppercase tracking-widest">
+                                Reasoning
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-medium text-text/80 leading-tight block">
+                              {hl.reason}
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 opacity-40">
+                              <CheckCircle className="h-2.5 w-2.5 text-green-500" />
+                              <span className="text-[7px] font-black uppercase tracking-widest">
+                                Correction
+                              </span>
+                            </div>
+                            <span className="text-[13px] font-black text-green-500">
+                              {hl.suggestion}
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 opacity-40">
+                              <Sparkles className="h-2.5 w-2.5 text-accent" />
+                              <span className="text-[7px] font-black uppercase tracking-widest">
+                                Explanation
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-medium text-text/60 leading-tight block italic">
+                              "{hl.explanation}"
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-12 text-center bg-surface-2/30 rounded-[12px] border border-dashed border-border/20">
+                    <span className="text-[11px] text-muted/40 italic font-medium">
+                      System nominal. No neural anomalies detected.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scroll">
-            {feedbacks.map((fb) => (
-              <motion.div
-                key={fb.id}
-                whileHover={{ x: -4 }}
-                className="p-4 bg-surface-2 border border-border rounded-[8px] space-y-2 hover:border-accent/30 transition-all cursor-pointer group"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-accent uppercase tracking-tight">
-                    {fb.user}
-                  </span>
-                  <span className="text-[8px] font-bold text-muted uppercase tracking-widest">
-                    {fb.time}
-                  </span>
-                </div>
-                <p className="text-[11px] text-text/70 leading-relaxed italic">
-                  "{fb.text}"
-                </p>
-                <div className="flex justify-start pt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ChevronRight className="h-3 w-3 text-accent rotate-180" />
-                </div>
-              </motion.div>
-            ))}
-
-            <button className="w-full py-3 border border-dashed border-border rounded-[8px] text-[9px] font-black text-muted uppercase tracking-widest hover:border-accent/30 hover:text-text transition-all">
-              View All Communications
+          <div className="p-4 border-t border-border bg-surface shrink-0 flex gap-3">
+            <button
+              onClick={() => {
+                if (isAnalyzing) setIsAnalyzing(false);
+                else handleDeepAnalyze();
+              }}
+              disabled={isNeuralScanning || (!forgeContent && !isAnalyzing)}
+              className={`flex-1 h-11 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[9px] uppercase tracking-[0.15em] shadow-xl ${isNeuralScanning ? "bg-accent/20 text-accent animate-pulse" : isAnalyzing ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4" : "bg-accent text-white hover:brightness-110 shadow-accent/20"}`}
+            >
+              {isNeuralScanning ? (
+                <Activity className="h-4 w-4 animate-spin" />
+              ) : isAnalyzing ? (
+                <>
+                  <Pencil className="h-4 w-4" /> Edit Draft
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4" /> Terapkan Saran
+                </>
+              )}
+            </button>
+            <button className="flex-1 h-11 rounded-[10px] border border-accent/20 text-accent hover:bg-accent/5 transition-all font-black text-[9px] uppercase tracking-[0.15em] flex items-center justify-center">
+              Send to Student
             </button>
           </div>
         </div>
       </div>
+      <DeleteModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={() => setItemToDelete(null)}
+      />
     </div>
   );
 }

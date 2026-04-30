@@ -121,7 +121,7 @@ export default function LibraryTrash({ api, onRestore, onDeletePermanent }) {
                       <Trash2 className="h-5 w-5 text-muted group-hover:text-red-500 transition-colors" />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <h4 className="text-sm font-black text-text tracking-tight group-hover:text-accent transition-colors uppercase">
+                      <h4 className="text-[14px] font-bold text-text tracking-tight group-hover:text-accent transition-colors">
                         {item.text || "Neural Fragment"}
                       </h4>
                       <div className="flex items-center gap-3">
