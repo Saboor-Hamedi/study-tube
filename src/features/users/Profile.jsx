@@ -260,6 +260,14 @@ export default function Profile({
       { m: "studing", c: "studying" },
       { m: "easyer", c: "easier" },
       { m: "nobodye", c: "nobody" },
+      { m: "alot", c: "a lot" },
+      { m: "belive", c: "believe" },
+      { m: "recive", c: "receive" },
+      { m: "thier", c: "their" },
+      { m: "truely", c: "truly" },
+      { m: "definately", c: "definitely" },
+      { m: "occured", c: "occurred" },
+      { m: "untill", c: "until" },
     ];
     commonMistakes.forEach((pair) => {
       const regex = new RegExp(`\\b${pair.m}\\b`, "gi");
@@ -295,6 +303,12 @@ export default function Profile({
         reason: "Verb Agreement",
         suggestion: "Verb Fix",
         explanation: "Singular subject requires third-person verb form.",
+      },
+      {
+        regex: /(?:^|[.!?]\s+)([a-z])\b/g,
+        reason: "Capitalization",
+        suggestion: "Uppercase",
+        explanation: "Sentence must start with a capital letter.",
       },
       {
         regex: /\b(are|is)\b\s+not\b\s+\w+ing\b/gi,

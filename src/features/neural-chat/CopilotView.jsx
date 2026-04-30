@@ -60,6 +60,7 @@ const NeuralChatMessage = memo(({ message, index, isStreaming }) => {
 export default memo(function CopilotView({
   isOpen,
   onClose,
+  onOpen,
   api,
   showToast,
   sidebarMode = false,
@@ -295,14 +296,25 @@ GUIDELINES:
   if (sidebarMode) {
     return (
       <motion.div
-        initial={false}
+        initial={{ width: 55, opacity: 1 }}
         animate={{
-          width: !isOpen ? 0 : isCollapsed ? 52 : 380,
-          opacity: !isOpen ? 0 : 1,
+          width: !isOpen ? 55 : isCollapsed ? 55 : 380,
+          opacity: 1,
         }}
-        className="h-full border-l border-border bg-surface-2 flex flex-col relative shrink-0 overflow-hidden"
+        className="h-full border-l border-border bg-surface flex flex-col relative shrink-0 overflow-hidden z-[40]"
       >
-        {isCollapsed ? (
+        {!isOpen ? (
+          <div className="flex-1 h-full flex flex-col items-center border-l border-border/10 group pointer-events-none bg-surface">
+            <div className="h-14 w-full flex items-center justify-center border-b border-border/20">
+              <div
+                className="flex items-center justify-center text-accent/40 group-hover:text-accent cursor-pointer pointer-events-auto transition-all p-2 hover:bg-accent/10 rounded-[4px]"
+                onClick={() => onOpen && onOpen()}
+              >
+                <Sparkles className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+        ) : isCollapsed ? (
           <div className="h-14 flex flex-col items-center justify-center border-b border-border/20 bg-surface">
             <button
               onClick={() => setIsCollapsed(false)}

@@ -691,6 +691,7 @@ export default function App() {
               <CopilotView
                 isOpen={isCopilotOpen && view !== "grammar"}
                 onClose={handleCloseCopilot}
+                onOpen={() => handleOpenCopilot(null)}
                 api={api}
                 showToast={showToast}
                 sidebarMode={view !== "search" && view !== "settings"}

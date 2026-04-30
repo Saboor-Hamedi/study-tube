@@ -14,7 +14,7 @@ export default function GlobalNeuralMenu({
   onSave,
   onClose,
 }) {
-  const sidebarOffset = !isCopilotOpen ? 15 : isCollapsed ? 67 : 395;
+  const sidebarOffset = !isCopilotOpen ? 70 : isCollapsed ? 70 : 395;
 
   return (
     <motion.div
