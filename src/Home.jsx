@@ -190,19 +190,6 @@ const Home = ({ setView, vocabCount = 0, onOpenCapture }) => {
             </div>
           </div>
         </motion.div>
-
-        {/* Embedded Neural Forge Trigger */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onOpenCapture}
-          className="fixed bottom-24 right-12 p-4 bg-accent text-white rounded-full shadow-2xl shadow-accent/40 flex items-center gap-3 border border-white/20 group z-50"
-        >
-          <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center">
-            <Zap className="h-3.5 w-3.5 fill-white" />
-          </div>
-          <span className="text-[11px] font-black uppercase tracking-widest pr-2">Forge Insight</span>
-        </motion.button>
       </div>
 
       {/* Global Bottom Horizon Alignment (72px Baseline) */}
@@ -215,13 +202,17 @@ const Home = ({ setView, vocabCount = 0, onOpenCapture }) => {
           <div className="h-3 w-px bg-border/10" />
           <span className="text-[8px] font-black text-text/40 uppercase tracking-widest leading-none">System Load: 12%</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button className="px-3 py-1.5 bg-surface-3 hover:bg-surface-4 text-[8px] font-black uppercase tracking-widest rounded-[4px] border border-border/10 transition-all">
             Terminal
           </button>
-          <div className="h-7 w-7 rounded-full bg-accent text-white flex items-center justify-center shadow-lg shadow-accent/20 cursor-pointer hover:scale-105 transition-transform">
-            <Zap className="h-3.5 w-3.5 fill-white" />
-          </div>
+          <button 
+            onClick={onOpenCapture}
+            className="px-3 py-1.5 bg-accent hover:brightness-110 text-white text-[8px] font-black uppercase tracking-widest rounded-[4px] flex items-center gap-2 transition-all shadow-lg shadow-accent/20 border border-white/10"
+          >
+            <Zap className="h-2.5 w-2.5 fill-white" />
+            Forge Insight
+          </button>
         </div>
       </div>
     </div>

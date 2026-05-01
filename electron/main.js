@@ -678,6 +678,7 @@ function registerIpcHandlers() {
   safeHandle('settings:getTheme', () => readAppState().theme || 'dark')
   safeHandle('settings:setTheme', (_e, theme) => { writeAppState({ theme }); return theme })
   safeHandle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
+  safeHandle('shell:openExternal', (_e, url) => shell.openExternal(url))
   safeHandle('app:getVersion', () => app.getVersion())
 
   // ─── Auto-Updater ──────────────────────────────────────────────────────────

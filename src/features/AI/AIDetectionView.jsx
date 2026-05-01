@@ -99,40 +99,29 @@ export default function AIDetectionView() {
       <div className="flex-1 flex overflow-hidden">
         {/* Input Laboratory */}
         <div className="flex-1 flex flex-col border-r border-border bg-surface-2/30 overflow-hidden">
-          <div className="flex-1 p-8 overflow-y-auto custom-scroll">
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-[14px] font-black tracking-tight text-text/90">
-                    Source analysis window
-                  </h3>
-                  <p className="text-[10px] text-muted font-medium">
-                    Input raw research text for neural fingerprinting.
-                  </p>
-                </div>
-                <div className="text-[10px] font-black tabular-nums text-muted/40">
-                  {content.length} characters
-                </div>
-              </div>
+          <div className="flex-1 p-2 flex flex-col space-y-2">
+            <div className="flex-1 relative group">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Paste research content here for forensic scan..."
+                className="w-full h-full bg-surface border border-border p-4 text-[13px] leading-relaxed text-text outline-none transition-all rounded-[6px] resize-none font-outfit select-text relative z-10"
+                spellCheck={false}
+              />
+            </div>
 
-              <div className="relative group">
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Paste research content here for forensic scan..."
-                  className="w-full h-[400px] bg-surface border border-border p-6 text-[13px] leading-relaxed text-text outline-none focus:border-blue-500/30 transition-all rounded-[12px] resize-none font-outfit"
-                />
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <div className="px-2 py-1 bg-surface-2 border border-border rounded-[4px] text-[8px] font-black text-muted/40">
-                    UTF-8
-                  </div>
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">Density Monitor</span>
+                <div className="text-[11px] font-black tabular-nums text-muted/60 bg-surface-3/50 px-3 py-1.5 rounded-[4px] border border-border/50">
+                  {content.length.toLocaleString()} <span className="text-[8px] opacity-40">CHARS</span>
                 </div>
               </div>
 
               <button
                 onClick={handleScan}
                 disabled={isScanning || !content.trim()}
-                className={`w-full h-12 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[11px] tracking-tight shadow-xl ${
+                className={`flex-1 h-12 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[11px] tracking-tight shadow-xl ${
                   isScanning
                     ? "bg-blue-500/20 text-blue-400 animate-pulse cursor-wait"
                     : "bg-blue-500 text-white hover:brightness-110 shadow-blue-500/20 active:scale-[0.99]"

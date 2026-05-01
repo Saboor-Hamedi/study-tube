@@ -66,6 +66,7 @@ export const useStore = create((set, get) => ({
   setTheme: (val) => set((s) => {
     const theme = typeof val === 'function' ? val(s.theme) : val
     document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('study-theme', theme)
     return { theme }
   }),
 

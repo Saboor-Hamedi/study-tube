@@ -108,40 +108,29 @@ export default function PlagiarismView() {
       <div className="flex-1 flex overflow-hidden">
         {/* Input Laboratory */}
         <div className="flex-1 flex flex-col border-r border-border bg-surface-2/30 overflow-hidden">
-          <div className="flex-1 p-8 overflow-y-auto custom-scroll">
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-[14px] font-black tracking-tight text-text/90">
-                    Originality analysis window
-                  </h3>
-                  <p className="text-[10px] text-muted font-medium">
-                    Scan research text against 14B+ indexed academic sources.
-                  </p>
-                </div>
-                <div className="text-[10px] font-black tabular-nums text-muted/40">
-                  {content.length} characters
-                </div>
-              </div>
+          <div className="flex-1 p-2 flex flex-col space-y-2">
+            <div className="flex-1 relative group">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Paste research content here for originality audit..."
+                className="w-full h-full bg-surface border border-border p-4 text-[13px] leading-relaxed text-text outline-none transition-all rounded-[6px] resize-none font-outfit select-text relative z-10"
+                spellCheck={false}
+              />
+            </div>
 
-              <div className="relative group">
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Paste research content here for originality audit..."
-                  className="w-full h-[400px] bg-surface border border-border p-6 text-[13px] leading-relaxed text-text outline-none focus:border-red-500/30 transition-all rounded-[12px] resize-none font-outfit"
-                />
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <div className="px-2 py-1 bg-surface-2 border border-border rounded-[4px] text-[8px] font-black text-muted/40">
-                    DEEP_SCAN_MODE
-                  </div>
+            <div className="flex items-center justify-between gap-6 px-1 py-1">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">Density Monitor</span>
+                <div className="text-[11px] font-black tabular-nums text-muted/60 bg-surface-3/50 px-3 py-1.5 rounded-[4px] border border-border/50">
+                  {content.length.toLocaleString()} <span className="text-[8px] opacity-40">CHARS</span>
                 </div>
               </div>
 
               <button
                 onClick={handleScan}
                 disabled={isScanning || !content.trim()}
-                className={`w-full h-12 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[11px] tracking-tight shadow-xl ${
+                className={`flex-1 h-12 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[11px] tracking-tight shadow-xl ${
                   isScanning
                     ? "bg-red-500/20 text-red-400 animate-pulse cursor-wait"
                     : "bg-red-500 text-white hover:brightness-110 shadow-red-500/20 active:scale-[0.99]"
@@ -201,20 +190,20 @@ export default function PlagiarismView() {
                   <div className="flex items-center justify-between relative z-10">
                     <div className="space-y-1">
                       <h4 className="text-[14px] font-black tracking-tight text-text">
-                        Writing integrity score
+                        Originality Report
                       </h4>
                       <p className="text-[9px] text-muted font-medium">
-                        Composite originality and forensic audit rating.
+                        Measures how much of this text is your own unique writing.
                       </p>
                     </div>
                     <div className="flex flex-col items-end">
                       <span
                         className={`text-[32px] font-black tabular-nums tracking-tighter ${results.originality > 80 ? "text-emerald-400" : "text-red-400"}`}
                       >
-                        {results.originality}/100
+                        {results.originality}%
                       </span>
-                      <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                        Verified clean
+                      <span className={`text-[8px] font-black uppercase tracking-widest ${results.originality > 80 ? "text-emerald-400/60" : "text-red-400/60"}`}>
+                        {results.originality > 85 ? "Authentic" : results.originality > 60 ? "Minor Overlap" : "Critical Overlap"}
                       </span>
                     </div>
                   </div>
@@ -229,7 +218,7 @@ export default function PlagiarismView() {
                   <div className="grid grid-cols-3 gap-4 pt-2">
                     <div className="space-y-1">
                       <p className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                        Originality
+                        Your Writing
                       </p>
                       <p className="text-[12px] font-black text-emerald-400">
                         {results.originality}%
@@ -237,7 +226,7 @@ export default function PlagiarismView() {
                     </div>
                     <div className="space-y-1 border-x border-border/10 px-4 text-center">
                       <p className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                        Similarity
+                        Copied Content
                       </p>
                       <p className="text-[12px] font-black text-red-400">
                         {results.similarity}%
@@ -245,7 +234,7 @@ export default function PlagiarismView() {
                     </div>
                     <div className="space-y-1 text-end">
                       <p className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                        Confidence
+                        Search Accuracy
                       </p>
                       <p className="text-[12px] font-black text-blue-400">
                         99.8%
@@ -288,7 +277,7 @@ export default function PlagiarismView() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-[10px] font-black text-muted tracking-tight">
-                      Source correlation matrix
+                      Database Matches Found
                     </span>
                     <Globe className="h-3.5 w-3.5 text-muted/20" />
                   </div>
@@ -296,6 +285,7 @@ export default function PlagiarismView() {
                     {results.matches.map((match, idx) => (
                       <div
                         key={idx}
+                        onClick={() => window.youtubeAPI.openExternal(match.url)}
                         className="p-4 bg-surface-2 border border-border rounded-[10px] space-y-3 group/source hover:border-red-400/20 transition-all cursor-pointer shadow-sm hover:shadow-lg"
                       >
                         <div className="flex items-center justify-between">

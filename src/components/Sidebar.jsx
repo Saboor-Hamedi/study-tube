@@ -52,7 +52,10 @@ export default function Sidebar({
   theme,
   onToggleTheme,
 }) {
-  const { isSidebarCollapsed: isCollapsed, setIsSidebarCollapsed: setIsCollapsed } = useStore();
+  const {
+    isSidebarCollapsed: isCollapsed,
+    setIsSidebarCollapsed: setIsCollapsed,
+  } = useStore();
   const [renamingId, setRenamingId] = useState(null);
   const [renamingValue, setRenamingValue] = useState("");
   const [pinnedItems, setPinnedItems] = useState([]);
@@ -124,7 +127,7 @@ export default function Sidebar({
             )}
             <div className="space-y-1">
               {[
-                { id: "home", name: "Neural Hub", icon: LayoutGrid },
+                { id: "home", name: "Home", icon: LayoutGrid },
                 { id: "search", name: "Video Intel", icon: Search },
                 { id: "vocab", name: "Research Vault", icon: Library },
                 { id: "class", name: "My Class", icon: GraduationCap },
@@ -138,7 +141,10 @@ export default function Sidebar({
               ].map((item) => {
                 const active = view === item.id;
                 return (
-                  <div key={item.id} className="group relative flex justify-center">
+                  <div
+                    key={item.id}
+                    className="group relative flex justify-center"
+                  >
                     {!isCollapsed && (
                       <div
                         className={`absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 transition-all duration-300 ${active ? "bg-blue-400 opacity-100" : "bg-transparent opacity-0"}`}
@@ -146,7 +152,9 @@ export default function Sidebar({
                     )}
                     <button
                       onClick={() => setView?.(item.id)}
-                      style={isCollapsed ? { width: "40px", height: "40px" } : {}}
+                      style={
+                        isCollapsed ? { width: "40px", height: "40px" } : {}
+                      }
                       className={`flex items-center transition-all duration-200 text-left shrink-0 ${
                         isCollapsed
                           ? `justify-center rounded-full border-0 ${active ? "bg-blue-500/10 text-blue-400" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
@@ -174,7 +182,6 @@ export default function Sidebar({
               })}
             </div>
           </div>
-
         </div>
 
         <div
@@ -182,7 +189,7 @@ export default function Sidebar({
         >
           <div className="flex flex-col gap-1 w-full">
             <button
-              onClick={() => setView('settings')}
+              onClick={() => setView("settings")}
               style={isCollapsed ? { width: "40px", height: "40px" } : {}}
               className={`flex items-center transition-all duration-200 text-left ${
                 isCollapsed
@@ -191,7 +198,9 @@ export default function Sidebar({
               }`}
             >
               <Settings className="h-3.5 w-3.5 shrink-0" />
-              {!isCollapsed && <span className="text-[11px] font-black">Settings</span>}
+              {!isCollapsed && (
+                <span className="text-[11px] font-black">Settings</span>
+              )}
             </button>
           </div>
         </div>

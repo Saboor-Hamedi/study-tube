@@ -23,6 +23,8 @@ export default function Profile({
   onExpand,
   api = window.youtubeAPI,
   showToast,
+  displayLimit,
+  setDisplayLimit,
 }) {
   const [activeTab, setActiveTab] = useState("profile");
   

@@ -115,41 +115,23 @@ const InsightDetailView = ({
   if (!item) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col h-full bg-background overflow-hidden relative"
-    >
-      <div
-        className="flex-1 overflow-y-auto scrollbar-thin relative"
-        ref={contentRef}
-        onMouseUp={handleSelection}
-      >
-        <div
-          className={`max-w-4xl mx-auto p-12 bg-white shadow-sm border-x border-border/10 relative z-10 ${isEditing ? "flex flex-col h-full" : "min-h-full"}`}
-        >
-          {/* Neural Analytics Rail */}
-          <div className="mb-8 flex items-center gap-3 border-b border-border/5 pb-4">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-muted font-black uppercase tracking-[0.2em] opacity-40">
-                Insight Analytics
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] text-accent/40 font-mono tracking-tighter uppercase">
-                  {new Date(item.date).toLocaleDateString()}
-                </span>
-                <span className="text-[9px] text-muted font-black uppercase tracking-[0.2em]">
-                  {stats.charCount} chars • {stats.readTime}m read
-                </span>
-              </div>
-            </div>
-          </div>
+    <div className="flex h-full bg-background overflow-hidden select-text">
+      <div className="flex-1 flex flex-col overflow-hidden relative px-2 pt-3 pb-0">
+        <div className="flex-1 overflow-hidden flex flex-col bg-surface border border-border/10 rounded-[12px] shadow-black/10 relative">
+          <div
+            className="flex-1 overflow-y-auto custom-scroll relative p-8 lg:p-12 flex flex-col"
+            ref={contentRef}
+            onMouseUp={handleSelection}
+          >
+            <div className="max-w-4xl mx-auto relative z-10 flex flex-col flex-1 w-full">
+
 
           {isEditing ? (
             <textarea
               value={editVal}
               onChange={(e) => setEditVal(e.target.value)}
-              className="w-full flex-1 bg-surface-2 border border-border/40 rounded-[8px] p-5 text-[14px] leading-relaxed text-text focus:outline-none focus:border-accent/40 resize-none scrollbar-thin"
+              className="w-full flex-1 bg-transparent border-none p-0 text-[16px] leading-[1.8] text-text focus:outline-none resize-none custom-scroll font-light tracking-wide"
+              placeholder="Initialize neural drafting..."
               autoFocus
             />
           ) : (
@@ -180,24 +162,177 @@ const InsightDetailView = ({
               </div>
             </div>
           )}
+          </div>
+
+          {/* Neural Selection Overlay */}
+          {selectionRects.map((rect, i) => (
+            <div
+              key={i}
+              className="absolute bg-accent/10 pointer-events-none z-0"
+              style={{
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+              }}
+            />
+          ))}
         </div>
 
-        {/* Neural Selection Overlay */}
-        {selectionRects.map((rect, i) => (
-          <div
-            key={i}
-            className="absolute bg-accent/10 pointer-events-none z-0"
-            style={{
-              top: rect.top,
-              left: rect.left,
-              width: rect.width,
-              height: rect.height,
-            }}
-          />
-        ))}
+        {/* Integrated Statistics Footer (72px Baseline) */}
+        <div className="h-[72px] border-t border-border/10 bg-surface-2/50 px-6 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-8">
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
+                Density
+              </span>
+              <span className="text-[12px] font-black tabular-nums text-text">
+                {stats.charCount} <span className="text-[8px] opacity-40">CHARS</span>
+              </span>
+            </div>
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
+                Volume
+              </span>
+              <span className="text-[12px] font-black tabular-nums text-text">
+                {stats.wordCount} <span className="text-[8px] opacity-40">WORDS</span>
+              </span>
+            </div>
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
+                Horizon
+              </span>
+              <span className="text-[12px] font-black tabular-nums text-text">
+                {stats.readTime} <span className="text-[8px] opacity-40">MIN READ</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[8px] font-black text-text/40 uppercase tracking-[0.2em]">
+                Neural: Synced
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
-    </motion.div>
-  );
+    </div>
+
+    {/* Insight Dashboard Panel */}
+    <div className="w-[320px] shrink-0 bg-surface flex flex-col border-l border-border">
+      <div className="h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
+        <div className="flex items-center gap-3">
+          <Sparkles className="h-4 w-4 text-accent" />
+          <h2 className="text-[11px] font-black tracking-tight uppercase">
+            Insight Hub
+          </h2>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-surface-3 rounded-[4px] text-muted transition-all"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto custom-scroll p-4 space-y-6">
+        {/* Metadata Grid */}
+        <div className="space-y-4">
+          <div className="bg-surface-2/50 border border-border/10 p-4 rounded-[10px] space-y-4">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em] mb-1 opacity-50">
+                Insight Analytics
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-text/80">
+                  {new Date(item.date).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em] mb-1 opacity-50">
+                  Density
+                </span>
+                <span className="text-[11px] font-mono font-bold text-text/80">
+                  {stats.charCount} <span className="text-[8px] opacity-40">CHARS</span>
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em] mb-1 opacity-50">
+                  Volume
+                </span>
+                <span className="text-[11px] font-mono font-bold text-text/80">
+                  {stats.wordCount} <span className="text-[8px] opacity-40">WORDS</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em] mb-1 opacity-50">
+                Document ID
+              </span>
+              <span className="text-[10px] font-mono font-bold text-accent/60 truncate">
+                {item.id || item.date}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Hub */}
+        <div className="space-y-3">
+          <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em] px-1">
+            Actions
+          </span>
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className={`h-11 rounded-[8px] flex items-center justify-center gap-2 transition-all font-black text-[11px] border ${
+                isEditing
+                  ? "bg-accent text-white border-accent shadow-lg shadow-accent/20"
+                  : "bg-surface-3 text-muted hover:text-text border-border/10 hover:bg-surface-4"
+              }`}
+            >
+              {isEditing ? (
+                <>
+                  <Save className="h-4 w-4" /> Save Modification
+                </>
+              ) : (
+                <>
+                  <Pencil className="h-4 w-4" /> Edit Definition
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={() => onOpenCopilot?.(item)}
+              className="h-11 rounded-[8px] bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all font-black text-[11px] flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" /> Analyze with Copilot
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Global Action Baseline */}
+      <div className="p-3 border-t border-border bg-surface shrink-0 flex gap-2 h-[72px] items-center">
+        <button
+          onClick={onClose}
+          className="flex-1 h-11 rounded-[10px] bg-surface-3 border border-border text-text hover:bg-surface-4 transition-all font-black text-[11px] tracking-tight flex items-center justify-center gap-2"
+        >
+          Close Insight
+        </button>
+      </div>
+    </div>
+  </div>
+);
 };
 
 export default memo(InsightDetailView);

@@ -389,8 +389,9 @@ export default function App() {
     (ctx) => {
       setCopilotContext(ctx);
       setIsCopilotOpen(true);
+      setIsCopilotCollapsed(false); // Force expansion on open to prevent 2-click bug
     },
-    [setCopilotContext, setIsCopilotOpen],
+    [setCopilotContext, setIsCopilotOpen, setIsCopilotCollapsed],
   );
 
   const handleCloseCopilot = useCallback(() => {
@@ -795,31 +796,7 @@ export default function App() {
         api={api}
       />
 
-      {view !== "settings" && view !== "grammar" && view !== "home" && (
-        <GlobalNeuralMenu
-          onOpenCapture={() => setIsCaptureOpen(true)}
-          onOpenCopilot={() => {
-            setCopilotContext(null);
-            setIsCopilotOpen(true);
-          }}
-          stats={vocabStats}
-          isCopilotOpen={isCopilotOpen}
-          isCaptureOpen={isCaptureOpen}
-          isCollapsed={isCopilotCollapsed}
-          view={view}
-          // Card Actions
-          isEditing={isEditingDetail}
-          onEdit={
-            view === "research-detail" ? () => setIsEditingDetail(true) : null
-          }
-          onSave={
-            view === "research-detail"
-              ? () => setDetailSaveTrigger((t) => t + 1)
-              : null
-          }
-          onClose={view === "research-detail" ? () => setView("vocab") : null}
-        />
-      )}
+
 
       <Notification toast={toast} onClose={() => setToast(null)} />
     </div>

@@ -40,6 +40,25 @@ class DetectionResponse(BaseModel):
     classification: str
     details: dict
 
+def preprocess_text(text: str) -> str:
+    """
+    CONSERVATIVE PRE-PROCESSOR: Removes decorative bullets without altering rhythm.
+    We removed the aggressive period-adding and prose-joining logic because it 
+    was 'smoothing' the AI's natural signature, reducing detection accuracy.
+    This version only strips bullet markers while preserving original punctuation 
+    and line breaks.
+    """
+    lines = text.split('\n')
+    processed_lines = []
+    
+    for line in lines:
+        # Only strip leading decorative bullets (-, *, •)
+        # We keep numbers (1.) because they are often part of the neural flow.
+        clean = re.sub(r'^[\-\*\•]\s*', '', line)
+        processed_lines.append(clean)
+        
+    return "\n".join(processed_lines)
+
 def calculate_perplexity(text: str) -> float:
     """
     Calculates perplexity using a fixed-window approach optimized for speed.
@@ -85,69 +104,65 @@ def calculate_burstiness(text: str) -> float:
 
 def determine_classification(ppl: float, burst: float, length: int) -> dict:
     """
-    RECALIBRATED for high-density neural detection.
-    Modern AI text (GPT-4/Claude) often generates perplexity in the 25-55 range.
-    We are increasing weights to align with professional scanners (GPTZero).
+    NEURAL SIGMOID SCORING (v4.0)
+    Implements a non-linear probability curve to match modern LLM benchmarks.
+    This creates a much sharper distinction between 'Advanced AI' and 'Human' text.
     """
-    score = 0.0
-    details = {
-        "ppl_interpretation": "",
-        "burst_interpretation": ""
-    }
+    import math
 
-    # 1. Perplexity Analysis (Aggressive Scoring)
-    if ppl < 30:
-        score += 75
-        details["ppl_interpretation"] = "Neural Pattern Detected (High Certainty)"
-    elif ppl < 55:
-        score += 55
-        details["ppl_interpretation"] = "Highly Predictable Structure"
-    elif ppl < 85:
-        score += 25
-        details["ppl_interpretation"] = "Moderate Complexity"
-    else:
-        score -= 20
-        details["ppl_interpretation"] = "Human-like Complexity"
+    # 1. Neural Predictability Sigmoid
+    # Center Point (50% score) at PPL 100
+    # Steepness factor: 25
+    # For GPT-4 text (PPL ~80-120), this curve is very sensitive.
+    ppl_score = 100 / (1 + math.exp((ppl - 100) / 25))
+    
+    # 2. Structural Monotony Sigmoid
+    # Center Point (50% score) at Burst 0.4
+    # Steepness factor: 0.1
+    burst_score = 100 / (1 + math.exp((burst - 0.4) / 0.1))
 
-    # 2. Burstiness Analysis (Variance in Sentence Length)
-    if burst < 0.25:
-        score += 20
-        details["burst_interpretation"] = "Low Structural Variance"
-    elif burst < 0.45:
-        score += 10
-        details["burst_interpretation"] = "Standard Academic Flow"
-    else:
-        score -= 15
-        details["burst_interpretation"] = "High Linguistic Variance"
+    # 3. Hybrid Confidence Weighting
+    # Predictability is the primary forensic marker (70% weight)
+    base_prob = (ppl_score * 0.70) + (burst_score * 0.30)
+    
+    # 4. The 'Neural Signature' Synergy
+    # If both markers point to AI, the probability accelerates toward 99%.
+    final_prob = base_prob
+    if ppl_score > 70 and burst_score > 70:
+        final_prob = max(final_prob, 96.0)
+    elif ppl_score > 50 and burst_score > 50:
+        final_prob += 20
 
-    # 3. Synergy & Length Bonus
-    if ppl < 50 and burst < 0.35:
-        score += 15 # Strong signal overlap
+    # 5. Length Compensation
+    if length > 300 and final_prob > 60:
+        final_prob += 5
 
-    # 4. Short Text Penalty Mitigation
-    # If text is short, we rely more on PPL than Burstiness
-    if length < 50:
-        score = min(score, 70) if ppl > 40 else score
-        details["warning"] = "Limited sample size"
-
-    # Clamp between 1 and 99
-    final_prob = max(1, min(99, score))
+    # Clamp to 1-99.9
+    final_prob = max(1, min(99.9, final_prob))
     
     classification = "Human"
-    if final_prob > 70:
+    if final_prob > 80:
         classification = "Likely AI"
-    elif final_prob > 35:
+    elif final_prob > 45:
         classification = "Mixed / Neural-Assist"
         
     return {
-        "probability": final_prob,
+        "probability": round(final_prob, 2),
         "classification": classification,
-        "details": details
+        "details": {
+            "ppl_interpretation": "Neural Pattern" if ppl_score > 50 else "Natural Complexity",
+            "burst_interpretation": "Robotic Monotony" if burst_score > 50 else "Human Rhythm",
+            "ppl_score": round(ppl_score, 2),
+            "burst_score": round(burst_score, 2)
+        }
     }
 
 @app.post("/detect", response_model=DetectionResponse)
 async def detect_ai(request: DetectionRequest):
     text = request.text.strip()
+    
+    # PRE-PROCESSING: Re-thread fragmented structures for neural accuracy
+    processed_text = preprocess_text(text)
     
     if not text:
         raise HTTPException(status_code=400, detail="Empty text provided")
@@ -156,7 +171,9 @@ async def detect_ai(request: DetectionRequest):
         raise HTTPException(status_code=400, detail="Text too short for analysis")
 
     try:
-        perplexity = calculate_perplexity(text)
+        # Use processed_text for neural analysis
+        perplexity = calculate_perplexity(processed_text)
+        # Use original text structure for burstiness (it relies on sentence length variance)
         burstiness = calculate_burstiness(text)
         
         result = determine_classification(perplexity, burstiness, len(text.split()))

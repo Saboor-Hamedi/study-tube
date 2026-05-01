@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
   cancelDownload: (taskId) => ipcRenderer.invoke('download:cancel', taskId),
   openFilePath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
+  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   // Load grammar 
   checkGrammar: (text) => ipcRenderer.invoke('grammar:check', text),
 
