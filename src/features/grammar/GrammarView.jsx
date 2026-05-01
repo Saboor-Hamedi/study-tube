@@ -87,13 +87,12 @@ const GrammarView = ({ grammars, setView }) => {
       {/* Content Stream */}
       <div className="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-12 pt-2 pb-12 grammar-scroll-area">
         <div className="max-w-4xl mx-auto">
-          
           {/* Integrated Control Hub (Ghost Sticky) */}
           <div className="flex items-center justify-between sticky top-0 z-10 py-4 pointer-events-none">
             <div className="flex items-center gap-4 pointer-events-auto">
-              {current?.name?.toLowerCase() !== 'introduction.md' && (
-                <button 
-                  onClick={() => handleNavigate('introduction.md')}
+              {current?.name?.toLowerCase() !== "introduction.md" && (
+                <button
+                  onClick={() => handleNavigate("introduction.md")}
                   className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-accent/30 hover:text-accent transition-colors group"
                 >
                   <div className="h-3 w-3 rounded-full bg-accent/5 flex items-center justify-center group-hover:bg-accent/10 transition-colors">
@@ -105,9 +104,9 @@ const GrammarView = ({ grammars, setView }) => {
             </div>
 
             <div className="flex items-center gap-1.5 pointer-events-auto">
-              <button 
-                disabled={safeIndex <= 0} 
-                onClick={() => setIndex(i => i - 1)}
+              <button
+                disabled={safeIndex <= 0}
+                onClick={() => setIndex((i) => i - 1)}
                 className="p-1.5 hover:bg-surface-3 text-muted hover:text-accent disabled:opacity-10 transition-all rounded-full"
               >
                 <ChevronLeft className="h-3 w-3" />
@@ -117,7 +116,7 @@ const GrammarView = ({ grammars, setView }) => {
               </div>
               <button
                 disabled={safeIndex >= filteredGrammars.length - 1}
-                onClick={() => setIndex(i => i + 1)}
+                onClick={() => setIndex((i) => i + 1)}
                 className="p-1.5 hover:bg-surface-3 text-muted hover:text-accent disabled:opacity-10 transition-all rounded-full"
               >
                 <ChevronRight className="h-3 w-3" />
@@ -129,11 +128,11 @@ const GrammarView = ({ grammars, setView }) => {
             content={current?.content}
             onNavigate={handleNavigate}
           />
-          
+
           <div className="pt-12 border-t border-border/10">
-             <p className="text-[10px] text-muted/40 font-bold uppercase tracking-[0.2em] text-center italic">
-               End of Neural Archive Block
-             </p>
+            <p className="text-[10px] text-muted/40 font-bold uppercase tracking-[0.2em] text-center italic">
+              End of Neural Archive Block
+            </p>
           </div>
         </div>
       </div>

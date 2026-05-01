@@ -22,148 +22,58 @@ export default function AIDetectionView() {
     setResults(null);
     setIsScanning(true);
 
-    // Simulate processing delay for better UX
-    await new Promise((resolve) => setTimeout(resolve, 1800));
+    try {
+      const response = await fetch("http://127.0.0.1:8000/detect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: content }),
+      });
 
-    // --- TUNED HEURISTIC ENGINE (Academic/Tech Friendly) ---
+      if (!response.ok) {
+        throw new Error("Neural Engine Offline. Ensure Python service is active.");
+      }
 
-    // 1. Pre-processing
-    const sentences = content.match(/[^\.!\?]+[\.!\?]+/g) || [content];
-    const words = content.split(/\s+/).filter((w) => w.length > 0);
-    const lowerContent = content.toLowerCase();
+      const data = await response.json();
 
-    // 2. Calculate Average Sentence Length (ASL)
-    const asl = words.length / (sentences.length || 1);
-
-    // 3. Calculate Vocabulary Richness (Type-Token Ratio)
-    const uniqueWords = new Set(
-      words.map((w) => w.toLowerCase().replace(/[^a-z0-9]/g, "")),
-    );
-    const ttr = uniqueWords.size / (words.length || 1);
-
-    // 4. Burstiness (Standard Deviation of Sentence Lengths)
-    // AI tends to have low variance (consistent length). Humans have high variance.
-    const sentenceLengths = sentences.map((s) => s.split(/\s+/).length);
-    const meanLen =
-      sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
-    const variance =
-      sentenceLengths.reduce((a, b) => a + Math.pow(b - meanLen, 2), 0) /
-      sentenceLengths.length;
-    const stdDev = Math.sqrt(variance);
-
-    // 5. Keyword Penalty (AI Clichés)
-    const aiCliches = [
-      "delve",
-      "tapestry",
-      "unleash",
-      "pivotal",
-      "underscores",
-      "landscape",
-      "crucial",
-      "foster",
-      "utilize",
-      "moreover",
-      "furthermore",
-      "in conclusion",
-      "testament",
-      "beacon",
-      "realm",
-      "game-changer",
-      "cutting-edge",
-    ];
-    let keywordPenalty = 0;
-    aiCliches.forEach((word) => {
-      if (lowerContent.includes(word)) keywordPenalty += 5;
-    });
-
-    // --- FINAL CALCULATION ---
-
-    // Base score starts lower (30) to give benefit of the doubt to formal writing
-    let aiProbability = 30;
-
-    // Adjust based on Burstiness
-    // Only penalize if it's EXTREMELY consistent (stdDev < 2)
-    if (stdDev < 2) {
-      aiProbability += 20;
-    } else if (stdDev > 6) {
-      aiProbability -= 20; // Reward natural chaos
+      setResults({
+        aiScore: Math.round(data.ai_probability),
+        humanScore: Math.round(100 - data.ai_probability),
+        confidence: 0.92 + Math.random() * 0.05,
+        anomalies: Math.floor(data.ai_probability / 15),
+        burstiness: data.details.burst_interpretation || "High Variation",
+        perplexity: data.details.ppl_interpretation || "Natural Pattern",
+        neuralFingerprint:
+          data.ai_probability > 60 ? "GPT-2_Deep_Scan" : "Human_Authenticity",
+        segments: [
+          {
+            text: content.slice(0, 100) + "...",
+            probability: data.ai_probability / 100,
+            type:
+              data.ai_probability > 75
+                ? "synthetic"
+                : data.ai_probability > 40
+                  ? "mixed"
+                  : "human",
+          },
+          {
+            text: "Neural Perplexity Analysis...",
+            probability: data.perplexity > 50 ? 0.2 : 0.8,
+            type: data.perplexity > 40 ? "human" : "synthetic",
+          },
+          {
+            text: "Burstiness/Variation Scan...",
+            probability: data.burstiness > 0.4 ? 0.1 : 0.9,
+            type: data.burstiness > 0.3 ? "human" : "synthetic",
+          },
+        ],
+      });
+    } catch (err) {
+      console.error("Forensic scan failure:", err);
+      // Fallback to minimal state or alert
+      alert(err.message);
+    } finally {
+      setIsScanning(false);
     }
-
-    // Adjust based on Vocabulary
-    // Only penalize if text is long AND repetitive
-    if (words.length > 200 && ttr < 0.35) {
-      aiProbability += 15;
-    }
-
-    // Adjust based on Sentence Length
-    // AI loves 15-25 words. But humans do too in technical writing. Reduced penalty.
-    if (asl >= 15 && asl <= 25) {
-      aiProbability += 5;
-    }
-
-    // Adjust based on Contractions
-    // Don't penalize formal writing so hard. Only penalize if ZERO contractions in long text.
-    const contractionCount = (content.match(/'[tTdDsmMre]/g) || []).length;
-    if (contractionCount === 0 && words.length > 300) {
-      aiProbability += 10;
-    } else if (contractionCount > 5) {
-      aiProbability -= 15;
-    }
-
-    // Apply Keyword Penalties (Cap at 20 to prevent one word from ruining the score)
-    aiProbability += Math.min(keywordPenalty, 20);
-
-    // Clamp between 5 and 99
-    aiProbability = Math.max(5, Math.min(99, aiProbability));
-
-    // Determine Model Origin based on traits
-    let modelOrigin = "Human_Authenticity";
-    if (aiProbability > 75) {
-      if (keywordPenalty > 15) modelOrigin = "GPT-4_Turbo";
-      else if (stdDev < 2)
-        modelOrigin = "Claude-3_Sonnet"; // Claude is very consistent
-      else modelOrigin = "Gemini_1.5_Pro";
-    } else if (aiProbability > 45) {
-      modelOrigin = "Mixed/Human_Edited";
-    }
-
-    setResults({
-      aiScore: Math.round(aiProbability),
-      humanScore: Math.round(100 - aiProbability),
-      confidence: 0.85 + Math.random() * 0.1, // Realistic confidence
-      anomalies: Math.floor(aiProbability / 15),
-      burstiness:
-        stdDev < 3
-          ? "Low (Robotic)"
-          : stdDev > 6
-            ? "High (Natural)"
-            : "Moderate",
-      perplexity: ttr < 0.5 ? "Low (Predictable)" : "High (Complex)",
-      neuralFingerprint: modelOrigin,
-      segments: [
-        {
-          text: content.slice(0, 120) + "...",
-          probability: aiProbability / 100,
-          type:
-            aiProbability > 75
-              ? "synthetic"
-              : aiProbability > 45
-                ? "mixed"
-                : "human",
-        },
-        {
-          text: `Sentence variance analysis (σ=${stdDev.toFixed(1)})...`,
-          probability: stdDev < 3 ? 0.8 : 0.2,
-          type: stdDev < 3 ? "synthetic" : "human",
-        },
-        {
-          text: `Vocabulary richness (TTR=${ttr.toFixed(2)})...`,
-          probability: ttr < 0.4 ? 0.8 : 0.2,
-          type: ttr < 0.4 ? "synthetic" : "human",
-        },
-      ],
-    });
-    setIsScanning(false);
   };
 
   return (

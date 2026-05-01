@@ -12,6 +12,7 @@ import Activitybar from "./components/Activitybar";
 import VideoView from "./features/video-intel/VideoView";
 import LibraryView from "./features/research-vault/LibraryView";
 import CopilotView from "./features/neural-chat/CopilotView";
+import PlagiarismView from "./features/AI/PlagiarismView";
 import SettingsView from "./features/settings/SettingsView";
 import Profile from "./features/users/Profile";
 import EditorView from "./features/editor/EditorView";
@@ -26,7 +27,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
 import GrammarView from "./features/grammar/GrammarView";
 import AIDetectionView from "./features/AI/AIDetectionView";
-import PlagiarismView from "./features/AI/PlagiarismView";
+import Home from "./Home";
+
 
 export default function App() {
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
@@ -306,6 +308,29 @@ export default function App() {
     return () => clearInterval(pulse);
   }, [api, syncStats, syncHistory]);
 
+  // Global Neural Search Logic (FTS)
+  useEffect(() => {
+    const search = async () => {
+      if (!libQuery.trim()) {
+        setLibResults([]);
+        setIsLibSearching(false);
+        return;
+      }
+      setIsLibSearching(true);
+      try {
+        const results = await api.searchLibraryFTS(libQuery);
+        setLibResults(results || []);
+      } catch (err) {
+        console.error("FTS Search Failure", err);
+      } finally {
+        setIsLibSearching(false);
+      }
+    };
+
+    const timer = setTimeout(search, 100);
+    return () => clearTimeout(timer);
+  }, [libQuery, api]);
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
@@ -485,6 +510,8 @@ export default function App() {
               view === "vocab" ||
               view === "research-detail" ||
               view === "editor" ||
+              view === "home" ||
+              view === "profile" ||
               view === "grammar"
                 ? {
                     ...libraryProps,
@@ -562,6 +589,21 @@ export default function App() {
 
               <main className="flex-1 relative overflow-hidden">
                 <AnimatePresence mode="wait">
+                  {view === "home" && (
+                    <motion.div
+                      key="home"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0"
+                    >
+                      <Home
+                        setView={setView}
+                        vocabCount={vocabStats?.total || 0}
+                        onOpenCapture={() => setIsCaptureOpen(true)}
+                      />
+                    </motion.div>
+                  )}
                   {view === "search" && (
                     <motion.div
                       key="search"
@@ -753,7 +795,7 @@ export default function App() {
         api={api}
       />
 
-      {view !== "settings" && view !== "grammar" && (
+      {view !== "settings" && view !== "grammar" && view !== "home" && (
         <GlobalNeuralMenu
           onOpenCapture={() => setIsCaptureOpen(true)}
           onOpenCopilot={() => {

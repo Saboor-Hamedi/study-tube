@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "npm run dev:electron",
     "dev:web": "vite --port 5173 --strictPort",
-    "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\"",
+    "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\" \"npm:python:dev\"",
+    "python:dev": "python electron/services/ai_detection.py",
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",
     "build": "vite build",

@@ -94,27 +94,7 @@ export default function LibraryView({
     loadLog()
   }, [api])
 
-  useEffect(() => {
-    const search = async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults([])
-        setIsSearching(false)
-        return
-      }
-      setIsSearching(true)
-      try {
-        const results = await api.searchLibraryFTS(searchQuery)
-        setSearchResults(results || [])
-      } catch (err) {
-        console.error('FTS Search Failure', err)
-      } finally {
-        setIsSearching(false)
-      }
-    }
 
-    const timer = setTimeout(search, 100)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
 
   useEffect(() => {
     const handleClickOutside = (e) => {

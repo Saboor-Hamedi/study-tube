@@ -50,6 +50,8 @@ export default function Header({
         {(view === "vocab" ||
           view === "research-detail" ||
           view === "editor" ||
+          view === "home" ||
+          view === "profile" ||
           view === "grammar") &&
           librarySearch && (
             <div className="relative group">

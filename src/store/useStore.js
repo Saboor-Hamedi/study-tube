@@ -6,9 +6,9 @@ import { create } from 'zustand'
  */
 export const useStore = create((set, get) => ({
   // --- Research Archive State ---
-  vocabStats: null,
+  vocabStats: { total: 0, collections: [] },
   savePath: '',
-  view: 'search',
+  view: 'home',
   selectedResearchNode: null,
   vocab: [],
   collections: [],

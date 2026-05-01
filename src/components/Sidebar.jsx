@@ -22,6 +22,8 @@ import {
   User as UserIcon,
   BarChart2,
   Cpu,
+  ClipboardCheck,
+  LayoutGrid,
 } from "lucide-react";
 import { DroppableFolder } from "../features/research-vault/DraggableCard";
 import { useState, useMemo } from "react";
@@ -122,7 +124,9 @@ export default function Sidebar({
             )}
             <div className="space-y-1">
               {[
-                { id: "search", name: "Home", icon: Search },
+                { id: "home", name: "Neural Hub", icon: LayoutGrid },
+                { id: "search", name: "Video Intel", icon: Search },
+                { id: "vocab", name: "Research Vault", icon: Library },
                 { id: "class", name: "My Class", icon: GraduationCap },
                 { id: "editor", name: "Analytical Writing", icon: FileText },
                 { id: "assignment", name: "Writing Assignment", icon: Pencil },
@@ -174,7 +178,7 @@ export default function Sidebar({
         </div>
 
         <div
-          className={`p-3 border-t border-border bg-surface-3 transition-colors duration-500 flex flex-col gap-2 ${isCollapsed ? "items-center" : ""}`}
+          className={`px-3 border-t border-border bg-surface-3 transition-colors duration-500 flex flex-col justify-center h-[72px] ${isCollapsed ? "items-center" : ""}`}
         >
           <div className="flex flex-col gap-1 w-full">
             <button

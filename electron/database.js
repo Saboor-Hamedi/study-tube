@@ -34,6 +34,7 @@ export function initDatabase() {
       archived INTEGER DEFAULT 0,
       collection TEXT,
       type TEXT,
+      metadata TEXT,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
@@ -105,6 +106,18 @@ export function initDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  // 6. Migrations: Add metadata column if missing
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(library)").all();
+    const hasMetadata = tableInfo.some(col => col.name === 'metadata');
+    if (!hasMetadata) {
+      db.exec("ALTER TABLE library ADD COLUMN metadata TEXT");
+      console.log("[SQLITE] Migration: Added metadata column to library table");
+    }
+  } catch (e) {
+    console.error("[SQLITE] Migration Failure:", e.message);
+  }
 }
 
 
@@ -183,8 +196,8 @@ export function getCollectionStats() {
 
 export function saveVocabItem(item) {
   const stmt = db.prepare(`
-    INSERT INTO library (id, text, definition, videoTitle, timestamp, date, archived, collection, type)
-    VALUES (@id, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type)
+    INSERT INTO library (id, text, definition, videoTitle, timestamp, date, archived, collection, type, metadata)
+    VALUES (@id, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type, @metadata)
     ON CONFLICT(id) DO UPDATE SET
       text = excluded.text,
       definition = excluded.definition,
@@ -192,6 +205,7 @@ export function saveVocabItem(item) {
       archived = excluded.archived,
       collection = excluded.collection,
       type = excluded.type,
+      metadata = excluded.metadata,
       updated_at = CURRENT_TIMESTAMP
   `);
 
@@ -204,7 +218,8 @@ export function saveVocabItem(item) {
     date: item.date || new Date().toISOString(),
     archived: item.archived ? 1 : 0,
     collection: item.collection || null,
-    type: item.type || ''
+    type: item.type || '',
+    metadata: item.metadata ? JSON.stringify(item.metadata) : JSON.stringify(item.diagnostics || {})
   });
 }
 
@@ -220,7 +235,12 @@ export function disbandCollection(name) {
 
 export function getLibrary() {
   const rows = db.prepare('SELECT * FROM library ORDER BY date DESC').all();
-  return rows.map(r => ({ ...r, archived: !!r.archived }));
+  return rows.map(r => ({ 
+    ...r, 
+    archived: !!r.archived,
+    diagnostics: r.metadata ? JSON.parse(r.metadata) : null,
+    band: r.metadata ? JSON.parse(r.metadata).ielts : null
+  }));
 }
 
 export function deleteVocabItem(id) {

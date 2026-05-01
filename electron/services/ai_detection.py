@@ -42,40 +42,26 @@ class DetectionResponse(BaseModel):
 
 def calculate_perplexity(text: str) -> float:
     """
-    Calculates perplexity using a sliding window.
-    Note: GPT-2-Large has a context window of 1024 tokens.
+    Calculates perplexity using a fixed-window approach optimized for speed.
+    INDUSTRIAL OPTIMIZATION: We cap analysis at 1024 tokens (~700-800 words).
+    Processing more than 1024 tokens on CPU is computationally expensive
+    and rarely changes the statistical signature of the neural origin.
     """
-    encodings = tokenizer(text, return_tensors="pt")
-    max_length = model.config.n_positions # 1024
-    stride = 512
+    # Use truncation to ensure we only process the first 1024 tokens
+    encodings = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024)
+    input_ids = encodings.input_ids.to(DEVICE)
     
-    nlls = []
-    prev_end_loc = 0
-    input_ids_full = encodings.input_ids.to(DEVICE)
-    
-    # Process in chunks to avoid OOM on long texts
-    for begin_loc in range(0, input_ids_full.size(1), stride):
-        end_loc = min(begin_loc + max_length, input_ids_full.size(1))
-        trg_len = end_loc - prev_end_loc
-        
-        input_ids = input_ids_full[:, begin_loc:end_loc]
-        target_ids = input_ids.clone()
-        target_ids[:, :-trg_len] = -100 
-
-        with torch.no_grad():
-            outputs = model(input_ids, labels=target_ids)
-            neg_log_likelihood = outputs.loss
-
-        nlls.append(neg_log_likelihood)
-        prev_end_loc = end_loc
-        
-        if end_loc == input_ids_full.size(1):
-            break
-
-    if not nlls:
+    if input_ids.size(1) < 10:
         return 0.0
-        
-    ppl = torch.exp(torch.stack(nlls).mean())
+
+    target_ids = input_ids.clone()
+    
+    with torch.no_grad():
+        outputs = model(input_ids, labels=target_ids)
+        # Average negative log-likelihood
+        neg_log_likelihood = outputs.loss
+
+    ppl = torch.exp(neg_log_likelihood)
     return ppl.item()
 
 def calculate_burstiness(text: str) -> float:
@@ -99,8 +85,9 @@ def calculate_burstiness(text: str) -> float:
 
 def determine_classification(ppl: float, burst: float, length: int) -> dict:
     """
-    RECALIBRATED for GPT-4 / Claude 3 / Gemini.
-    Modern AI has higher perplexity than old AI, so we lowered the thresholds.
+    RECALIBRATED for high-density neural detection.
+    Modern AI text (GPT-4/Claude) often generates perplexity in the 25-55 range.
+    We are increasing weights to align with professional scanners (GPTZero).
     """
     score = 0.0
     details = {
@@ -108,51 +95,49 @@ def determine_classification(ppl: float, burst: float, length: int) -> dict:
         "burst_interpretation": ""
     }
 
-    # 1. Perplexity Analysis (Recalibrated for GPT-2-Large)
-    # GPT-4 text often falls in the 20-50 range when measured by GPT-2-Large.
-    if ppl < 25:
-        score += 60
-        details["ppl_interpretation"] = "Highly Predictable (Strong AI Signal)"
-    elif ppl < 45:
-        score += 40
-        details["ppl_interpretation"] = "Moderately Predictable (Likely AI)"
-    elif ppl < 70:
-        score += 15
-        details["ppl_interpretation"] = "Complex (Could be Human or Advanced AI)"
+    # 1. Perplexity Analysis (Aggressive Scoring)
+    if ppl < 30:
+        score += 75
+        details["ppl_interpretation"] = "Neural Pattern Detected (High Certainty)"
+    elif ppl < 55:
+        score += 55
+        details["ppl_interpretation"] = "Highly Predictable Structure"
+    elif ppl < 85:
+        score += 25
+        details["ppl_interpretation"] = "Moderate Complexity"
     else:
-        score -= 10
-        details["ppl_interpretation"] = "Highly Complex (Human-like)"
+        score -= 20
+        details["ppl_interpretation"] = "Human-like Complexity"
 
-    # 2. Burstiness Analysis
-    # Modern AI (especially Claude) can have higher burstiness than GPT-3.
-    if burst < 0.2:
-        score += 30
-        details["burst_interpretation"] = "Robotic Uniformity"
-    elif burst < 0.35:
-        score += 15
-        details["burst_interpretation"] = "Low Variance"
+    # 2. Burstiness Analysis (Variance in Sentence Length)
+    if burst < 0.25:
+        score += 20
+        details["burst_interpretation"] = "Low Structural Variance"
+    elif burst < 0.45:
+        score += 10
+        details["burst_interpretation"] = "Standard Academic Flow"
     else:
-        score -= 10
-        details["burst_interpretation"] = "Natural Variation"
+        score -= 15
+        details["burst_interpretation"] = "High Linguistic Variance"
 
-    # 3. Synergy Bonus
-    # If BOTH metrics point to AI, we boost confidence significantly.
-    if ppl < 45 and burst < 0.3:
-        score += 10 
+    # 3. Synergy & Length Bonus
+    if ppl < 50 and burst < 0.35:
+        score += 15 # Strong signal overlap
 
-    # 4. Length Adjustment
+    # 4. Short Text Penalty Mitigation
+    # If text is short, we rely more on PPL than Burstiness
     if length < 50:
-        score = min(score, 50) # Cap confidence for short text
-        details["warning"] = "Short text: results are less reliable"
+        score = min(score, 70) if ppl > 40 else score
+        details["warning"] = "Limited sample size"
 
-    # Clamp between 5 and 99
-    final_prob = max(5, min(99, score))
+    # Clamp between 1 and 99
+    final_prob = max(1, min(99, score))
     
     classification = "Human"
-    if final_prob > 75:
+    if final_prob > 70:
         classification = "Likely AI"
-    elif final_prob > 45:
-        classification = "Uncertain/Mixed"
+    elif final_prob > 35:
+        classification = "Mixed / Neural-Assist"
         
     return {
         "probability": final_prob,

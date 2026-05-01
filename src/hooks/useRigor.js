@@ -52,7 +52,7 @@ export const useRigor = () => {
     while ((patternMatch = patternRegex.exec(text)) !== null) {
       const word = patternMatch[0].toLowerCase();
       const legitimateDoubles = [
-        "better", "apple", "common", "grammar", "academic", "furthermore", "nevertheless", "been", "will", "all", "well", "see", "look", "book", "need", "feel", "seem", "keep", "school", "today", "success", "opportunity", "every", "think", "class", "process", "assess", "across", "addition", "address", "apply", "assist", "assume", "attach", "between", "cannot", "carry", "collect", "connect", "current", "decision", "degree", "differ", "effect", "effort", "error", "essay", "essential", "follow", "happen", "issue", "letter", "little", "matter", "message", "middle", "necessary", "occur", "offer", "office", "official", "pass", "passage", "possible", "press", "pressure", "professor", "progress", "really", "recall", "small", "staff", "still", "street", "stress", "suppose", "tell", "unless", "upper"
+        "better", "apple", "common", "grammar", "academic", "furthermore", "nevertheless", "been", "will", "all", "well", "see", "look", "book", "need", "feel", "seem", "keep", "school", "today", "success", "opportunity", "every", "think", "class", "process", "assess", "across", "addition", "address", "apply", "assist", "assume", "attach", "between", "cannot", "carry", "collect", "connect", "current", "decision", "degree", "differ", "effect", "effort", "error", "essay", "essential", "follow", "happen", "issue", "letter", "little", "matter", "message", "middle", "necessary", "occur", "offer", "office", "official", "pass", "passage", "possible", "press", "pressure", "professor", "progress", "really", "recall", "shall", "small", "staff", "still", "street", "stress", "suppose", "tell", "unless", "upper"
       ];
       if (!legitimateDoubles.includes(word)) {
         highlights.push({
@@ -220,7 +220,8 @@ export const useRigor = () => {
     const academicHits = words.filter((w) =>
       [
         "furthermore", "nevertheless", "consequently", "methodology", "empirical", "theoretical", "substantial", "significant", "demonstrates", "illustrates", "synthesize",
-        "proficiency", "effectively", "acquire", "analytical", "framework", "systematic", "perspective", "evidence", "empirical", "consistent", "theoretical"
+        "proficiency", "effectively", "acquire", "analytical", "framework", "systematic", "perspective", "evidence", "empirical", "consistent", "theoretical",
+        "pedagogical", "efficacy", "acquisition", "discourse", "rigorous", "facilitate", "institution", "instructional", "academic", "inconsistent", "perplexing", "completion"
       ].includes(w.toLowerCase().replace(/[.,;]/g, ""))
     ).length;
 
@@ -243,15 +244,15 @@ export const useRigor = () => {
 
     // ── IELTS BAND MAPPING ───────────────────────────────────────────
     const calculateBand = (score) => {
-      if (score >= 95) return "9.0";
-      if (score >= 85) return "8.5";
-      if (score >= 75) return "8.0";
-      if (score >= 65) return "7.5";
-      if (score >= 55) return "7.0";
-      if (score >= 45) return "6.5";
-      if (score >= 35) return "6.0";
-      if (score >= 25) return "5.5";
-      if (score >= 15) return "5.0";
+      if (score >= 90) return "9.0";
+      if (score >= 80) return "8.5";
+      if (score >= 70) return "8.0";
+      if (score >= 60) return "7.5";
+      if (score >= 50) return "7.0";
+      if (score >= 40) return "6.5";
+      if (score >= 30) return "6.0";
+      if (score >= 20) return "5.5";
+      if (score >= 10) return "5.0";
       return "4.5";
     };
 
