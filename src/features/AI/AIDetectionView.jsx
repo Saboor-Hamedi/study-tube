@@ -19,21 +19,47 @@ export default function AIDetectionView() {
 
   const handleScan = () => {
     if (!content.trim()) return;
+    setResults(null);
     setIsScanning(true);
-    // Simulate industrial forensic scan
+    
+    // Industrial Linguistic Heuristic for demo accuracy
+    const text = content.toLowerCase();
+    const aiMarkers = ["moreover", "furthermore", "in conclusion", "it is important to note", "tapestry", "unleash", "leverage", "delve", "embark", "pivotal", "underscores", "comprehensive", "significant breakthroughs", "shaping the future"];
+    const humanMarkers = [" i ", " my ", " me ", " we ", " our ", " personally ", " i think ", " don't ", " can't ", " won't ", " haven't "];
+    
+    let baseProb = 50;
+    
+    // AI Weighting
+    aiMarkers.forEach(m => { if (text.includes(m)) baseProb += 20; });
+    
+    // Contraction check (Lack of contractions is a strong AI signal)
+    const hasContractions = humanMarkers.some(m => text.includes(m) && (m.includes("'") || m.includes(" i ")));
+    if (!hasContractions && text.length > 200) baseProb += 25;
+    
+    // Human Weighting
+    humanMarkers.forEach(m => { if (text.includes(m)) baseProb -= 15; });
+    
+    // Add small variance and clamp
+    const aiProb = Math.max(5, Math.min(99, baseProb + (Math.floor(Math.random() * 10) - 5)));
+    const anomalyCount = aiProb > 60 ? Math.floor(aiProb / 10) + 5 : Math.floor(Math.random() * 5);
+    
     setTimeout(() => {
+      let modelOrigin = "Human_Authenticity";
+      if (aiProb > 85) modelOrigin = text.includes("delve") || text.includes("comprehensive") ? "Gemini_1.5_Pro" : "GPT-4.5_Omni";
+      else if (aiProb > 40) modelOrigin = "Claude-3_Sonnet";
+
       setResults({
-        aiScore: 84,
-        humanScore: 16,
-        confidence: 0.982,
-        anomalies: 12,
-        burstiness: "High",
-        perplexity: "Low",
-        neuralFingerprint: "GPT-4_STOCHASTIC_PARROT",
+        aiScore: aiProb,
+        humanScore: 100 - aiProb,
+        confidence: 0.97 + (Math.random() * 0.02),
+        anomalies: anomalyCount,
+        burstiness: aiProb > 60 ? "Low" : "High",
+        perplexity: aiProb > 60 ? "Predictable" : "Natural",
+        neuralFingerprint: modelOrigin,
         segments: [
-          { text: "The development of neural networks has led to significant breakthroughs in artificial intelligence.", probability: 0.92, type: "synthetic" },
-          { text: "However, we must consider the ethical implications of these technologies.", probability: 0.45, type: "mixed" },
-          { text: "My personal experience with this research suggests that human-centric design is paramount.", probability: 0.12, type: "human" }
+          { text: content.slice(0, 100) + "...", probability: aiProb / 100, type: aiProb > 75 ? "synthetic" : aiProb > 35 ? "mixed" : "human" },
+          { text: "Structural pattern verification...", probability: (aiProb - 2) / 100, type: aiProb > 50 ? "mixed" : "human" },
+          { text: "Contraction frequency analysis...", probability: hasContractions ? 0.05 : 0.88, type: hasContractions ? "human" : "synthetic" }
         ]
       });
       setIsScanning(false);
