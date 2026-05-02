@@ -51,17 +51,42 @@ const APP_ID = 'com.studytube.app'
 let pyProcess = null;
 const startPythonService = () => {
   if (pyProcess) return;
-  const scriptPath = path.join(__dirname, 'services', 'ai_detection.py');
+  
+  // Industrial Path Resolution: Handle ASAR vs Unpacked states
+  let scriptPath = path.join(__dirname, 'services', 'ai_detection.py');
+  if (app.isPackaged) {
+    // In production, Electron scripts are often moved to resources/app/electron
+    scriptPath = path.join(process.resourcesPath, 'app', 'electron', 'services', 'ai_detection.py');
+    // If the above fails, fall back to __dirname which should point to the correct location
+    if (!fs.existsSync(scriptPath)) {
+      scriptPath = path.join(__dirname, 'services', 'ai_detection.py');
+    }
+  }
+
   const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
   
-  console.log(`[SYSTEM] Initializing Neural Sidecar: ${pythonCmd} ${scriptPath}`);
+  console.log(`[SYSTEM] Launching Neural Sidecar: ${pythonCmd} ${scriptPath}`);
+  
   pyProcess = spawn(pythonCmd, [scriptPath], {
-    stdio: 'inherit',
-    windowsHide: true
+    windowsHide: true,
+    env: { ...process.env, PYTHONUNBUFFERED: "1" } // Force immediate log output
+  });
+
+  pyProcess.stdout.on('data', (data) => {
+    console.log(`[NEURAL ENGINE] ${data.toString()}`);
+  });
+
+  pyProcess.stderr.on('data', (data) => {
+    console.error(`[NEURAL ENGINE ERROR] ${data.toString()}`);
   });
 
   pyProcess.on('error', (err) => {
-    console.error('[SYSTEM] CRITICAL: Neural Engine failed to spawn:', err.message);
+    console.error('[SYSTEM] CRITICAL: Sidecar Spawn Failure:', err.message);
+  });
+
+  pyProcess.on('close', (code) => {
+    console.log(`[SYSTEM] Neural Sidecar exited with code ${code}`);
+    pyProcess = null;
   });
 };
 
