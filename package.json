@@ -1,6 +1,6 @@
 {
   "name": "StudyTube",
-  "version": "1.0.8",
+  "version": "1.0.11",
   "private": true,
   "type": "module",
   "description": "Premium AI-powered YouTube learning studio.",
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "npm run dev:electron",
     "dev:web": "vite --port 5173 --strictPort",
-    "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\" \"npm:python:dev\"",
+    "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\"",
     "python:dev": "python electron/services/ai_detection.py",
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",
@@ -26,6 +26,9 @@
     "directories": {
       "output": "dist-electron"
     },
+    "asarUnpack": [
+      "electron/services/**"
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*",

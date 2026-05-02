@@ -75,6 +75,12 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
     return () => ipcRenderer.removeListener('download:cancelled', fn)
   },
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
+  getEngineStatus: () => ipcRenderer.invoke('ai:get-engine-status'),
+  onEngineStatus: (cb) => {
+    const fn = (_e, d) => cb(d)
+    ipcRenderer.on('ai:engine-status', fn)
+    return () => ipcRenderer.removeListener('ai:engine-status', fn)
+  },
   onRefineTrigger: (cb) => {
     const fn = () => cb()
     ipcRenderer.on('editor:refine-trigger', fn)

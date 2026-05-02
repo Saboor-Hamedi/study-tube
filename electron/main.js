@@ -48,19 +48,21 @@ function atomicWriteJsonSync(filePath, data) {
 Menu.setApplicationMenu(null)
 const APP_ID = 'com.studytube.app'
 
+
+// --------------------------------------------------------------------------------------------
+// FastAPI auto load 
+// --------------------------------------------------------------------------------------------
 let pyProcess = null;
+let lastEngineStatus = 'OFFLINE'; 
+
 const startPythonService = () => {
   if (pyProcess) return;
   
   // Industrial Path Resolution: Handle ASAR vs Unpacked states
   let scriptPath = path.join(__dirname, 'services', 'ai_detection.py');
   if (app.isPackaged) {
-    // In production, Electron scripts are often moved to resources/app/electron
-    scriptPath = path.join(process.resourcesPath, 'app', 'electron', 'services', 'ai_detection.py');
-    // If the above fails, fall back to __dirname which should point to the correct location
-    if (!fs.existsSync(scriptPath)) {
-      scriptPath = path.join(__dirname, 'services', 'ai_detection.py');
-    }
+    // Redirect to the unpacked version so Python can execute the file
+    scriptPath = scriptPath.replace('app.asar', 'app.asar.unpacked');
   }
 
   const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
@@ -73,7 +75,19 @@ const startPythonService = () => {
   });
 
   pyProcess.stdout.on('data', (data) => {
-    console.log(`[NEURAL ENGINE] ${data.toString()}`);
+    const output = data.toString();
+    console.log(`[NEURAL ENGINE] ${output}`);
+    
+    // Broadcast status to renderer for UI progress
+    if (output.includes('[STATUS]')) {
+      const statusMatch = output.match(/\[STATUS\] (.*)/);
+      if (statusMatch) {
+        lastEngineStatus = statusMatch[1].trim();
+        if (mainWindow) {
+          sendToRenderer(mainWindow.webContents, 'ai:engine-status', lastEngineStatus);
+        }
+      }
+    }
   });
 
   pyProcess.stderr.on('data', (data) => {
@@ -82,13 +96,17 @@ const startPythonService = () => {
 
   pyProcess.on('error', (err) => {
     console.error('[SYSTEM] CRITICAL: Sidecar Spawn Failure:', err.message);
+    lastEngineStatus = 'ERROR';
   });
 
   pyProcess.on('close', (code) => {
     console.log(`[SYSTEM] Neural Sidecar exited with code ${code}`);
     pyProcess = null;
+    lastEngineStatus = 'OFFLINE';
   });
 };
+
+// end 
 
 app.on('will-quit', () => {
   if (pyProcess) {
@@ -734,6 +752,7 @@ function registerIpcHandlers() {
   safeHandle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
   safeHandle('shell:openExternal', (_e, url) => shell.openExternal(url))
   safeHandle('app:getVersion', () => app.getVersion())
+  safeHandle('ai:get-engine-status', () => lastEngineStatus)
 
   // ─── Auto-Updater ──────────────────────────────────────────────────────────
   autoUpdater.autoDownload = true
@@ -853,6 +872,8 @@ app.whenReady().then(() => {
     initDatabase()
     console.log('[SYSTEM] Initializing Neural Sentry Handlers...')
     registerIpcHandlers()
+    console.log('[SYSTEM] Initializing Neural Engine Sidecar...')
+    startPythonService()
     console.log('[SYSTEM] Launching Research Studio...')
     createWindow()
     

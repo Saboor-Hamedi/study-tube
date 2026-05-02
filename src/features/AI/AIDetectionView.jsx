@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Cpu,
@@ -12,31 +12,30 @@ import {
   Info,
 } from "lucide-react";
 
-export default function AIDetectionView({ showToast }) {
+export default function AIDetectionView({ showToast, api }) {
   const [content, setContent] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
- 
+  const [version, setVersion] = useState("0.0.0");
+
   const handleScan = async () => {
     if (!content.trim()) return;
     setResults(null);
     setIsScanning(true);
- 
+
     try {
-      const response = await fetch("http://127.0.0.1:8000/detect", {
+      const response = await fetch("http://127.0.0.1:8008/detect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: content }),
       });
- 
+
       if (!response.ok) {
-        throw new Error(
-          "Neural Engine Warming Up. Please wait a moment...",
-        );
+        throw new Error("Neural Engine Warming Up. Please wait a moment...");
       }
- 
+
       const data = await response.json();
- 
+
       setResults({
         aiScore: Math.round(data.ai_probability),
         humanScore: Math.round(100 - data.ai_probability),
@@ -78,8 +77,33 @@ export default function AIDetectionView({ showToast }) {
     }
   };
 
+  const [engineStatus, setEngineStatus] = useState("OFFLINE"); // OFFLINE, INITIALIZING, LOADING_WEIGHTS, READY
+
+  // Get the versoin from package
+  useEffect(() => {
+    const loadVersion = async () => {
+      const ver = await api?.getVersion(); // Request through the tunnel
+      if (ver) setVersion(ver);
+    };
+    loadVersion();
+  }, [api]);
+
+  useEffect(() => {
+    if (!api) return;
+
+    // Initial State Handshake: Ask the main process what the current status is
+    api.getEngineStatus?.().then((status) => {
+      if (status) setEngineStatus(status);
+    });
+
+    const unsub = api.onEngineStatus((status) => {
+      setEngineStatus(status);
+    });
+    return unsub;
+  }, [api]);
+
   return (
-    <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans select-text">
+    <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans select-text relative">
       {/* Header */}
       <div className="h-12 px-6 border-b border-border bg-surface flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -114,9 +138,37 @@ export default function AIDetectionView({ showToast }) {
 
             <div className="flex items-center justify-between gap-6">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">
-                  Density Monitor
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest">
+                    Model
+                  </span>
+                  {engineStatus === "READY" ? (
+                    <div className="flex items-center gap-1.5 animate-in fade-in duration-500">
+                      <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />
+                      <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest">
+                        Ready
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative h-2.5 w-2.5">
+                        <div className="absolute inset-0 border-[1.5px] border-blue-500/20 rounded-full" />
+                        <motion.div
+                          className="absolute inset-0 border-[1.5px] border-blue-500 rounded-full border-t-transparent"
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                        />
+                      </div>
+                      <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest animate-pulse">
+                        {engineStatus.replace("_", " ")}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div className="text-[11px] font-black tabular-nums text-muted/60 bg-surface-3/50 px-3 py-1.5 rounded-[4px] border border-border/50">
                   {content.length.toLocaleString()}{" "}
                   <span className="text-[8px] opacity-40">CHARS</span>
@@ -341,7 +393,7 @@ export default function AIDetectionView({ showToast }) {
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               <span className="text-[9px] font-black text-muted tracking-tight">
-                Diagnostic engine v4.0
+                AI Detection
               </span>
             </div>
             <button className="p-2 hover:bg-surface-3 rounded-[5px] text-muted transition-all">

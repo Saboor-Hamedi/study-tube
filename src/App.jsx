@@ -29,7 +29,6 @@ import GrammarView from "./features/grammar/GrammarView";
 import AIDetectionView from "./features/AI/AIDetectionView";
 import Home from "./Home";
 
-
 export default function App() {
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
@@ -616,6 +615,7 @@ export default function App() {
                         setView={setView}
                         vocabCount={vocabStats?.total || 0}
                         onOpenCapture={() => setIsCaptureOpen(true)}
+                        api={window.youtubeAPI}
                       />
                     </motion.div>
                   )}
@@ -750,7 +750,10 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0"
                     >
-                      <AIDetectionView showToast={showToast} />
+                      <AIDetectionView
+                        showToast={showToast}
+                        api={window.youtubeAPI}
+                      />
                     </motion.div>
                   )}
                   {view === "plagiarism" && (
@@ -809,8 +812,6 @@ export default function App() {
         showToast={showToast}
         api={api}
       />
-
-
 
       <Notification toast={toast} onClose={() => setToast(null)} />
     </div>

@@ -90,9 +90,9 @@ export default function PlagiarismView() {
       {/* Header */}
       <div className="h-12 px-6 border-b border-border bg-surface flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <ShieldAlert className="h-4 w-4 text-red-400" />
+          <Zap className="h-4 w-4 text-red-400" />
           <h2 className="text-[12px] font-black tracking-tight">
-            Plagiarism audit laboratory
+            Plagiarism checker
           </h2>
         </div>
         <div className="flex items-center gap-4">
@@ -121,9 +121,12 @@ export default function PlagiarismView() {
 
             <div className="flex items-center justify-between gap-6 px-1 py-1">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">Density Monitor</span>
+                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">
+                  Density Monitor
+                </span>
                 <div className="text-[11px] font-black tabular-nums text-muted/60 bg-surface-3/50 px-3 py-1.5 rounded-[4px] border border-border/50">
-                  {content.length.toLocaleString()} <span className="text-[8px] opacity-40">CHARS</span>
+                  {content.length.toLocaleString()}{" "}
+                  <span className="text-[8px] opacity-40">CHARS</span>
                 </div>
               </div>
 
@@ -193,7 +196,8 @@ export default function PlagiarismView() {
                         Originality Report
                       </h4>
                       <p className="text-[9px] text-muted font-medium">
-                        Measures how much of this text is your own unique writing.
+                        Measures how much of this text is your own unique
+                        writing.
                       </p>
                     </div>
                     <div className="flex flex-col items-end">
@@ -202,8 +206,14 @@ export default function PlagiarismView() {
                       >
                         {results.originality}%
                       </span>
-                      <span className={`text-[8px] font-black uppercase tracking-widest ${results.originality > 80 ? "text-emerald-400/60" : "text-red-400/60"}`}>
-                        {results.originality > 85 ? "Authentic" : results.originality > 60 ? "Minor Overlap" : "Critical Overlap"}
+                      <span
+                        className={`text-[8px] font-black uppercase tracking-widest ${results.originality > 80 ? "text-emerald-400/60" : "text-red-400/60"}`}
+                      >
+                        {results.originality > 85
+                          ? "Authentic"
+                          : results.originality > 60
+                            ? "Minor Overlap"
+                            : "Critical Overlap"}
                       </span>
                     </div>
                   </div>
@@ -285,7 +295,9 @@ export default function PlagiarismView() {
                     {results.matches.map((match, idx) => (
                       <div
                         key={idx}
-                        onClick={() => window.youtubeAPI.openExternal(match.url)}
+                        onClick={() =>
+                          window.youtubeAPI.openExternal(match.url)
+                        }
                         className="p-4 bg-surface-2 border border-border rounded-[10px] space-y-3 group/source hover:border-red-400/20 transition-all cursor-pointer shadow-sm hover:shadow-lg"
                       >
                         <div className="flex items-center justify-between">
@@ -360,9 +372,9 @@ export default function PlagiarismView() {
           {/* Footer Metadata */}
           <div className="h-14 px-5 border-t border-border bg-surface-2/50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <Zap className="h-3 w-3 text-red-400" />
-              <span className="text-[9px] font-black text-muted tracking-tight italic">
-                Legal integrity sweep active
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[9px] font-black text-muted tracking-tight">
+                Plagiarism Checker
               </span>
             </div>
             <button className="p-2 hover:bg-surface-3 rounded-[5px] text-muted transition-all">

@@ -8,18 +8,18 @@ import re
 import numpy as np
 
 # --- CONFIGURATION ---
-# UPGRADE: Using gpt2-large for better sensitivity to modern AI patterns.
-# It is larger (3GB RAM) but much more accurate than base gpt2.
-MODEL_NAME = "gpt2-large" 
+print("[STATUS] INITIALIZING")
+# Standard GPT-2 (Base) for high-speed initialization (Few seconds)
+MODEL_NAME = "gpt2" 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-print(f"Loading {MODEL_NAME} on {DEVICE}... This may take a minute.")
+ 
+print(f"[STATUS] LOADING_WEIGHTS")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
 model.to(DEVICE)
 model.eval()
-print("Model loaded successfully.")
-
+print("[STATUS] READY")
+ 
 app = FastAPI(title="AI Detection Engine v2.0")
 
 app.add_middleware(
@@ -190,4 +190,6 @@ async def detect_ai(request: DetectionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Industrial Port Migration: Shifting to 8008 to avoid collisions with common local services
+    # Host changed to 127.0.0.1 to avoid unnecessary Windows Firewall prompts in production
+    uvicorn.run(app, host="127.0.0.1", port=8008)
