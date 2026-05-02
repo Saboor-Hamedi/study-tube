@@ -124,6 +124,7 @@ export default function GrammarForensicView({
                         );
                         lastIndex = hl.end;
                       });
+
                       elements.push(content.substring(lastIndex));
                       return elements;
                     })()}
@@ -207,7 +208,7 @@ export default function GrammarForensicView({
                   </span>
                 </div>
                 <span className="text-[8px] font-black text-muted/20 uppercase tracking-widest tabular-nums">
-                  Load: 14%
+                  Load: {isNeuralScanning ? Math.floor(Math.random() * 40) + 60 : 12}%
                 </span>
               </div>
             </div>

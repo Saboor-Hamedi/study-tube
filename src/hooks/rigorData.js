@@ -1,0 +1,34 @@
+/**
+ * INDUSTRIAL LEXICON DATA
+ * High-fidelity datasets for linguistic forensic auditing.
+ */
+
+export const legitimateDoubles = [
+  "better", "apple", "common", "grammar", "academic", "furthermore", "nevertheless", "been", "will", "all", "well", "see", "look", "book", "need", "feel", "seem", "keep", "school", "today", "success", "opportunity", "every", "think", "class", "process", "assess", "across", "addition", "address", "apply", "assist", "assume", "attach", "between", "cannot", "carry", "collect", "connect", "current", "decision", "degree", "differ", "effect", "effort", "error", "essay", "essential", "follow", "happen", "issue", "letter", "little", "matter", "message", "middle", "necessary", "occur", "offer", "office", "official", "pass", "passage", "possible", "press", "pressure", "professor", "progress", "really", "recall", "shall", "small", "staff", "still", "street", "stress", "suppose", "tell", "unless", "upper",
+  "full", "loss", "cross", "mitchell", "burstiness", "accessibility", "accuracy", "address", "approach", "appropriate", "assessment", "assignment", "association", "assumption", "attention", "attribute", "available", "between", "challenge", "collaborate", "collection", "commitment", "communication", "community", "comparison", "conclusion", "connection", "consensus", "consequence", "consistent", "coordinate", "correlation", "critical", "curriculum", "decision", "definition", "demonstrate", "description", "difference", "difficult", "discussion", "effectively", "efficiency", "element", "essential", "evaluation", "evidence", "experience", "experiment", "expression", "facilitate", "frequently", "functional", "fundamental", "illustration", "immediately", "impact", "implementation", "implication", "important", "improvement", "including", "independent", "individual", "information", "innovation", "insight", "installation", "institution", "instruction", "integration", "intelligence", "interaction", "interpretation", "intervention", "introduction", "investigation", "involvement", "knowledge", "language", "leadership", "literature", "management", "measurement", "mechanism", "methodology", "motivation", "necessary", "observation", "opportunity", "organization", "participant", "participation", "performance", "perspective", "possibility", "potential", "practical", "precision", "prediction", "preference", "preparation", "presentation", "prevention", "principle", "probability", "procedure", "process", "production", "professional", "proficiency", "programming", "progress", "project", "proportion", "proposition", "protection", "protocol", "provision", "psychology", "publication", "qualitative", "quality", "quantitative", "question", "reaction", "readiness", "recognition", "recommendation", "reduction", "reference", "reflection", "registration", "regulation", "relationship", "reliability", "requirement", "research", "resolution", "resource", "response", "responsibility", "restriction", "results", "satisfaction", "scholarship", "selection", "sensitivity", "sequence", "significance", "simulation", "situation", "skill", "solution", "specialist", "specification", "stability", "standard", "statistical", "strategy", "strength", "structure", "student", "study", "submission", "subsequent", "substantial", "success", "suggestion", "support", "survey", "symmetry", "synthesis", "system", "technique", "technology", "tendency", "theoretical", "theory", "transformation", "transition", "translation", "transmission", "treatment", "understanding", "university", "utilization", "validation", "variation", "version", "vision", "visualization"
+];
+
+export const commonMistakes = [
+  { m: "everyday", c: "every day" },
+  { m: "sometime", c: "sometimes" },
+  { m: "dont", c: "don't" },
+  { m: "tech", c: "teach" },
+  { m: "confuse", c: "confused" },
+  { m: "studing", c: "studying" },
+  { m: "easyer", c: "easier" },
+  { m: "nobodye", c: "nobody" },
+  { m: "alot", c: "a lot" },
+  { m: "belive", c: "believe" },
+  { m: "recive", c: "receive" },
+  { m: "thier", c: "their" },
+  { m: "truely", c: "truly" },
+  { m: "definately", c: "definitely" },
+  { m: "occured", c: "occurred" },
+  { m: "untill", c: "until" },
+];
+
+export const academicLexicon = [
+  "furthermore", "nevertheless", "consequently", "methodology", "empirical", "theoretical", "substantial", "significant", "demonstrates", "illustrates", "synthesize",
+  "proficiency", "effectively", "acquire", "analytical", "framework", "systematic", "perspective", "evidence", "empirical", "consistent", "theoretical",
+  "pedagogical", "efficacy", "acquisition", "discourse", "rigorous", "facilitate", "institution", "instructional", "academic", "inconsistent", "perplexing", "completion"
+];

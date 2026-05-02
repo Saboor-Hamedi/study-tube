@@ -1,4 +1,9 @@
 import { useState, useCallback } from "react";
+import {
+  legitimateDoubles,
+  commonMistakes,
+  academicLexicon,
+} from "./rigorData";
 
 export const useRigor = () => {
   const [isNeuralScanning, setIsNeuralScanning] = useState(false);
@@ -46,44 +51,24 @@ export const useRigor = () => {
     const charCount = text.length;
     const highlights = [];
 
-    // 1. SPELLING & PUNCTUATION
-    const patternRegex = /\b\w*(\w)\1{1,}\b/gi;
+    // 1. SPELLING & PUNCTUATION (Industrial Repetition Filter)
+    // Only flags triple characters or more (e.g., "helllo") to avoid standard double-letter false positives.
+    const patternRegex = /\b[a-z]*([a-z])\1{2,}[a-z]*\b/gi;
     let patternMatch;
     while ((patternMatch = patternRegex.exec(text)) !== null) {
       const word = patternMatch[0].toLowerCase();
-      const legitimateDoubles = [
-        "better", "apple", "common", "grammar", "academic", "furthermore", "nevertheless", "been", "will", "all", "well", "see", "look", "book", "need", "feel", "seem", "keep", "school", "today", "success", "opportunity", "every", "think", "class", "process", "assess", "across", "addition", "address", "apply", "assist", "assume", "attach", "between", "cannot", "carry", "collect", "connect", "current", "decision", "degree", "differ", "effect", "effort", "error", "essay", "essential", "follow", "happen", "issue", "letter", "little", "matter", "message", "middle", "necessary", "occur", "offer", "office", "official", "pass", "passage", "possible", "press", "pressure", "professor", "progress", "really", "recall", "shall", "small", "staff", "still", "street", "stress", "suppose", "tell", "unless", "upper"
-      ];
+      // Even for triples, we check against a small "legitimate" list for technical terms if needed.
       if (!legitimateDoubles.includes(word)) {
         highlights.push({
           start: patternMatch.index,
           end: patternMatch.index + patternMatch[0].length,
           type: "spelling",
-          reason: "Linguistic Anomaly",
-          suggestion: word.replace(/(.)\1{1,}$/, "$1"),
-          explanation: "Redundant character repetition detected.",
+          reason: "Neural Anomaly",
+          suggestion: word.replace(/([a-z])\1{2,}/gi, "$1$1"), // Reduces to a double as most likely intent
+          explanation: "Excessive character repetition detected (Keyboard/Neural Artifact).",
         });
       }
     }
-
-    const commonMistakes = [
-      { m: "everyday", c: "every day" },
-      { m: "sometime", c: "sometimes" },
-      { m: "dont", c: "don't" },
-      { m: "tech", c: "teach" },
-      { m: "confuse", c: "confused" },
-      { m: "studing", c: "studying" },
-      { m: "easyer", c: "easier" },
-      { m: "nobodye", c: "nobody" },
-      { m: "alot", c: "a lot" },
-      { m: "belive", c: "believe" },
-      { m: "recive", c: "receive" },
-      { m: "thier", c: "their" },
-      { m: "truely", c: "truly" },
-      { m: "definately", c: "definitely" },
-      { m: "occured", c: "occurred" },
-      { m: "untill", c: "until" },
-    ];
 
     commonMistakes.forEach((pair) => {
       const regex = new RegExp(`\\b${pair.m}\\b`, "gi");
@@ -99,6 +84,8 @@ export const useRigor = () => {
         });
       }
     });
+
+
 
     // 2. GRAMMAR & VERB AGREEMENT
     const grammarChecks = [
@@ -218,11 +205,7 @@ export const useRigor = () => {
     const toneCount = highlights.filter((h) => h.type === "tone").length;
 
     const academicHits = words.filter((w) =>
-      [
-        "furthermore", "nevertheless", "consequently", "methodology", "empirical", "theoretical", "substantial", "significant", "demonstrates", "illustrates", "synthesize",
-        "proficiency", "effectively", "acquire", "analytical", "framework", "systematic", "perspective", "evidence", "empirical", "consistent", "theoretical",
-        "pedagogical", "efficacy", "acquisition", "discourse", "rigorous", "facilitate", "institution", "instructional", "academic", "inconsistent", "perplexing", "completion"
-      ].includes(w.toLowerCase().replace(/[.,;]/g, ""))
+      academicLexicon.includes(w.toLowerCase().replace(/[.,;]/g, ""))
     ).length;
 
     const rigorPenalties = highlights.filter(
@@ -281,9 +264,16 @@ export const useRigor = () => {
         ieltsLabel: getBandLabel(ieltsBand),
         highlights,
         marketTrends: words
-          .filter((w) => w.length > 6)
+          .filter((w) => w.length > 7 && !academicLexicon.includes(w.toLowerCase()))
+          .sort((a, b) => b.length - a.length)
           .slice(0, 4)
-          .map((w) => `${w.charAt(0).toUpperCase() + w.slice(1)} Context Found`),
+          .map((w) => {
+            const word = w.toLowerCase().replace(/[.,;]/g, "");
+            if (["data", "analysis", "empirical", "results"].includes(word)) return "Quantitative Precision";
+            if (["theory", "framework", "perspective", "discourse"].includes(word)) return "Theoretical Depth";
+            if (["significant", "impact", "substantial", "primary"].includes(word)) return "Scholarly Authority";
+            return `${word.charAt(0).toUpperCase() + word.slice(1)} Domain Identified`;
+          }),
       },
       highlights,
     };

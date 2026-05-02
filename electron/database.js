@@ -167,7 +167,13 @@ export function getLibraryPage({ collection, sortBy, limit, id }) {
       params.push(limit)
     }
     
-    return db.prepare(query).all(...params)
+    const rows = db.prepare(query).all(...params);
+    return rows.map(r => ({
+      ...r,
+      archived: !!r.archived,
+      diagnostics: r.metadata ? JSON.parse(r.metadata) : null,
+      band: r.metadata ? (JSON.parse(r.metadata).ielts || JSON.parse(r.metadata).ieltsBand) : null
+    }));
   } catch (err) {
     console.error('Paginated fetch failure', err)
     return []

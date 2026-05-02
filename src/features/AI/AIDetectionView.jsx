@@ -30,7 +30,9 @@ export default function AIDetectionView() {
       });
 
       if (!response.ok) {
-        throw new Error("Neural Engine Offline. Ensure Python service is active.");
+        throw new Error(
+          "Neural Engine Offline. Ensure Python service is active.",
+        );
       }
 
       const data = await response.json();
@@ -112,9 +114,12 @@ export default function AIDetectionView() {
 
             <div className="flex items-center justify-between gap-6">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">Density Monitor</span>
+                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">
+                  Density Monitor
+                </span>
                 <div className="text-[11px] font-black tabular-nums text-muted/60 bg-surface-3/50 px-3 py-1.5 rounded-[4px] border border-border/50">
-                  {content.length.toLocaleString()} <span className="text-[8px] opacity-40">CHARS</span>
+                  {content.length.toLocaleString()}{" "}
+                  <span className="text-[8px] opacity-40">CHARS</span>
                 </div>
               </div>
 
@@ -134,7 +139,7 @@ export default function AIDetectionView() {
                   </>
                 ) : (
                   <>
-                    <Zap className="h-4 w-4" /> Initialize forensic scan
+                    <Zap className="h-4 w-4" /> Scan
                   </>
                 )}
               </button>

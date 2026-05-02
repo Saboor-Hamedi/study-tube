@@ -118,6 +118,20 @@ export default function App() {
     }
   }, [api]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        libHistoryRef.current &&
+        !libHistoryRef.current.contains(e.target) &&
+        !searchInputRef.current?.contains(e.target)
+      ) {
+        setIsLibHistoryOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [libHistoryRef, searchInputRef, setIsLibHistoryOpen]);
+
   const syncStats = useCallback(async () => {
     if (!api) return;
     try {
