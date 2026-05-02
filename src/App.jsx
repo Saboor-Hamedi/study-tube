@@ -750,7 +750,7 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0"
                     >
-                      <AIDetectionView />
+                      <AIDetectionView showToast={showToast} />
                     </motion.div>
                   )}
                   {view === "plagiarism" && (

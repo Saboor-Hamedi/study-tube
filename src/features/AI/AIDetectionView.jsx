@@ -12,31 +12,31 @@ import {
   Info,
 } from "lucide-react";
 
-export default function AIDetectionView() {
+export default function AIDetectionView({ showToast }) {
   const [content, setContent] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
-
+ 
   const handleScan = async () => {
     if (!content.trim()) return;
     setResults(null);
     setIsScanning(true);
-
+ 
     try {
       const response = await fetch("http://127.0.0.1:8000/detect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: content }),
       });
-
+ 
       if (!response.ok) {
         throw new Error(
-          "Neural Engine Offline. Ensure Python service is active.",
+          "Neural Engine Warming Up. Please wait a moment...",
         );
       }
-
+ 
       const data = await response.json();
-
+ 
       setResults({
         aiScore: Math.round(data.ai_probability),
         humanScore: Math.round(100 - data.ai_probability),
@@ -72,7 +72,7 @@ export default function AIDetectionView() {
     } catch (err) {
       console.error("Forensic scan failure:", err);
       // Fallback to minimal state or alert
-      alert(err.message);
+      showToast?.(err.message);
     } finally {
       setIsScanning(false);
     }

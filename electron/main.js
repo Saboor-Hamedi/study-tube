@@ -48,8 +48,37 @@ function atomicWriteJsonSync(filePath, data) {
 Menu.setApplicationMenu(null)
 const APP_ID = 'com.studytube.app'
 
+let pyProcess = null;
+const startPythonService = () => {
+  if (pyProcess) return;
+  const scriptPath = path.join(__dirname, 'services', 'ai_detection.py');
+  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+  
+  console.log(`[SYSTEM] Initializing Neural Sidecar: ${pythonCmd} ${scriptPath}`);
+  pyProcess = spawn(pythonCmd, [scriptPath], {
+    stdio: 'inherit',
+    windowsHide: true
+  });
+
+  pyProcess.on('error', (err) => {
+    console.error('[SYSTEM] CRITICAL: Neural Engine failed to spawn:', err.message);
+  });
+};
+
+app.on('will-quit', () => {
+  if (pyProcess) {
+    console.log('[SYSTEM] Terminating Neural Sidecar...');
+    pyProcess.kill();
+    pyProcess = null;
+  }
+});
+
 app.whenReady().then(() => {
   initDatabase()
+  if (app.isPackaged) {
+    startPythonService();
+  }
+  
   try {
     const stats = getCollectionStats()
     console.log('[ARCHIVE AUDIT] Initial Density:', JSON.stringify(stats))
@@ -57,9 +86,9 @@ app.whenReady().then(() => {
     console.error('[ARCHIVE AUDIT] Initial Audit Failed', e)
   }
 })
+
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
 
-const activeDownloads = new Map()
 const DEFAULT_QUALITY_OPTIONS = [
   { label: '1080p', value: 'video:1080' },
   { label: '720p', value: 'video:720' },
