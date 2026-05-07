@@ -16,6 +16,7 @@ import Marker from "@editorjs/marker";
 export default function EditorView({ api, showToast, onOpenCopilot }) {
   const { isCopilotOpen, setCopilotContext } = useStore();
   const editorInstance = useRef(null);
+  const editorContainerRef = useRef(null);
   const isInitializingRef = useRef(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -67,8 +68,12 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
         console.error("Failed to load notes", e);
       }
 
+      if (editorContainerRef.current) {
+        editorContainerRef.current.innerHTML = "";
+      }
+
       const editor = new EditorJS({
-        holder: "editorjs",
+        holder: editorContainerRef.current || "editorjs",
         placeholder: "Neural drafting active...",
         tools: {
           header: {
@@ -123,25 +128,48 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
         editorInstance.current.destroy();
         editorInstance.current = null;
       }
+      isInitializingRef.current = false;
     };
   }, [api, syncToCopilot]);
 
+  // Handle the refine event from the Neural Copilot view
+  // This will refine the editor content
   const handleNeuralRefine = useCallback(async () => {
     if (!editorInstance.current || isRefining) return;
-    setIsRefining(true);
     try {
       const data = await editorInstance.current.save();
-      window.dispatchEvent(
-        new CustomEvent("editor:start-refine", {
-          detail: { blocks: data.blocks },
-        }),
-      );
+
+      // Ensure there's actual text content to refine
+      const hasContent =
+        data.blocks &&
+        data.blocks.some((b) => {
+          if (b.type === "list") return b.data.items && b.data.items.length > 0;
+          const text = b.data.text || b.data.caption || "";
+          const stripped = text.replace(/<[^>]*>?/gm, "").trim();
+          return stripped.length > 0;
+        });
+
+      if (!hasContent) {
+        showToast("Editor is empty. Add text to refine.", "warning");
+        return;
+      }
+
+      setIsRefining(true);
+      showToast("Neural Forge Active: Refining Draft...", "info");
+
+      const refinedBlocks = await api.refineNotes({ blocks: data.blocks });
+      if (refinedBlocks) {
+        editorInstance.current.render({ blocks: refinedBlocks });
+        await api.saveNotes({ blocks: refinedBlocks });
+        showToast("Neural Correction Applied", "success");
+      }
     } catch (e) {
-      showToast("Neural Forge Interrupted", "error");
+      console.error(e);
+      showToast("Neural Forge Interrupted: " + e.message, "error");
     } finally {
       setIsRefining(false);
     }
-  }, [isRefining, showToast]);
+  }, [isRefining, showToast, api]);
 
   useEffect(() => {
     const handleRefineEvent = () => handleNeuralRefine();
@@ -206,12 +234,26 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setShowDeleteModal(true)}
-          className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-[5px] transition-all"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleNeuralRefine}
+            disabled={isRefining}
+            className={`p-1.5 rounded-[5px] transition-all ${isRefining ? "bg-accent/20 text-accent cursor-wait" : "text-muted hover:text-accent hover:bg-accent/10"}`}
+            title="Neural Forge: Polish Draft"
+          >
+            {isRefining ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-[5px] transition-all"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-row flex-1 overflow-hidden">
@@ -224,14 +266,12 @@ export default function EditorView({ api, showToast, onOpenCopilot }) {
             </div>
           )}
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-12 opacity-30">
-              <Sparkles className="h-4 w-4 text-accent" />
-              <span className="text-[11px] font-black tracking-tight">
-                Neural text interface
-              </span>
-            </div>
             <div className="prose prose-invert prose-lg max-w-none editor-js-override">
-              <div id="editorjs" className="min-h-[200px]" />
+              <div
+                ref={editorContainerRef}
+                id="editorjs"
+                className="min-h-[200px]"
+              />
             </div>
           </div>
         </div>

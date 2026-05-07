@@ -8,7 +8,7 @@ export const useStore = create((set, get) => ({
   // --- Research Archive State ---
   vocabStats: { total: 0, collections: [] },
   savePath: '',
-  view: 'home',
+  view: sessionStorage.getItem('study-view') || 'home',
   selectedResearchNode: null,
   vocab: [],
   collections: [],
@@ -48,7 +48,11 @@ export const useStore = create((set, get) => ({
   
   setVocabStats: (val) => set((s) => ({ vocabStats: typeof val === 'function' ? val(s.vocabStats) : val })),
   setSavePath: (val) => set((s) => ({ savePath: typeof val === 'function' ? val(s.savePath) : val })),
-  setView: (val) => set((s) => ({ view: typeof val === 'function' ? val(s.view) : val })),
+  setView: (val) => set((s) => {
+    const nextView = typeof val === 'function' ? val(s.view) : val;
+    sessionStorage.setItem('study-view', nextView);
+    return { view: nextView };
+  }),
   setSelectedResearchNode: (val) => set((s) => ({ selectedResearchNode: typeof val === 'function' ? val(s.selectedResearchNode) : val })),
   setVocab: (val) => set((s) => ({ vocab: typeof val === 'function' ? val(s.vocab) : val })),
   setCollections: (val) => set((s) => ({ collections: typeof val === 'function' ? val(s.collections) : val })),

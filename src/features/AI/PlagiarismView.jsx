@@ -121,12 +121,12 @@ export default function PlagiarismView() {
 
             <div className="flex items-center justify-between gap-6 px-1 py-1">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-muted/20 uppercase tracking-widest mb-1">
-                  Density Monitor
+                <span className="text-[9px] font-black text-muted/20 tracking-widest mb-1">
+                  Density monitor
                 </span>
                 <div className="text-[11px] font-black tabular-nums text-muted/60 bg-surface-3/50 px-3 py-1.5 rounded-[4px] border border-border/50">
                   {content.length.toLocaleString()}{" "}
-                  <span className="text-[8px] opacity-40">CHARS</span>
+                  <span className="text-[8px] opacity-40 tracking-widest">chars</span>
                 </div>
               </div>
 
@@ -193,7 +193,7 @@ export default function PlagiarismView() {
                   <div className="flex items-center justify-between relative z-10">
                     <div className="space-y-1">
                       <h4 className="text-[14px] font-black tracking-tight text-text">
-                        Originality Report
+                        Originality report
                       </h4>
                       <p className="text-[9px] text-muted font-medium">
                         Measures how much of this text is your own unique
@@ -207,13 +207,13 @@ export default function PlagiarismView() {
                         {results.originality}%
                       </span>
                       <span
-                        className={`text-[8px] font-black uppercase tracking-widest ${results.originality > 80 ? "text-emerald-400/60" : "text-red-400/60"}`}
+                        className={`text-[8px] font-black tracking-widest ${results.originality > 80 ? "text-emerald-400/60" : "text-red-400/60"}`}
                       >
                         {results.originality > 85
                           ? "Authentic"
                           : results.originality > 60
-                            ? "Minor Overlap"
-                            : "Critical Overlap"}
+                            ? "Minor overlap"
+                            : "Critical overlap"}
                       </span>
                     </div>
                   </div>
@@ -227,24 +227,24 @@ export default function PlagiarismView() {
 
                   <div className="grid grid-cols-3 gap-4 pt-2">
                     <div className="space-y-1">
-                      <p className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                        Your Writing
+                      <p className="text-[8px] font-black text-muted/40 tracking-widest">
+                        Your writing
                       </p>
                       <p className="text-[12px] font-black text-emerald-400">
                         {results.originality}%
                       </p>
                     </div>
                     <div className="space-y-1 border-x border-border/10 px-4 text-center">
-                      <p className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                        Copied Content
+                      <p className="text-[8px] font-black text-muted/40 tracking-widest">
+                        Copied content
                       </p>
                       <p className="text-[12px] font-black text-red-400">
                         {results.similarity}%
                       </p>
                     </div>
                     <div className="space-y-1 text-end">
-                      <p className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                        Search Accuracy
+                      <p className="text-[8px] font-black text-muted/40 tracking-widest">
+                        Search accuracy
                       </p>
                       <p className="text-[12px] font-black text-blue-400">
                         99.8%
@@ -262,7 +262,7 @@ export default function PlagiarismView() {
                         Highlighted audit view
                       </span>
                     </div>
-                    <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
+                    <span className="text-[8px] font-black text-muted/40 tracking-widest">
                       Source mapping
                     </span>
                   </div>
@@ -283,11 +283,10 @@ export default function PlagiarismView() {
                   </p>
                 </div>
 
-                {/* Source correlation matrix */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-[10px] font-black text-muted tracking-tight">
-                      Database Matches Found
+                      Database matches found
                     </span>
                     <Globe className="h-3.5 w-3.5 text-muted/20" />
                   </div>
@@ -328,7 +327,7 @@ export default function PlagiarismView() {
                           </p>
                         </div>
                         <div className="flex items-center gap-3 pt-2 border-t border-border/5">
-                          <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
+                          <span className="text-[8px] font-black text-muted/40 tracking-widest">
                             Identified sequence:
                           </span>
                           <span className="text-[9px] font-black text-text/40 font-mono truncate">
@@ -348,7 +347,7 @@ export default function PlagiarismView() {
                       <p className="text-[10px] font-black text-text/70 leading-none">
                         428 words
                       </p>
-                      <p className="text-[8px] text-muted font-bold uppercase tracking-widest">
+                      <p className="text-[8px] text-muted font-bold tracking-widest">
                         Scanned
                       </p>
                     </div>
@@ -359,7 +358,7 @@ export default function PlagiarismView() {
                       <p className="text-[10px] font-black text-text/70 leading-none">
                         AUD-928-XR
                       </p>
-                      <p className="text-[8px] text-muted font-bold uppercase tracking-widest">
+                      <p className="text-[8px] text-muted font-bold tracking-widest">
                         Audit ID
                       </p>
                     </div>
