@@ -6,7 +6,10 @@ import {
   Activity, Zap, Database, Terminal, Shield, Sun, Moon, FileDown
 } from 'lucide-react'
 
+import { api as bridgeApi } from "./../../utils/api-bridge";
+
 const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
+  const activeApi = api || bridgeApi;
   const [apiKey, setApiKey] = useState('')
   const [savePath, setSavePath] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -21,11 +24,11 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const key = await api.getAiKey()
-        const path = await api.getSavePath()
+        const key = await activeApi.getAiKey()
+        const path = await activeApi.getSavePath()
         setApiKey(key || '')
         setSavePath(path || '')
-        const ver = await api.getVersion?.()
+        const ver = await activeApi.getVersion?.()
         if (ver) setVersion(ver)
       } catch (err) {
         console.warn('[IPC SYNC] Version deferred.', err)
@@ -33,8 +36,8 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
     }
     loadSettings()
 
-    if (api?.updater?.onUpdateStatus) {
-      const unsubs = api.updater.onUpdateStatus((data) => {
+    if (activeApi?.updater?.onUpdateStatus) {
+      const unsubs = activeApi.updater.onUpdateStatus((data) => {
         setUpdateStatus(data.status)
         if (data.info) setUpdateInfo(data.info)
         if (data.status === 'downloading' && data.info?.percent) {
@@ -43,26 +46,26 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
       })
       return () => unsubs()
     }
-  }, [api])
+  }, [activeApi])
 
   const handleSaveKey = async () => {
     setIsSaving(true)
-    await api.setAiKey(apiKey)
+    await activeApi.setAiKey(apiKey)
     setIsSaving(false)
     setShowStatus(true)
     setTimeout(() => setShowStatus(false), 3000)
   }
 
   const handlePickPath = async () => {
-    const path = await api.pickSavePath()
+    const path = await activeApi.pickSavePath()
     if (path) {
       setSavePath(path)
-      await api.setSavePath(path)
+      await activeApi.setSavePath(path)
     }
   }
 
-  const handleCheckUpdate = () => api?.updater?.check()
-  const handleInstallUpdate = () => api?.updater?.install()
+  const handleCheckUpdate = () => activeApi?.updater?.check()
+  const handleInstallUpdate = () => activeApi?.updater?.install()
 
   return (
     <motion.div 

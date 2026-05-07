@@ -104,8 +104,26 @@ function VideoPlayer({ videoId, onClose, seekTo }) {
   )
 }
 
-export default function VideoPreviewCard({ video, onClose, transcript, loadingTranscript, onAddVocab, quality, onQualityChange, savePath, onPickPath, onDownload, onCancel, progress, downloading, showToast }) {
-  const api = window.youtubeAPI
+import { api as bridgeApi } from "../../utils/api-bridge";
+
+export default function VideoPreviewCard({ 
+  video, 
+  onClose, 
+  transcript, 
+  loadingTranscript, 
+  onAddVocab, 
+  quality, 
+  onQualityChange, 
+  savePath, 
+  onPickPath, 
+  onDownload, 
+  onCancel, 
+  progress, 
+  downloading, 
+  showToast,
+  api: passedApi
+}) {
+  const api = passedApi || bridgeApi
   const [activeTab, setActiveTab] = useState('learn')
   const [streamUrl, setStreamUrl] = useState(null)
   const [curTime, setCurTime] = useState(0)

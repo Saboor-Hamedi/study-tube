@@ -12,7 +12,9 @@ import {
   Info,
 } from "lucide-react";
 
-export default function AIDetectionView({ showToast, api }) {
+import { api } from "./../../utils/api-bridge";
+
+export default function AIDetectionView({ showToast }) {
   const [content, setContent] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);

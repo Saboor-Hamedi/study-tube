@@ -34,6 +34,8 @@ import DeleteModal from "./DeleteModal";
 import InsightCaptureModal from "./InsightCaptureModal";
 import PulseLoader from "./PulseLoader";
 
+import { api as bridgeApi } from "./../../utils/api-bridge";
+
 export default function LibraryView({
   vocab,
   setVocab,
@@ -66,6 +68,7 @@ export default function LibraryView({
   setIsHistoryOpen,
   historyRef,
 }) {
+  const activeApi = api || bridgeApi;
   const [localVocab, setLocalVocab] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAppending, setIsAppending] = useState(false);
@@ -99,7 +102,7 @@ export default function LibraryView({
 
       if (showLoader && !isAppending) setLoading(true);
       try {
-        const fetchPromise = api.loadVocabPage({
+        const fetchPromise = activeApi.loadVocabPage({
           collection: selectedCollection,
           sortBy,
           limit: displayLimit,
@@ -119,20 +122,20 @@ export default function LibraryView({
         setIsAppending(false);
       }
     },
-    [selectedCollection, sortBy, displayLimit, api],
+    [selectedCollection, sortBy, displayLimit, activeApi],
   );
 
   useEffect(() => {
     const loadLog = async () => {
       try {
-        const log = await api.getSearchLog();
+        const log = await activeApi.getSearchLog();
         setSearchHistory(log || []);
       } catch (err) {
         console.error("Failed to sync search intelligence", err);
       }
     };
     loadLog();
-  }, [api]);
+  }, [activeApi]);
 
 
 
@@ -168,7 +171,7 @@ export default function LibraryView({
 
   const handleUpdateItem = async (updated) => {
     try {
-      await api.saveVocabItem(updated);
+      await activeApi.saveVocabItem(updated);
       setLocalVocab((prev) => {
         const isTrashView = selectedCollection === "trash";
         const isAllView = selectedCollection === "all";
@@ -247,11 +250,11 @@ export default function LibraryView({
     const itemId = itemToDelete.id || itemToDelete.date;
     try {
       if (selectedCollection === "trash" || itemToDelete.archived) {
-        await api.deleteVocabItem(itemId);
+        await activeApi.deleteVocabItem(itemId);
         showToast("Insight permanently eradicated", "success");
       } else {
         const archivedItem = { ...itemToDelete, archived: true };
-        await api.saveVocabItem(archivedItem);
+        await activeApi.saveVocabItem(archivedItem);
         showToast("Insight moved to trash", "success");
       }
       setLocalVocab((prev) => prev.filter((v) => (v.id || v.date) !== itemId));

@@ -13,7 +13,9 @@ import Quote from "@editorjs/quote";
 import Code from "@editorjs/code";
 import Marker from "@editorjs/marker";
 
-export default function EditorView({ api, showToast, onOpenCopilot }) {
+import { api } from "./../../utils/api-bridge";
+
+export default function EditorView({ showToast, onOpenCopilot }) {
   const { isCopilotOpen, setCopilotContext } = useStore();
   const editorInstance = useRef(null);
   const editorContainerRef = useRef(null);

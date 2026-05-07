@@ -15,7 +15,8 @@ import {
   getLibraryPage, getCollectionStats, saveVocabItem, deleteVocabItem,
   getCollections, saveCollections, migrateCollection, disbandCollection,
   getSearchLog, addSearchLog, deleteSearchLog, clearSearchLog,
-  searchLibraryFTS
+  searchLibraryFTS,
+  getAppSettings, saveAppSettings
 } from './database.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -158,6 +159,11 @@ function canonicalize(url) {
   return s
 }
 function sendToRenderer(wc, channel, data) { if (!wc.isDestroyed()) wc.send(channel, data) }
+function resolveAiApiKey() {
+  const dbConfig = getAppSettings();
+  if (dbConfig.aiApiKey) return dbConfig.aiApiKey;
+  return readAppState().aiApiKey || '';
+}
 function buildQualityOptions(heights) {
   const opts = [...new Set(heights)].filter(Boolean).sort((a, b) => b - a).slice(0, 6).map(h => ({ label: `${h}p`, value: `video:${h}` }))
   opts.push({ label: 'MP3 (192kbps)', value: 'audio:mp3' })
@@ -333,7 +339,7 @@ function registerIpcHandlers() {
 
   // --- Neural Dialogue Handlers (High Priority) ---
   safeHandle('ai:chat-stream', async (event, { messages, context }) => {
-    const apiKey = readAppState().aiApiKey
+    const apiKey = resolveAiApiKey()
     if (!apiKey) throw new Error('API Key missing.')
     if (aiAbortController) aiAbortController.abort()
     aiAbortController = new AbortController()
@@ -398,7 +404,7 @@ function registerIpcHandlers() {
   })
 
   safeHandle('ai:chat', async (_e, { messages, context }) => {
-    const apiKey = readAppState().aiApiKey
+    const apiKey = resolveAiApiKey()
     if (!apiKey) throw new Error('API Key missing.')
     if (aiAbortController) aiAbortController.abort()
     aiAbortController = new AbortController()
@@ -565,7 +571,7 @@ function registerIpcHandlers() {
 
 
   safeHandle('ai:reconstruct-transcript', async (_e, text) => {
-    const apiKey = readAppState().aiApiKey
+    const apiKey = resolveAiApiKey()
     if (!apiKey) throw new Error('API Key found missing.')
     try {
       const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -586,7 +592,7 @@ function registerIpcHandlers() {
   })
 
   safeHandle('ai:refine', async (_e, { blocks }) => {
-    const apiKey = readAppState().aiApiKey
+    const apiKey = resolveAiApiKey()
     if (!apiKey) throw new Error('API Key missing.')
     
     // Concatenate text for analysis while keeping track of indices
@@ -630,7 +636,7 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle('ai:processTranscript', async (_e, { text, prompt }) => {
-    const apiKey = readAppState().aiApiKey
+    const apiKey = resolveAiApiKey()
     if (!apiKey) throw new Error('API Key found missing.')
     try {
       const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -697,7 +703,7 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle('ai:explain', async (_e, { text, videoTitle }) => {
-    const apiKey = readAppState().aiApiKey
+    const apiKey = resolveAiApiKey()
     if (!apiKey) return { text, definition: 'No API Key' }
     const ctrl = new AbortController()
     const timeout = setTimeout(() => ctrl.abort(), 20000)
@@ -745,14 +751,28 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle('settings:getSavePath', () => readAppState().savePath || app.getPath('downloads'))
-  safeHandle('settings:getAiKey', () => readAppState().aiApiKey || '')
-  safeHandle('settings:setAiKey', (_e, key) => { writeAppState({ aiApiKey: key }); return key })
+  safeHandle('settings:getAiKey', () => {
+    const dbConfig = getAppSettings();
+    if (dbConfig.aiApiKey) return dbConfig.aiApiKey;
+    return readAppState().aiApiKey || '';
+  })
+  safeHandle('settings:setAiKey', (_e, key) => {
+    const dbConfig = getAppSettings();
+    dbConfig.aiApiKey = key;
+    saveAppSettings(dbConfig);
+    writeAppState({ aiApiKey: key }); // Sync to JSON too for now
+    return key;
+  })
   safeHandle('settings:getTheme', () => readAppState().theme || 'dark')
   safeHandle('settings:setTheme', (_e, theme) => { writeAppState({ theme }); return theme })
   safeHandle('shell:openPath', (_e, p) => shell.showItemInFolder(p))
   safeHandle('shell:openExternal', (_e, url) => shell.openExternal(url))
   safeHandle('app:getVersion', () => app.getVersion())
   safeHandle('ai:get-engine-status', () => lastEngineStatus)
+
+  // --- Neural Database Settings (Universal Blueprint) ---
+  safeHandle('settings:load', () => getAppSettings())
+  safeHandle('settings:save', (_e, config) => saveAppSettings(config))
 
   // ─── Auto-Updater ──────────────────────────────────────────────────────────
   autoUpdater.autoDownload = true

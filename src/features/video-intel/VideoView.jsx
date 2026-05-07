@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { Search, Loader2, Tv2, Play, X, ChevronLeft, Library, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import VideoPreviewCard from './VideoPreviewCard'
+import { api as bridgeApi } from "../../utils/api-bridge";
 
 const YT_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/i
 function fmtViews(n) {
@@ -21,9 +22,10 @@ export default function VideoView({
   loadingTranscript, setLoadingTranscript,
   showToast,
   searchInputRef,
-  busy, setBusy
+  busy, setBusy,
+  api: passedApi
 }) {
-  const api = window.youtubeAPI
+  const api = passedApi || bridgeApi
 
   const [quality, setQuality] = useState('')
   const [progress, setProgress] = useState({})

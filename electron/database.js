@@ -107,6 +107,16 @@ export function initDatabase() {
     )
   `).run();
 
+  // 6. Global Settings Table (Universal Configuration)
+  // Blueprint for future PostgreSQL cloud migration
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1), -- Singleton record
+      config TEXT, -- JSON blob of all user preferences/API keys
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
   // 6. Migrations: Add metadata column if missing
   try {
     const tableInfo = db.prepare("PRAGMA table_info(library)").all();
@@ -356,6 +366,33 @@ export function searchLibraryFTS(query) {
   } catch (err) {
     console.error('[SQLITE FTS ERROR]:', err.message);
     return [];
+  }
+}
+
+/**
+ * Settings API - Blueprint for Neural Config
+ */
+export function getAppSettings() {
+  try {
+    const row = db.prepare('SELECT config FROM settings WHERE id = 1').get();
+    return row ? JSON.parse(row.config) : {};
+  } catch (err) {
+    console.error('[SQLITE SETTINGS FETCH ERROR]', err);
+    return {};
+  }
+}
+
+export function saveAppSettings(config) {
+  try {
+    const raw = typeof config === 'string' ? config : JSON.stringify(config);
+    db.prepare(`
+      INSERT OR REPLACE INTO settings (id, config, updated_at) 
+      VALUES (1, ?, CURRENT_TIMESTAMP)
+    `).run(raw);
+    return true;
+  } catch (err) {
+    console.error('[SQLITE SETTINGS SAVE ERROR]', err);
+    return false;
   }
 }
 

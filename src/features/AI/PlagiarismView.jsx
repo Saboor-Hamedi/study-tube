@@ -12,6 +12,7 @@ import {
   ExternalLink,
   FileText,
 } from "lucide-react";
+import { api } from "../../utils/api-bridge";
 
 export default function PlagiarismView() {
   const [content, setContent] = useState("");
@@ -295,7 +296,7 @@ export default function PlagiarismView() {
                       <div
                         key={idx}
                         onClick={() =>
-                          window.youtubeAPI.openExternal(match.url)
+                          api.openExternal(match.url)
                         }
                         className="p-4 bg-surface-2 border border-border rounded-[10px] space-y-3 group/source hover:border-red-400/20 transition-all cursor-pointer shadow-sm hover:shadow-lg"
                       >

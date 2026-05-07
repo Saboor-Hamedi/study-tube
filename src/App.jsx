@@ -29,6 +29,8 @@ import GrammarView from "./features/grammar/GrammarView";
 import AIDetectionView from "./features/AI/AIDetectionView";
 import Home from "./Home";
 
+import { api } from "./utils/api-bridge";
+
 export default function App() {
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
@@ -102,7 +104,6 @@ export default function App() {
 
   const searchInputRef = useRef(null);
   const libHistoryRef = useRef(null);
-  const api = window.youtubeAPI;
 
   const [isEditingDetail, setIsEditingDetail] = useState(false);
   const [detailSaveTrigger, setDetailSaveTrigger] = useState(0);
@@ -615,7 +616,7 @@ export default function App() {
                         setView={setView}
                         vocabCount={vocabStats?.total || 0}
                         onOpenCapture={() => setIsCaptureOpen(true)}
-                        api={window.youtubeAPI}
+                        api={api}
                       />
                     </motion.div>
                   )}
@@ -752,7 +753,7 @@ export default function App() {
                     >
                       <AIDetectionView
                         showToast={showToast}
-                        api={window.youtubeAPI}
+                        api={api}
                       />
                     </motion.div>
                   )}

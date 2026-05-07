@@ -17,15 +17,18 @@ import LibraryView from "../research-vault/LibraryView";
 import DeleteModal from "../research-vault/DeleteModal";
 import GrammarForensicView from "../grammar/GrammarForensicView";
 
+import { api as bridgeApi } from "../../utils/api-bridge";
+
 export default function Profile({
   vocab = [],
   setVocab,
   onExpand,
-  api = window.youtubeAPI,
+  api: passedApi,
   showToast,
   displayLimit,
   setDisplayLimit,
 }) {
+  const api = passedApi || bridgeApi;
   const [activeTab, setActiveTab] = useState("profile");
   
   // Library State for LibraryView integration

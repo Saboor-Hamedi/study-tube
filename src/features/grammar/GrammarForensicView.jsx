@@ -78,18 +78,19 @@ export default function GrammarForensicView({
 
   return (
     <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans select-text">
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 grid grid-cols-[1fr_380px] overflow-hidden">
         {/* Source Analysis Window */}
-        <div className="flex-1 flex flex-col border-r border-border bg-surface-2/40 overflow-hidden relative px-2 pt-3 pb-0">
-          <div className="flex-1 overflow-hidden flex flex-col bg-surface border border-border/10 rounded-[12px]  shadow-black/10 relative">
-            <div className="flex-1 relative flex flex-col overflow-hidden">
+        <div className="min-w-0 flex flex-col border-r border-border bg-surface-2/40 overflow-hidden relative px-2 pt-3 pb-0">
+          <div className="flex-1 min-w-0 overflow-hidden flex flex-col bg-surface border border-border/10 rounded-[12px]  shadow-black/10 relative">
+            <div className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
               {isAnalyzing ? (
-                <div className="flex-1 overflow-y-auto custom-scroll p-4 lg:p-6">
-                  <div className="text-[18px] text-text/90 leading-[2.2] font-light tracking-wide whitespace-pre-wrap font-outfit select-text">
+                <div className="flex-1 min-w-0 overflow-y-auto custom-scroll p-4 lg:p-6">
+                  <div className="text-[18px] text-text/90 leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
                     {(() => {
                       let lastIndex = 0;
                       const elements = [];
-                      const sorted = [...diagnostics.highlights].sort(
+                      const highlights = diagnostics?.highlights || [];
+                      const sorted = [...highlights].sort(
                         (a, b) => a.start - b.start,
                       );
 
@@ -98,7 +99,7 @@ export default function GrammarForensicView({
                         elements.push(
                           <span
                             key={i}
-                            className={`relative inline-block px-1 rounded-[4px] mx-0.5 ${getCategoryBg(hl.type)}`}
+                            className={`relative inline px-1 rounded-[4px] mx-0.5 ${getCategoryBg(hl.type)}`}
                           >
                             <span
                               onClick={() => {
@@ -154,25 +155,25 @@ export default function GrammarForensicView({
                 {[
                   {
                     label: "Grammar",
-                    score: diagnostics.grammar,
+                    score: diagnostics?.grammar || 0,
                     icon: CheckCircle,
                     color: "text-blue-500",
                   },
                   {
                     label: "Academic",
-                    score: diagnostics.academic,
+                    score: diagnostics?.academic || 0,
                     icon: GraduationCap,
                     color: "text-purple-500",
                   },
                   {
                     label: "Index",
-                    score: diagnostics.index,
+                    score: diagnostics?.index || 0,
                     icon: Activity,
                     color: "text-green-500",
                   },
                   {
                     label: "Writing",
-                    score: diagnostics.writing,
+                    score: diagnostics?.writing || 0,
                     icon: Zap,
                     color: "text-accent",
                   },
@@ -216,7 +217,7 @@ export default function GrammarForensicView({
         </div>
 
         {/* Diagnostics Hub Panel */}
-        <div className="w-[380px] shrink-0 bg-surface flex flex-col border-l border-border">
+        <div className="w-[380px] bg-surface flex flex-col border-l border-border">
           <div className="h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
             <div className="flex items-center gap-3">
               <MessageSquare className="h-4 w-4 text-accent" />
@@ -241,7 +242,7 @@ export default function GrammarForensicView({
                 {[
                   {
                     label: "Grammar",
-                    score: diagnostics.grammar,
+                    score: diagnostics?.grammar || 0,
                     icon: CheckCircle,
                     color: "text-blue-500",
                     bg: "bg-blue-500/5",
@@ -249,7 +250,7 @@ export default function GrammarForensicView({
                   },
                   {
                     label: "Academic",
-                    score: diagnostics.academic,
+                    score: diagnostics?.academic || 0,
                     icon: GraduationCap,
                     color: "text-purple-500",
                     bg: "bg-purple-500/5",
@@ -257,7 +258,7 @@ export default function GrammarForensicView({
                   },
                   {
                     label: "Index",
-                    score: diagnostics.index,
+                    score: diagnostics?.index || 0,
                     icon: Activity,
                     color: "text-green-500",
                     bg: "bg-green-500/5",
@@ -265,7 +266,7 @@ export default function GrammarForensicView({
                   },
                   {
                     label: "Writing",
-                    score: diagnostics.writing,
+                    score: diagnostics?.writing || 0,
                     icon: Zap,
                     color: "text-accent",
                     bg: "bg-accent/5",
@@ -302,7 +303,7 @@ export default function GrammarForensicView({
             </div>
 
             {/* Band Score Indicator */}
-            {diagnostics.ielts && (
+            {diagnostics?.ielts && (
               <div className="p-4 border-b border-border/5 bg-surface-2/30">
                 <div className="p-4 bg-gradient-to-br from-accent/10 to-emerald-500/10 border border-accent/20 rounded-[10px] shadow-sm relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -352,13 +353,13 @@ export default function GrammarForensicView({
                   Neural Anomalies
                 </h3>
                 <span className="text-[9px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded-full tracking-widest">
-                  {diagnostics.highlights.length} DETECTED
+                  {(diagnostics?.highlights || []).length} DETECTED
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {diagnostics.highlights.length > 0 ? (
-                  diagnostics.highlights.map((hl, i) => (
+                {isAnalyzing && (diagnostics?.highlights || []).length > 0 ? (
+                  (diagnostics?.highlights || []).map((hl, i) => (
                     <div
                       key={i}
                       id={`anomaly-${i + 1}`}
