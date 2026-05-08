@@ -41,7 +41,7 @@ export default function Header({
       {/* Left Rail (Fixed Width for Balance) */}
       <div className="flex items-center gap-4 flex-1 min-w-[100px]">
         <h1 className="text-[18px] font-bold text-accent tracking-tight select-none truncate">
-          StudyHub
+          Writella
         </h1>
       </div>
 

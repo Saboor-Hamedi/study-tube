@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   Activity,
   Cpu,
+  Plus,
 } from "lucide-react";
 
 const Home = ({ setView, vocabCount = 0, onOpenCapture, api }) => {
@@ -246,8 +247,8 @@ const Home = ({ setView, vocabCount = 0, onOpenCapture, api }) => {
         </motion.div>
       </div>
 
-      {/* Global Bottom Horizon Alignment (72px Baseline) */}
-      <div className="h-[72px] border-t border-border/5 px-8 flex items-center justify-between bg-surface-2/30 backdrop-blur-md">
+      {/* Global Bottom Horizon Alignment (56px Baseline) */}
+      <div className="h-[56px] border-t border-border/5 px-8 flex items-center justify-between bg-surface-2/30 backdrop-blur-md">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -261,15 +262,12 @@ const Home = ({ setView, vocabCount = 0, onOpenCapture, api }) => {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button className="px-3 py-1.5 bg-surface-3 hover:bg-surface-4 text-[8px] font-black uppercase tracking-widest rounded-[4px] border border-border/10 transition-all">
-            Terminal
-          </button>
+          {/* Create New Document */}
           <button
             onClick={onOpenCapture}
             className="px-3 py-1.5 bg-accent hover:brightness-110 text-white text-[8px] font-black uppercase tracking-widest rounded-[4px] flex items-center gap-2 transition-all shadow-lg shadow-accent/20 border border-white/10"
           >
-            <Zap className="h-2.5 w-2.5 fill-white" />
-            Forge Insight
+            <Plus className="h-2.5 w-2.5 fill-white" />
           </button>
         </div>
       </div>
