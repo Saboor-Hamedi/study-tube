@@ -24,7 +24,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { DroppableFolder } from "../features/research-vault/DraggableCard";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "../store/useStore";
 import SidebarHeader from "./SidebarHeader";
@@ -59,6 +59,20 @@ export default function Sidebar({
   const [renamingId, setRenamingId] = useState(null);
   const [renamingValue, setRenamingValue] = useState("");
   const [pinnedItems, setPinnedItems] = useState([]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 800) {
+        setIsCollapsed(true);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    // Initial check
+    if (window.innerWidth <= 800) {
+      setIsCollapsed(true);
+    }
+    return () => window.removeEventListener("resize", handleResize);
+  }, [setIsCollapsed]);
 
   const handleCollectionSelect = (id) => {
     setSelectedCollection?.(id);

@@ -614,9 +614,17 @@ export default function App() {
                     >
                       <Home
                         setView={setView}
-                        vocabCount={vocabStats?.total || 0}
                         onOpenCapture={() => setIsCaptureOpen(true)}
                         api={api}
+                        vocab={vocab}
+                        setVocab={setVocab}
+                        onExpand={(item) => {
+                          setSelectedResearchNode(item);
+                          setView("research-detail");
+                        }}
+                        showToast={showToast}
+                        displayLimit={displayLimit}
+                        setDisplayLimit={setDisplayLimit}
                       />
                     </motion.div>
                   )}
