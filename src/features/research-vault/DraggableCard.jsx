@@ -94,7 +94,7 @@ export const DraggableCard = memo(({ id, v, children, useHandle = false }) => {
       {...listeners}
       className={`active:cursor-grabbing h-full ${isDragging ? "z-[200]" : ""}`}
     >
-      {children}
+      {typeof children === "function" ? children(isDragging) : children}
     </div>
   );
 });

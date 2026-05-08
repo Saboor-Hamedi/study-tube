@@ -28,6 +28,7 @@ import Sidebar from "./components/Sidebar";
 import GrammarView from "./features/grammar/GrammarView";
 import AIDetectionView from "./features/AI/AIDetectionView";
 import Home from "./Home";
+import SystemStatus from "./features/users/SystemStatus";
 
 import { api } from "./utils/api-bridge";
 
@@ -645,16 +646,23 @@ export default function App() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="absolute inset-0 overflow-y-auto scrollbar-thin"
+                      className="absolute inset-0 flex flex-row overflow-hidden bg-background"
                     >
-                      <LibraryView
-                        {...libraryProps}
-                        activeDragItem={activeDragItem}
-                        onExpand={(item) => {
-                          setSelectedResearchNode(item);
-                          setView("research-detail");
-                        }}
-                      />
+                      <div className="flex-1 h-full overflow-y-auto scrollbar-thin min-w-0">
+                        <LibraryView
+                          {...libraryProps}
+                          activeDragItem={activeDragItem}
+                          onExpand={(item) => {
+                            setSelectedResearchNode(item);
+                            setView("research-detail");
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Integrated System Status - Right Panel (Visible on Large Screens) */}
+                      <div className="hidden xl:block">
+                        <SystemStatus forensicNodes={vocab.length} />
+                      </div>
                     </motion.div>
                   )}
                   {view === "research-detail" && (
@@ -759,10 +767,7 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0"
                     >
-                      <AIDetectionView
-                        showToast={showToast}
-                        api={api}
-                      />
+                      <AIDetectionView showToast={showToast} api={api} />
                     </motion.div>
                   )}
                   {view === "plagiarism" && (

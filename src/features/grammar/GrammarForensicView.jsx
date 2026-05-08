@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GraduationCap,
@@ -10,11 +10,13 @@ import {
   Pencil,
   Plus,
   MessageSquare,
-  ChevronRight,
-  ChevronLeft,
+  AlertCircle,
+  ArrowRight,
+  X,
 } from "lucide-react";
 import { useRigor } from "../../hooks/useRigor";
 import NeuralFeedbackHub from "./NeuralFeedbackHub";
+import ForensicDropdown from "./ForensicDropdown";
 
 export default function GrammarForensicView({
   api,
@@ -34,6 +36,9 @@ export default function GrammarForensicView({
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 800);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
+  const [selectedHl, setSelectedHl] = useState(null);
+  const containerRef = useRef(null);
+  const closeTimeoutRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -68,6 +73,24 @@ export default function GrammarForensicView({
     }
   };
 
+  const handleApplySuggestion = async (suggestion) => {
+    if (!selectedHl) return;
+    const newContent = 
+      content.substring(0, selectedHl.start) + 
+      suggestion + 
+      content.substring(selectedHl.end);
+    
+    setContent(newContent);
+    setSelectedHl(null);
+
+    const results = await analyze(newContent);
+    if (results) {
+      setDiagnostics(results.diagnostics);
+    }
+    
+    if (showToast) showToast("Neural Correction Applied", "success");
+  };
+
   const handleArchive = async () => {
     if (!content.trim()) return;
 
@@ -100,6 +123,45 @@ export default function GrammarForensicView({
     }
   };
 
+  const showHl = (hl, i, e) => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const parentRect = containerRef.current.getBoundingClientRect();
+    
+    // Aggressive Smart Positioning: Check space below for 400px card clearance
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const preferUp = spaceBelow < 400; 
+
+    setSelectedHl({
+      ...hl,
+      index: i + 1,
+      top: preferUp 
+        ? rect.top - parentRect.top + containerRef.current.scrollTop - 16
+        : rect.bottom - parentRect.top + containerRef.current.scrollTop + 16,
+      left: Math.min(Math.max(10, rect.left - parentRect.left), parentRect.width - 230),
+      preferUp
+    });
+  };
+
+  const hideHl = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setSelectedHl(null);
+    }, 400); // Slightly longer buffer for better UX
+  };
+
+  const cancelHide = () => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+  };
+
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+    }
+  }, [content]);
+
   return (
     <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
       {/* Main Workspace */}
@@ -107,8 +169,9 @@ export default function GrammarForensicView({
         
         {/* Source Analysis Window (Seamless) */}
         <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative">
-          <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative">
-            <div className="p-4 md:p-10 min-h-full flex flex-col">
+          <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative" ref={containerRef}>
+            {/* Added PB-96 (384px) safe zone for bottom-of-page highlights */}
+            <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
               {isAnalyzing ? (
                 <div className="flex-1">
                   <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
@@ -131,23 +194,20 @@ export default function GrammarForensicView({
                             animate={{
                               backgroundColor: getCategoryBg(hl.type),
                             }}
-                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} px-0.5 rounded-sm transition-colors`}
-                            title={hl.explanation}
-                            onClick={() => {
-                              const el = document.getElementById(
-                                `anomaly-${i + 1}`,
-                              );
-                              el?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "center",
-                              });
-                              el?.classList.add("ring-2", "ring-accent");
-                              setTimeout(() => {
-                                el?.classList.remove("ring-2", "ring-accent");
-                              }, 2000);
+                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} px-0.5 rounded-sm transition-colors relative inline-flex items-center gap-0.5 leading-none group/hl`}
+                            onMouseEnter={(e) => showHl(hl, i, e)}
+                            onMouseLeave={hideHl}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showHl(hl, i, e);
                             }}
                           >
-                            {content.substring(hl.start, hl.end)}
+                            <span className="relative">
+                              {content.substring(hl.start, hl.end)}
+                            </span>
+                            <span className={`absolute -top-1.5 -right-1 text-[7px] font-black opacity-80 px-0.5 rounded-[2px] leading-none ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}>
+                              {i + 1}
+                            </span>
                           </motion.span>,
                         );
                         lastIndex = hl.end;
@@ -162,9 +222,23 @@ export default function GrammarForensicView({
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Paste academic manuscript for neural forensic auditing..."
-                  className="flex-1 w-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-hidden font-outfit min-h-[400px]"
+                  className="flex-1 h-full w-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
                 />
               )}
+
+              {/* Robust Anomaly Dropdown/Tooltip */}
+              <AnimatePresence>
+                <ForensicDropdown
+                  selectedHl={selectedHl}
+                  content={content}
+                  onApplySuggestion={handleApplySuggestion}
+                  onClose={() => setSelectedHl(null)}
+                  onMouseEnter={cancelHide}
+                  onMouseLeave={hideHl}
+                  getCategoryColor={getCategoryColor}
+                  getCategoryBg={getCategoryBg}
+                />
+              </AnimatePresence>
 
               {/* On Mobile, Diagnostics move INSIDE the scroll view at the bottom */}
               {isMobile && isAnalyzing && (
