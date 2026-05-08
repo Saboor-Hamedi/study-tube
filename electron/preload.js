@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
   getTheme: () => ipcRenderer.invoke('settings:getTheme'),
   setTheme: (theme) => ipcRenderer.invoke('settings:setTheme', theme),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (config) => ipcRenderer.invoke('settings:save', config),
   loadVocab: () => ipcRenderer.invoke('vocab:load'),
   saveVocab: (list) => ipcRenderer.invoke('vocab:save', list),
   loadCollections: () => ipcRenderer.invoke('collections:load'),
@@ -28,4 +30,5 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
     ipcRenderer.on('download:done', listener)
     return () => ipcRenderer.removeListener('download:done', listener)
   },
+  triggerSync: () => ipcRenderer.invoke('settings:trigger-sync'),
 })

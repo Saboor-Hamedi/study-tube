@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   setAiKey: (key) => ipcRenderer.invoke('settings:setAiKey', key),
   getTheme: () => ipcRenderer.invoke('settings:getTheme'),
   setTheme: (theme) => ipcRenderer.invoke('settings:setTheme', theme),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (config) => ipcRenderer.invoke('settings:save', config),
   loadVocab: () => ipcRenderer.invoke('vocab:load'),
   loadVocabPage: (criteria) => ipcRenderer.invoke('vocab:load-page', criteria),
   getLibraryStats: () => ipcRenderer.invoke('vocab:get-stats'),
@@ -85,5 +87,6 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
     const fn = () => cb()
     ipcRenderer.on('editor:refine-trigger', fn)
     return () => ipcRenderer.removeListener('editor:refine-trigger', fn)
-  }
+  },
+  triggerSync: () => ipcRenderer.invoke('settings:trigger-sync'),
 })

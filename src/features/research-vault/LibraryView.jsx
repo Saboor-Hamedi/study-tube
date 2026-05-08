@@ -125,6 +125,25 @@ export default function LibraryView({
     [selectedCollection, sortBy, displayLimit, activeApi],
   );
 
+  const handleCloudPull = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const result = await activeApi.pullFromCloud();
+      if (result?.success) {
+        showToast(`Cloud Restoration: ${result.count} items recovered`, "success");
+        await syncLibraryPage(true);
+        if (syncStats) syncStats();
+      } else {
+        showToast("Cloud connection refused", "error");
+      }
+    } catch (err) {
+      showToast("Sync anomaly detected", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const loadLog = async () => {
       try {
@@ -283,7 +302,7 @@ export default function LibraryView({
   const gridMemo = useMemo(
     () => (
       <div
-        className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5 ${activeDragItem ? "[&_*]:transition-none [&_*]:duration-0 select-none" : ""}`}
+        className={`grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5 ${activeDragItem ? "[&_*]:transition-none [&_*]:duration-0 select-none" : ""}`}
       >
         {visible.map((v, i) => (
           <DraggableCard
@@ -457,41 +476,68 @@ export default function LibraryView({
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full flex-1 flex flex-col"
                   >
-                    {gridMemo}
-                    <div className="mt-8 mb-20 flex flex-col items-center gap-6">
-                      {isAppending ? (
-                        <PulseLoader message="Expanding Research Horizon..." />
-                      ) : (
+                      {/* Industrial Control Bar */}
+                      <div className="flex items-center justify-between mb-6 px-1">
                         <div className="flex items-center gap-4">
-                          {localVocab.length >= displayLimit &&
-                            totalInCollection > displayLimit && (
+                          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted/40">
+                            Research Inventory
+                          </h2>
+                          <div className="h-4 w-px bg-border/10" />
+                          <span className="text-[10px] font-mono text-accent">
+                            {totalInCollection} NODES
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleCloudPull}
+                            disabled={loading}
+                            className="group h-8 px-4 flex items-center gap-2 bg-surface-2 border border-border/10 text-muted/60 hover:text-accent hover:border-accent/30 hover:bg-accent/5 transition-all rounded-[5px]"
+                          >
+                            <RefreshCcw
+                              className={`h-3 w-3 transition-transform duration-500 ${loading ? "animate-spin" : "group-hover:rotate-180"}`}
+                            />
+                            <span className="text-[8px] font-black uppercase tracking-[0.2em]">
+                              {loading ? "Syncing..." : "Sync Cloud"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {gridMemo}
+                      <div className="mt-8 mb-20 flex flex-col items-center gap-6">
+                        {isAppending ? (
+                          <PulseLoader message="Expanding Research Horizon..." />
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            {localVocab.length >= displayLimit &&
+                              totalInCollection > displayLimit && (
+                                <button
+                                  onClick={() => {
+                                    setDisplayLimit((prev) => prev + 3);
+                                  }}
+                                  className="group h-10 px-6 flex items-center gap-2 bg-surface-2 border border-border/10 text-muted/60 hover:text-accent hover:border-accent/30 hover:bg-accent/5 transition-all rounded-full"
+                                >
+                                  <Plus className="h-3 w-3 group-hover:rotate-90 transition-transform duration-500" />
+                                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">
+                                    Load more
+                                  </span>
+                                </button>
+                              )}
+
+                            {displayLimit > 6 && (
                               <button
-                                onClick={() => {
-                                  setDisplayLimit((prev) => prev + 3);
-                                }}
-                                className="group h-10 px-6 flex items-center gap-2 bg-surface-2 border border-border/10 text-muted/60 hover:text-accent hover:border-accent/30 hover:bg-accent/5 transition-all rounded-full"
+                                onClick={() => setDisplayLimit(6)}
+                                className="h-10 px-6 flex items-center bg-transparent border border-transparent hover:border-red-500/20 text-muted/30 hover:text-red-400 transition-all rounded-full"
                               >
-                                <Plus className="h-3 w-3 group-hover:rotate-90 transition-transform duration-500" />
                                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                                  Load more
+                                  Collapse
                                 </span>
                               </button>
                             )}
-
-                          {displayLimit > 6 && (
-                            <button
-                              onClick={() => setDisplayLimit(6)}
-                              className="h-10 px-6 flex items-center bg-transparent border border-transparent hover:border-red-500/20 text-muted/30 hover:text-red-400 transition-all rounded-full"
-                            >
-                              <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                                Collapse
-                              </span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
                 )}
               </AnimatePresence>
             </div>

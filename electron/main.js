@@ -16,7 +16,8 @@ import {
   getCollections, saveCollections, migrateCollection, disbandCollection,
   getSearchLog, addSearchLog, deleteSearchLog, clearSearchLog,
   searchLibraryFTS,
-  getAppSettings, saveAppSettings
+  getAppSettings, saveAppSettings,
+  getUnsyncedLibraryItems, markItemsAsSynced
 } from './database.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -109,11 +110,44 @@ const startPythonService = () => {
 
 // end 
 
+let cloudProcess = null;
+const startCloudBackend = () => {
+  if (cloudProcess) return;
+  
+  // Industrial Path Resolution: Handle ASAR vs Unpacked states
+  let serverPath = path.join(__dirname, '..', 'server', 'main.py');
+  if (app.isPackaged) {
+    serverPath = serverPath.replace('app.asar', 'app.asar.unpacked');
+  }
+
+  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+  
+  console.log(`[SYSTEM] Launching Cloud Bridge: ${pythonCmd} -m uvicorn server.main:app`);
+  
+  cloudProcess = spawn(pythonCmd, ['-m', 'uvicorn', 'server.main:app', '--port', '8000'], {
+    cwd: path.join(__dirname, '..'),
+    windowsHide: true,
+    env: { ...process.env, PYTHONUNBUFFERED: "1" }
+  });
+
+  cloudProcess.stdout.on('data', (data) => console.log(`[CLOUD BACKEND] ${data}`));
+  cloudProcess.stderr.on('data', (data) => console.error(`[CLOUD BACKEND ERROR] ${data}`));
+  cloudProcess.on('close', (code) => {
+    console.log(`[SYSTEM] Cloud Bridge exited with code ${code}`);
+    cloudProcess = null;
+  });
+};
+
 app.on('will-quit', () => {
   if (pyProcess) {
     console.log('[SYSTEM] Terminating Neural Sidecar...');
     pyProcess.kill();
     pyProcess = null;
+  }
+  if (cloudProcess) {
+    console.log('[SYSTEM] Terminating Cloud Bridge...');
+    cloudProcess.kill();
+    cloudProcess = null;
   }
 });
 
@@ -121,6 +155,7 @@ app.whenReady().then(() => {
   initDatabase()
   if (app.isPackaged) {
     startPythonService();
+    startCloudBackend();
   }
   
   try {
@@ -129,6 +164,9 @@ app.whenReady().then(() => {
   } catch (e) {
     console.error('[ARCHIVE AUDIT] Initial Audit Failed', e)
   }
+
+  // Start the Neural Cloud Bridge
+  startCloudSyncService();
 })
 
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
@@ -168,6 +206,51 @@ function buildQualityOptions(heights) {
   const opts = [...new Set(heights)].filter(Boolean).sort((a, b) => b - a).slice(0, 6).map(h => ({ label: `${h}p`, value: `video:${h}` }))
   opts.push({ label: 'MP3 (192kbps)', value: 'audio:mp3' })
   return opts
+}
+
+let isSyncing = false;
+async function performCloudSync() {
+  if (isSyncing) return { success: false, message: 'Sync already in progress' };
+  const settings = getAppSettings();
+  if (!settings.cloudApiUrl) return { success: false, message: 'Cloud API URL not configured' };
+
+  const items = getUnsyncedLibraryItems();
+  if (items.length === 0) return { success: true, message: 'Everything up to date' };
+
+  isSyncing = true;
+  console.log(`[CLOUD SYNC] Starting synchronization of ${items.length} items...`);
+
+  try {
+    const response = await fetch(`${settings.cloudApiUrl}/sync`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.cloudApiToken || ''}`
+      },
+      body: JSON.stringify({ items })
+    });
+
+    if (response.ok) {
+      const ids = items.map(i => i.id);
+      markItemsAsSynced(ids);
+      console.log(`[CLOUD SYNC] Successfully synchronized ${ids.length} items.`);
+      return { success: true, count: ids.length };
+    } else {
+      const errorText = await response.text();
+      console.warn(`[CLOUD SYNC] Server rejected sync: ${response.statusText} - ${errorText}`);
+      return { success: false, message: response.statusText };
+    }
+  } catch (err) {
+    console.error('[CLOUD SYNC] Neural Bridge connection failure:', err.message);
+    return { success: false, message: err.message };
+  } finally {
+    isSyncing = false;
+  }
+}
+
+async function startCloudSyncService() {
+  // Heartbeat every 5 minutes
+  setInterval(performCloudSync, 1000 * 60 * 5);
 }
 
 // ─── Metadata (ytdl-core) ────────────────────────────────────────────────────
@@ -743,6 +826,18 @@ function registerIpcHandlers() {
     } catch (e) { clearTimeout(timeout); return { text, videoTitle, definition: 'AI analysis timed out. Retry.', date: new Date().toISOString() } }
   })
 
+  ipcMain.handle('settings:trigger-sync', async () => {
+    return await performCloudSync();
+  });
+
+  ipcMain.handle('settings:get', async () => {
+    return getAppSettings();
+  });
+
+  ipcMain.handle('settings:save', async (_, config) => {
+    return saveAppSettings(config);
+  });
+
   ipcMain.handle('fs:pickSavePath', async () => {
     const r = await dialog.showOpenDialog({ title: 'Select Folder', properties: ['openDirectory', 'createDirectory'] })
     if (r.canceled || !r.filePaths.length) return null
@@ -769,10 +864,6 @@ function registerIpcHandlers() {
   safeHandle('shell:openExternal', (_e, url) => shell.openExternal(url))
   safeHandle('app:getVersion', () => app.getVersion())
   safeHandle('ai:get-engine-status', () => lastEngineStatus)
-
-  // --- Neural Database Settings (Universal Blueprint) ---
-  safeHandle('settings:load', () => getAppSettings())
-  safeHandle('settings:save', (_e, config) => saveAppSettings(config))
 
   // ─── Auto-Updater ──────────────────────────────────────────────────────────
   autoUpdater.autoDownload = true

@@ -1,114 +1,74 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import os from 'os';
 import fs from 'fs';
-import { app } from 'electron';
 
-const dbPath = path.join(app.getPath('userData'), 'studytube.db');
+const dbPath = path.join(os.homedir(), 'AppData', 'Roaming', 'StudyTube', 'studytube.db');
+const dbDir = path.dirname(dbPath);
+
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 const db = new Database(dbPath);
 
-// Enable WAL mode for performance
-db.pragma('journal_mode = WAL');
-
-/**
- * Initialize Tables and FTS5
- */
+// Initialize Tables
 export function initDatabase() {
-  // 1. Notes Table
+  // 1. Library Table (FTS5 enabled)
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS library (
+      id TEXT PRIMARY KEY,
+      text TEXT NOT NULL,
+      definition TEXT,
+      videoTitle TEXT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      collection TEXT,
+      archived INTEGER DEFAULT 0,
+      metadata TEXT,
+      synced INTEGER DEFAULT 0
+    )
+  `).run();
+
+  // 2. FTS5 Virtual Table for Library
+  try {
+    db.prepare(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS library_fts USING fts5(
+        text, 
+        definition, 
+        videoTitle, 
+        content='library', 
+        content_rowid='rowid'
+      )
+    `).run();
+  } catch (e) { console.error("FTS5 Init Failure:", e.message) }
+
+  // 3. Notes Table
   db.prepare(`
     CREATE TABLE IF NOT EXISTS notes (
-      id INTEGER PRIMARY KEY CHECK (id = 1), -- Hardcoded ID to ensure singleton
+      id TEXT PRIMARY KEY,
       data TEXT,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
 
-  // 2. Library Table (Vocabulary/Captures)
-  db.prepare(`
-    CREATE TABLE IF NOT EXISTS library (
-      id TEXT PRIMARY KEY, 
-      text TEXT,
-      definition TEXT,
-      videoTitle TEXT,
-      timestamp REAL,
-      date TEXT,
-      archived INTEGER DEFAULT 0,
-      collection TEXT,
-      type TEXT,
-      metadata TEXT,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
-
-  // 2b. High-Performance B-Tree Indexes
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_library_collection ON library(collection);
-    CREATE INDEX IF NOT EXISTS idx_library_date ON library(date);
-    CREATE INDEX IF NOT EXISTS idx_library_archived ON library(archived);
-  `);
-
-  // 3. Collections Table
+  // 4. Collections Table
   db.prepare(`
     CREATE TABLE IF NOT EXISTS collections (
-      name TEXT PRIMARY KEY
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
-
-  // 4. FTS5 Virtual Table for Library Search
-  try {
-    // Industrial Search: Library FTS5 Index with Porter Stemming
-    db.exec(`
-      DROP TABLE IF EXISTS library_fts;
-      CREATE VIRTUAL TABLE library_fts USING fts5(
-        text, 
-        definition, 
-        videoTitle, 
-        collection,
-        content='library',
-        content_rowid='rowid',
-        tokenize="porter unicode61 remove_diacritics 1"
-      );
-      
-      -- Initial Indexing Migration
-      INSERT INTO library_fts(rowid, text, definition, videoTitle, collection)
-      SELECT rowid, text, definition, videoTitle, collection FROM library;
-
-      -- Sync Triggers (Recreated with table)
-      DROP TRIGGER IF EXISTS library_ai;
-      DROP TRIGGER IF EXISTS library_ad;
-      DROP TRIGGER IF EXISTS library_au;
-
-      CREATE TRIGGER library_ai AFTER INSERT ON library BEGIN
-        INSERT INTO library_fts(rowid, text, definition, videoTitle, collection) 
-        VALUES (new.rowid, new.text, new.definition, new.videoTitle, new.collection);
-      END;
-
-      CREATE TRIGGER library_ad AFTER DELETE ON library BEGIN
-        INSERT INTO library_fts(library_fts, rowid, text, definition, videoTitle, collection) 
-        VALUES('delete', old.rowid, old.text, old.definition, old.videoTitle, old.collection);
-      END;
-
-      CREATE TRIGGER library_au AFTER UPDATE ON library BEGIN
-        INSERT INTO library_fts(library_fts, rowid, text, definition, videoTitle, collection) 
-        VALUES('delete', old.rowid, old.text, old.definition, old.videoTitle, old.collection);
-        INSERT INTO library_fts(rowid, text, definition, videoTitle, collection) 
-        VALUES (new.rowid, new.text, new.definition, new.videoTitle, new.collection);
-      END;
-    `);
-  } catch (e) {
-    console.warn('FTS5 Initialization Anomaly:', e.message);
-  }
 
   // 5. Search Log Table (Persistent History)
   db.prepare(`
     CREATE TABLE IF NOT EXISTS search_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      query TEXT UNIQUE,
+      query TEXT PRIMARY KEY,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
 
   // 6. Global Settings Table (Universal Configuration)
-  // Blueprint for future PostgreSQL cloud migration
   db.prepare(`
     CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY CHECK (id = 1), -- Singleton record
@@ -117,19 +77,27 @@ export function initDatabase() {
     )
   `).run();
 
-  // 6. Migrations: Add metadata column if missing
+  // 7. Migrations: Add new columns if missing
   try {
     const tableInfo = db.prepare("PRAGMA table_info(library)").all();
-    const hasMetadata = tableInfo.some(col => col.name === 'metadata');
-    if (!hasMetadata) {
+    
+    if (!tableInfo.some(col => col.name === 'metadata')) {
       db.exec("ALTER TABLE library ADD COLUMN metadata TEXT");
       console.log("[SQLITE] Migration: Added metadata column to library table");
+    }
+
+    if (!tableInfo.some(col => col.name === 'synced')) {
+      db.exec("ALTER TABLE library ADD COLUMN synced INTEGER DEFAULT 0");
+      console.log("[SQLITE] Migration: Added synced column to library table (Default 0)");
     }
   } catch (e) {
     console.error("[SQLITE] Migration Failure:", e.message);
   }
-}
 
+  // Forced Neural Sync Reset: One-time migration for initial bridge setup
+  db.prepare("UPDATE library SET synced = 0").run();
+  console.log("[SQLITE] Neural Sync Reset: All local records flagged for Cloud Migration.");
+}
 
 /**
  * Notes API
@@ -140,192 +108,155 @@ export function getNotes() {
 }
 
 export function saveNotes(data) {
-  const raw = typeof data === 'string' ? data : JSON.stringify(data);
-  db.prepare('INSERT OR REPLACE INTO notes (id, data, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)').run(raw);
+  const raw = JSON.stringify(data);
+  db.prepare(`
+    INSERT OR REPLACE INTO notes (id, data, updated_at) 
+    VALUES ('default', ?, CURRENT_TIMESTAMP)
+  `).run(raw);
 }
 
 /**
- * Library API - Industrial Scale Optimized
+ * Library API
  */
-export function getLibraryPage({ collection, sortBy, limit, id }) {
-  try {
-    if (id) {
-      return db.prepare('SELECT * FROM library WHERE id = ? OR date = ?').all(id, id);
-    }
+export function getLibrary() {
+  return db.prepare('SELECT * FROM library WHERE archived = 0 ORDER BY date DESC').all();
+}
 
-    let query = `SELECT * FROM library`
-    const params = []
-    
-    if (collection && collection !== 'all') {
-      if (collection === 'trash') {
-        query += ` WHERE archived = 1`
-      } else if (collection === 'unorganized') {
-        query += ` WHERE (collection IS NULL OR collection = '') AND archived = 0`
-      } else {
-        query += ` WHERE collection = ? AND archived = 0`
-        params.push(collection)
-      }
-    } else {
-      query += ` WHERE archived = 0`
-    }
-    
-    if (sortBy === 'alpha') query += ` ORDER BY date ASC`
-    else query += ` ORDER BY date DESC`
-    
-    if (limit) {
-      query += ` LIMIT ?`
-      params.push(limit)
-    }
-    
-    const rows = db.prepare(query).all(...params);
-    return rows.map(r => ({
-      ...r,
-      archived: !!r.archived,
-      diagnostics: r.metadata ? JSON.parse(r.metadata) : null,
-      band: r.metadata ? (JSON.parse(r.metadata).ielts || JSON.parse(r.metadata).ieltsBand) : null
-    }));
-  } catch (err) {
-    console.error('Paginated fetch failure', err)
-    return []
+export function getLibraryPage({ collection, sortBy, limit }) {
+  let query = 'SELECT * FROM library';
+  const params = [];
+
+  if (collection === 'trash') {
+    query += ' WHERE archived = 1';
+  } else if (collection === 'unorganized') {
+    query += ' WHERE (collection IS NULL OR collection = "") AND archived = 0';
+  } else if (collection && collection !== 'all') {
+    query += ' WHERE collection = ? AND archived = 0';
+    params.push(collection);
+  } else {
+    query += ' WHERE archived = 0';
   }
+
+  if (sortBy === 'alpha') query += ' ORDER BY text ASC';
+  else query += ' ORDER BY date DESC';
+
+  if (limit) {
+    query += ' LIMIT ?';
+    params.push(limit);
+  }
+
+  return db.prepare(query).all(...params);
 }
 
 export function getCollectionStats() {
-  try {
-    // Industrial Counting: Treat NULL as 0 (Unarchived)
-    const all = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 0').get().count;
-    const trash = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 1').get().count;
-    
-    const collections = db.prepare(`
-      SELECT collection as name, COUNT(*) as count 
-      FROM library 
-      WHERE IFNULL(archived, 0) = 0 AND collection IS NOT NULL AND collection != ''
-      GROUP BY collection
-    `).all();
+  // Industrial Audit: Ensure NULL archived states are treated as active (0)
+  const allCount = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 0').get().count;
+  const trashCount = db.prepare('SELECT COUNT(*) as count FROM library WHERE archived = 1').get().count;
+  const collections = db.prepare(`
+    SELECT collection as name, COUNT(*) as count 
+    FROM library 
+    WHERE IFNULL(archived, 0) = 0 AND collection IS NOT NULL AND collection != ''
+    GROUP BY collection
+  `).all();
 
-    return { all, trash, collections };
-  } catch (err) {
-    console.error('[SQLITE STATS ERROR]', err.message);
-    return { all: 0, trash: 0, collections: [] };
-  }
+  return { all: allCount, trash: trashCount, collections };
+}
+
+export function saveLibrary(items) {
+  const insert = db.prepare(`
+    INSERT OR REPLACE INTO library (id, text, definition, videoTitle, date, collection, archived, metadata, synced) 
+    VALUES (@id, @text, @definition, @videoTitle, @date, @collection, @archived, @metadata, 0)
+  `);
+
+  const insertFTS = db.prepare(`
+    INSERT INTO library_fts (rowid, text, definition, videoTitle) 
+    VALUES (@rowid, @text, @definition, @videoTitle)
+  `);
+
+  const transaction = db.transaction((list) => {
+    for (const item of list) {
+      const res = insert.run(item);
+      insertFTS.run({
+        rowid: res.lastInsertRowid,
+        text: item.text,
+        definition: item.definition,
+        videoTitle: item.videoTitle
+      });
+    }
+  });
+
+  transaction(items);
 }
 
 export function saveVocabItem(item) {
-  const stmt = db.prepare(`
-    INSERT INTO library (id, text, definition, videoTitle, timestamp, date, archived, collection, type, metadata)
-    VALUES (@id, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type, @metadata)
-    ON CONFLICT(id) DO UPDATE SET
-      text = excluded.text,
-      definition = excluded.definition,
-      videoTitle = excluded.videoTitle,
-      archived = excluded.archived,
-      collection = excluded.collection,
-      type = excluded.type,
-      metadata = excluded.metadata,
-      updated_at = CURRENT_TIMESTAMP
-  `);
-
-  stmt.run({
-    id: item.date || item.id || new Date().toISOString(),
-    text: item.text || '',
+  // Hardened Industrial Extraction: Only bind fields present in the schema
+  const dbItem = {
+    id: item.id,
+    text: item.text,
     definition: item.definition || '',
-    videoTitle: item.videoTitle || 'Universal Knowledge',
-    timestamp: item.timestamp || 0,
+    videoTitle: item.videoTitle || item.video_title || '',
     date: item.date || new Date().toISOString(),
-    archived: item.archived ? 1 : 0,
     collection: item.collection || null,
-    type: item.type || '',
-    metadata: item.metadata ? JSON.stringify(item.metadata) : JSON.stringify(item.diagnostics || {})
-  });
-}
+    archived: (item.archived === 1 || item.archived === true) ? 1 : 0,
+    metadata: typeof item.metadata === 'object' ? JSON.stringify(item.metadata) : (item.metadata || '{}'),
+    synced: (item.synced === 1 || item.synced === true) ? 1 : 0
+  };
+  
+  const res = db.prepare(`
+    INSERT OR REPLACE INTO library (id, text, definition, videoTitle, date, collection, archived, metadata, synced) 
+    VALUES (@id, @text, @definition, @videoTitle, @date, @collection, @archived, @metadata, @synced)
+  `).run(dbItem);
 
-export function migrateCollection(oldName, newName) {
-  db.prepare('UPDATE library SET collection = ? WHERE collection = ?').run(newName, oldName);
-  db.prepare('UPDATE collections SET name = ? WHERE name = ?').run(newName, oldName);
-}
-
-export function disbandCollection(name) {
-  db.prepare('UPDATE library SET collection = NULL WHERE collection = ?').run(name);
-  db.prepare('DELETE FROM collections WHERE name = ?').run(name);
-}
-
-export function getLibrary() {
-  const rows = db.prepare('SELECT * FROM library ORDER BY date DESC').all();
-  return rows.map(r => ({ 
-    ...r, 
-    archived: !!r.archived,
-    diagnostics: r.metadata ? JSON.parse(r.metadata) : null,
-    band: r.metadata ? JSON.parse(r.metadata).ielts : null
-  }));
+  // Update FTS (Forensic Search Index)
+  db.prepare('DELETE FROM library_fts WHERE rowid = ?').run(res.lastInsertRowid);
+  db.prepare(`
+    INSERT INTO library_fts (rowid, text, definition, videoTitle) 
+    VALUES (?, ?, ?, ?)
+  `).run(res.lastInsertRowid, dbItem.text, dbItem.definition, dbItem.videoTitle);
 }
 
 export function deleteVocabItem(id) {
   db.prepare('DELETE FROM library WHERE id = ?').run(id);
 }
 
-// Legacy support for smaller migrations, but we should move away from this
-export function saveLibrary(items) {
-  db.transaction(() => {
-    db.prepare('DELETE FROM library').run();
-    const insert = db.prepare(`
-      INSERT INTO library (id, text, definition, videoTitle, timestamp, date, archived, collection, type)
-      VALUES (@date, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type)
-    `);
-    for (const item of items) {
-      insert.run({
-        text: item.text || '',
-        videoTitle: item.videoTitle || 'Universal Source',
-        timestamp: item.timestamp || 0,
-        date: item.date || new Date().toISOString(),
-        archived: item.archived ? 1 : 0,
-        collection: item.collection || null,
-        type: item.type || '',
-        definition: item.definition || ''
-      });
-    }
-  })();
-}
-
 /**
  * Collections API
  */
 export function getCollections() {
-  const rows = db.prepare('SELECT name FROM collections').all();
-  return rows.map(r => r.name);
+  return db.prepare('SELECT * FROM collections ORDER BY name ASC').all();
 }
 
-export function saveCollections(names) {
-  db.transaction(() => {
-    db.prepare('DELETE FROM collections').run();
-    const insert = db.prepare('INSERT INTO collections (name) VALUES (?)');
+export function saveCollections(list) {
+  db.prepare('DELETE FROM collections').run();
+  const insert = db.prepare('INSERT INTO collections (name) VALUES (?)');
+  const transaction = db.transaction((names) => {
     for (const name of names) insert.run(name);
-  })();
+  });
+  transaction(list);
+}
+
+export function migrateCollection(oldName, newName) {
+  db.prepare('UPDATE library SET collection = ? WHERE collection = ?').run(newName, oldName);
+}
+
+export function disbandCollection(name) {
+  db.prepare('UPDATE library SET collection = NULL WHERE collection = ?').run(name);
 }
 
 /**
- * Search Log API
+ * Search History / Logs
  */
 export function getSearchLog() {
-  try {
-    const rows = db.prepare('SELECT query FROM search_log ORDER BY created_at DESC LIMIT 10').all();
-    console.log(`[SQLITE] Fetched ${rows.length} search logs`);
-    return rows.map(r => r.query);
-  } catch (err) {
-    console.error('[SQLITE ERROR] Fetch Log Failure:', err.message);
-    return [];
-  }
+  return db.prepare('SELECT query FROM search_log ORDER BY created_at DESC LIMIT 10').all().map(r => r.query);
 }
 
 export function addSearchLog(query) {
   try {
-    console.log(`[SQLITE] Committing Query: "${query}"`);
-    // Insert or update timestamp if exists
     db.prepare(`
       INSERT INTO search_log (query, created_at) 
       VALUES (?, CURRENT_TIMESTAMP)
       ON CONFLICT(query) DO UPDATE SET created_at = CURRENT_TIMESTAMP
     `).run(query);
-    console.log(`[SQLITE] Query Saved Successfully`);
   } catch (err) {
     console.error('[SYSTEM] Search Log Persistence Failure:', err.message);
   }
@@ -345,8 +276,6 @@ export function clearSearchLog() {
 export function searchLibraryFTS(query) {
   if (!query || query.trim().length === 0) return [];
   try {
-    // Search across word, definition, and title using FTS5
-    // We use snippet() to get the highlighted context
     const rows = db.prepare(`
       SELECT 
         l.id, 
@@ -361,7 +290,6 @@ export function searchLibraryFTS(query) {
       ORDER BY rank
       LIMIT 6
     `).all(query);
-
     return rows;
   } catch (err) {
     console.error('[SQLITE FTS ERROR]:', err.message);
@@ -393,6 +321,27 @@ export function saveAppSettings(config) {
   } catch (err) {
     console.error('[SQLITE SETTINGS SAVE ERROR]', err);
     return false;
+  }
+}
+
+// ─── Cloud Sync Helpers ─────────────────────────────────────────────────────
+
+export function getUnsyncedLibraryItems() {
+  try {
+    return db.prepare('SELECT * FROM library WHERE synced = 0 OR synced IS NULL LIMIT 100').all();
+  } catch (err) {
+    console.error('[SQLITE SYNC FETCH FAIL]', err);
+    return [];
+  }
+}
+
+export function markItemsAsSynced(ids) {
+  if (!ids || ids.length === 0) return;
+  try {
+    const placeholders = ids.map(() => '?').join(',');
+    db.prepare(`UPDATE library SET synced = 1 WHERE id IN (${placeholders})`).run(...ids);
+  } catch (err) {
+    console.error('[SQLITE SYNC MARK FAIL]', err);
   }
 }
 

@@ -58,10 +58,12 @@ export default function GrammarForensicView({
       definition: content,
       collection: "__neural_drafts__",
       date: new Date().toISOString(),
-      student: "Me (Forensic Audit)",
-      status: "Saved",
-      band: diagnostics.ielts || diagnostics.ieltsBand || "N/A",
-      diagnostics: { ...diagnostics },
+      metadata: {
+        student: "Me (Forensic Audit)",
+        status: "Saved",
+        band: diagnostics.ielts || diagnostics.ieltsBand || "N/A",
+        diagnostics: { ...diagnostics }
+      }
     };
 
     try {
@@ -78,7 +80,7 @@ export default function GrammarForensicView({
 
   return (
     <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans select-text">
-      <div className="flex-1 grid grid-cols-[1fr_380px] overflow-hidden">
+      <div className="flex-1 grid grid-cols-[1fr_380px] overflow-hidden min-h-0">
         {/* Source Analysis Window */}
         <div className="min-w-0 flex flex-col border-r border-border bg-surface-2/40 overflow-hidden relative px-2 pt-3 pb-0">
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col bg-surface border border-border/10 rounded-[12px]  shadow-black/10 relative">
@@ -217,7 +219,7 @@ export default function GrammarForensicView({
         </div>
 
         {/* Diagnostics Hub Panel */}
-        <div className="w-[380px] bg-surface flex flex-col border-l border-border">
+        <div className="w-[380px] bg-surface flex flex-col border-l border-border min-h-0">
           <div className="h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
             <div className="flex items-center gap-3">
               <MessageSquare className="h-4 w-4 text-accent" />

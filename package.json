@@ -8,8 +8,9 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "npm run dev:electron",
-    "dev:web": "vite --port 5173 --strictPort",
+    "dev:web": "concurrently -k \"vite --port 5173 --strictPort\" \"npm:dev:cloud\"",
     "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\"",
+    "dev:cloud": "uvicorn server.main:app --reload --port 8000",
     "python:dev": "python electron/services/ai_detection.py",
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",
@@ -27,11 +28,13 @@
       "output": "dist-electron"
     },
     "asarUnpack": [
-      "electron/services/**"
+      "electron/services/**",
+      "server/**"
     ],
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "server/**/*",
       "electron/grammars/**/*",
       "node_modules/**/*",
       "package.json",

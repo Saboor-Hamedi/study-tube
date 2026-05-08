@@ -6,6 +6,7 @@ import {
   Trash2,
   Pencil,
   Check,
+  Brain,
   ChevronLeft,
   ChevronRight,
   Hash,
@@ -180,6 +181,77 @@ export default function Sidebar({
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Collections & Folders */}
+          <div className="space-y-4">
+            {!isCollapsed && (
+              <div className="px-2 flex items-center justify-between group/title">
+                <p className="text-[10px] font-black text-muted/20 uppercase tracking-widest">
+                  Collections
+                </p>
+                <button
+                  onClick={() => setIsCreatingCollection(true)}
+                  className="p-1 hover:bg-accent/10 text-muted/20 hover:text-accent transition-all rounded-[3px]"
+                >
+                  <Plus className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {/* Special Folders */}
+              {[
+                { id: "all", name: "All Research", icon: Library },
+                { id: "__neural_drafts__", name: "Neural Archive", icon: Brain },
+                { id: "trash", name: "Trash", icon: Trash2 },
+              ].map((folder) => {
+                const active = selectedCollection === folder.id;
+                return (
+                  <button
+                    key={folder.id}
+                    onClick={() => handleCollectionSelect(folder.id)}
+                    className={`w-full group relative flex items-center transition-all duration-200 px-3 py-2 rounded-[5px] border border-transparent ${active ? "bg-accent/5 text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`}
+                  >
+                    <folder.icon
+                      className={`h-3.5 w-3.5 shrink-0 mr-3 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
+                    />
+                    {!isCollapsed && (
+                      <div className="flex-1 flex items-center justify-between overflow-hidden">
+                        <span className="text-[11px] font-black truncate">
+                          {folder.name}
+                        </span>
+                        <span className="text-[9px] font-mono opacity-30 group-hover:opacity-100">
+                          {getCount(folder.id)}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+
+              <div className="h-px bg-border/5 mx-2 my-2" />
+
+              {/* User Collections */}
+              {collections?.map((name) => (
+                <DroppableFolder
+                  key={name}
+                  id={name}
+                  active={selectedCollection === name}
+                  onClick={() => handleCollectionSelect(name)}
+                  isCollapsed={isCollapsed}
+                >
+                  <div className="flex-1 flex items-center justify-between overflow-hidden">
+                    <span className="text-[11px] font-black truncate">
+                      {name}
+                    </span>
+                    <span className="text-[9px] font-mono opacity-30 group-hover:opacity-100">
+                      {getCount(name)}
+                    </span>
+                  </div>
+                </DroppableFolder>
+              ))}
             </div>
           </div>
         </div>

@@ -63,11 +63,25 @@ const WebAdapter = {
     return lib.slice(0, limit);
   },
   saveVocabItem: async (item) => {
+    // 1. Local Storage fallback
     const lib = JSON.parse(localStorage.getItem('study_library') || '[]');
     const idx = lib.findIndex(v => (v.id || v.date) === (item.id || item.date));
     if (idx >= 0) lib[idx] = item;
     else lib.unshift(item);
     localStorage.setItem('study_library', JSON.stringify(lib));
+
+    // 2. Direct Cloud Push (Same as Electron mode)
+    try {
+      const settings = JSON.parse(localStorage.getItem('study_settings') || '{}');
+      const cloudUrl = settings.cloudApiUrl || 'http://127.0.0.1:8000';
+      await fetch(`${cloudUrl}/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [item], notes: null, collections: null, settings: null })
+      });
+    } catch (e) {
+      console.warn('[CLOUD] Web Sync Bypass', e);
+    }
     return true;
   },
   deleteVocabItem: async (id) => {
@@ -171,6 +185,18 @@ const WebAdapter = {
     localStorage.setItem('study_search_log', JSON.stringify(log));
   },
   clearSearchLog: async () => localStorage.removeItem('study_search_log'),
+
+  // --- Neural Cloud Bridge (Web Mode) ---
+  triggerSync: async () => {
+    console.log('[CLOUD] Web mode: Syncing via Direct Cloud Access...');
+    // In web mode, we are already talking to the cloud or will be soon.
+    return { success: true, message: 'Cloud Active' };
+  },
+  loadCollections: async () => JSON.parse(localStorage.getItem('study_collections') || '[]'),
+  saveCollections: async (list) => {
+    localStorage.setItem('study_collections', JSON.stringify(list));
+    return true;
+  }
 };
 
 /**
@@ -178,6 +204,67 @@ const WebAdapter = {
  */
 export const api = isElectron ? {
   ...window.youtubeAPI,
-  getAppSettings: () => window.youtubeAPI.invoke('settings:load'),
-  saveAppSettings: (config) => window.youtubeAPI.invoke('settings:save', config),
-} : WebAdapter;
+  getAppSettings: () => window.youtubeAPI.getSettings(),
+  saveAppSettings: (config) => window.youtubeAPI.saveSettings(config),
+  
+  saveVocabItem: async (item) => {
+    await window.youtubeAPI.saveVocabItem(item);
+    try {
+      const settings = await window.youtubeAPI.getSettings();
+      const cloudUrl = settings.cloud_api_url || settings.cloudApiUrl || 'http://127.0.0.1:8000';
+      await fetch(`${cloudUrl}/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [item], notes: null, collections: null, settings: null })
+      });
+    } catch (e) {
+      console.warn('[CLOUD] Direct Sync Bypass', e);
+    }
+    return true;
+  },
+
+  pullFromCloud: async () => {
+    try {
+      const settings = await window.youtubeAPI.getSettings();
+      const cloudUrl = settings.cloud_api_url || settings.cloudApiUrl || 'http://127.0.0.1:8000';
+      console.log(`[CLOUD] Electron Pull: Connecting to ${cloudUrl}/library...`);
+      const response = await fetch(`${cloudUrl}/library`);
+      const cloudItems = await response.json();
+      if (Array.isArray(cloudItems)) {
+        console.log(`[CLOUD] Electron Pull: Received ${cloudItems.length} items. Syncing to SQLite...`);
+        for (const item of cloudItems) {
+          const localItem = { ...item, videoTitle: item.video_title, archived: item.archived ? 1 : 0, synced: 1 };
+          delete localItem.video_title;
+          await window.youtubeAPI.saveVocabItem(localItem);
+        }
+        return { success: true, count: cloudItems.length };
+      }
+    } catch (err) {
+      console.error('[CLOUD] Electron Pull Failed:', err);
+      return { success: false };
+    }
+  }
+} : {
+  ...WebAdapter,
+  pullFromCloud: async () => {
+     try {
+       const settings = JSON.parse(localStorage.getItem('study_settings') || '{}');
+       const cloudUrl = settings.cloudApiUrl || 'http://127.0.0.1:8000';
+       console.log(`[CLOUD] Web Pull: Connecting to ${cloudUrl}/library...`);
+       const response = await fetch(`${cloudUrl}/library`);
+       const cloudItems = await response.json();
+       if (Array.isArray(cloudItems)) {
+         console.log(`[CLOUD] Web Pull: Received ${cloudItems.length} items. Syncing to LocalStorage...`);
+         for (const item of cloudItems) {
+           const localItem = { ...item, videoTitle: item.video_title, archived: item.archived ? 1 : 0 };
+           delete localItem.video_title;
+           await WebAdapter.saveVocabItem(localItem);
+         }
+         return { success: true, count: cloudItems.length };
+       }
+     } catch (err) {
+       console.error('[CLOUD] Web Pull Failed:', err);
+       return { success: false };
+     }
+  }
+};
