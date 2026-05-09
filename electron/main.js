@@ -13,6 +13,7 @@ import {
   initDatabase, getNotes, saveNotes, 
   getLibrary, saveLibrary, 
   getLibraryPage, getCollectionStats, saveVocabItem, deleteVocabItem,
+  archiveVocabItem, restoreVocabItem,
   getCollections, saveCollections, migrateCollection, disbandCollection,
   getSearchLog, addSearchLog, deleteSearchLog, clearSearchLog,
   searchLibraryFTS,
