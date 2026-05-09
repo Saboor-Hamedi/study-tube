@@ -45,7 +45,7 @@ const WebAdapter = {
   loadVocab: async (includeArchived = false) => {
     let lib = JSON.parse(localStorage.getItem('study_library') || '[]');
     if (!includeArchived) lib = lib.filter(v => !v.archived);
-    return lib;
+    return lib.sort((a, b) => new Date(b.date) - new Date(a.date));
   },
   loadVocabPage: async ({ collection, sortBy, limit }) => {
     let lib = JSON.parse(localStorage.getItem('study_library') || '[]');

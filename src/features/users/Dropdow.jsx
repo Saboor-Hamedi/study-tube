@@ -81,7 +81,7 @@ export default function Dropdow({ view, setView, theme, onToggleTheme }) {
 
       <button
         onClick={() => setIsProfileOpen(!isProfileOpen)}
-        className={`group flex items-center gap-3 px-3 py-2 rounded-[12px] transition-all duration-300 ${
+        className={`group flex items-center gap-3 px-3 py-0 h-8 rounded-[12px] transition-all duration-300 ${
           isProfileOpen 
             ? 'bg-accent/10 shadow-sm' 
             : 'hover:bg-white/5'

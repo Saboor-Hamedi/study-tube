@@ -26,7 +26,7 @@ export default function Notifications() {
     <div className="relative" ref={bellRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 relative ${isOpen ? 'bg-accent/10 text-accent' : 'text-muted/40 hover:bg-white/5 hover:text-text'}`}
+        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 relative ${isOpen ? 'bg-accent/10 text-accent' : 'text-muted/40 hover:bg-white/5 hover:text-text'}`}
       >
         <Bell className="h-4 w-4" />
         <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-surface shadow-[0_0_8px_rgba(239,68,68,0.4)]" />

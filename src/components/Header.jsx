@@ -37,7 +37,7 @@ export default function Header({
   };
 
   return (
-    <div className="w-full shrink-0 flex items-center justify-between px-8 py-2.5 border-b border-border bg-surface z-[100] transition-colors duration-500 relative">
+    <div className="w-full shrink-0 flex items-center justify-between px-8 py-1.5 border-b border-border bg-surface z-[100] transition-colors duration-500 relative">
       {/* Left Rail (Fixed Width for Balance) */}
       <div className="flex items-center gap-4 flex-1 min-w-[100px]">
         <h1 className="text-[18px] font-bold text-accent tracking-tight select-none truncate">
@@ -125,7 +125,7 @@ export default function Header({
                   librarySearch.setSelectedIndex(-1);
                 }}
                 placeholder="Search neural archive... (Ctrl+F)"
-                className="w-full bg-surface-2/50 border border-border py-2 px-10 text-[11px] text-text outline-none focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[4px] shadow-sm"
+                className="w-full bg-surface-2/50 border border-border py-1 px-10 text-[11px] text-text outline-none focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[4px] shadow-sm"
               />
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
                 <SearchIcon
