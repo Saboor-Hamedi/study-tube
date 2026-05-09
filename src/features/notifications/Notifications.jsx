@@ -23,7 +23,7 @@ export default function Notifications() {
   }, [])
 
   return (
-    <div className="relative" ref={bellRef}>
+    <div className="flex items-center relative" ref={bellRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 relative ${isOpen ? 'bg-accent/10 text-accent' : 'text-muted/40 hover:bg-white/5 hover:text-text'}`}
@@ -38,7 +38,7 @@ export default function Notifications() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full right-0 mt-2 w-80 bg-surface-2 border border-border shadow-2xl z-[250] overflow-hidden rounded-[12px] backdrop-blur-xl"
+            className="absolute top-full right-0 mt-4 w-80 bg-surface-2 border border-border shadow-2xl z-[250] overflow-hidden rounded-[12px] backdrop-blur-xl"
           >
             <div className="p-4 bg-surface-3 border-b border-border flex items-center justify-between">
               <span className="text-[10px] font-black text-text uppercase tracking-[0.2em]">Neural Alerts</span>

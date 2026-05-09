@@ -24,7 +24,7 @@ export default function Dropdow({ view, setView, theme, onToggleTheme }) {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full right-0 mt-2 w-64 bg-surface-2 border border-border shadow-2xl z-[250] overflow-hidden rounded-[12px] backdrop-blur-xl"
+            className="absolute top-full right-0 mt-4 w-64 bg-surface-2 border border-border shadow-2xl z-[250] overflow-hidden rounded-[12px] backdrop-blur-xl"
           >
             {/* User Identity Header */}
             <div className="p-4 bg-surface-3 border-b border-border flex items-center gap-3">
