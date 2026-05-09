@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import DraggableCard from "./DraggableCard";
 import PulseLoader from "./PulseLoader";
+import StreamControls from "../../components/StreamControls";
 
 const LibraryView = ({
   vocab,
@@ -109,11 +110,11 @@ const LibraryView = ({
               onExpand={() => onExpand(v)}
               onDelete={async () => {
                 try {
-                  if (api?.deleteVocabItem) {
-                    await api.deleteVocabItem(v.id);
+                  if (api?.archiveVocabItem) {
+                    await api.archiveVocabItem(v.id);
                     setVocab(vocab.filter((item) => item.id !== v.id));
                     if (showToast)
-                      showToast("Neural Fragment Purged", "success");
+                      showToast("Neural Fragment Moved to Trash", "success");
                   }
                 } catch (err) {
                   console.error("Purge failure:", err);
@@ -169,13 +170,13 @@ const LibraryView = ({
                         onClick={async (e) => {
                           e.stopPropagation();
                           try {
-                            if (api?.deleteVocabItem) {
-                              await api.deleteVocabItem(v.id);
+                            if (api?.archiveVocabItem) {
+                              await api.archiveVocabItem(v.id);
                               setVocab(
                                 vocab.filter((item) => item.id !== v.id),
                               );
                               if (showToast)
-                                showToast("Fragment Purged", "success");
+                                showToast("Fragment Decommissioned", "success");
                             }
                           } catch (err) {
                             console.error("Purge failure:", err);
@@ -232,20 +233,13 @@ const LibraryView = ({
 
             {renderGrid}
 
-            {/* Load More */}
-            {filteredVocab.length > displayLimit && (
-              <div className="mt-12 flex justify-center pb-20  ">
-                <button
-                  onClick={() => setDisplayLimit((prev) => prev + 12)}
-                  className="h-10 px-8 flex items-center  gap-3 bg-surface-2 border border-border/10 text-muted/60 hover:text-accent hover:border-accent/30 transition-all rounded-[6px] shadow-sm group"
-                >
-                  <Plus className="h-3 w-3 group-hover:rotate-90 transition-all " />
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                    Expand Stream
-                  </span>
-                </button>
-              </div>
-            )}
+            {/* Unified Stream Controls */}
+            <StreamControls
+              currentLimit={displayLimit}
+              totalItems={filteredVocab.length}
+              onLoadMore={() => setDisplayLimit((prev) => prev + 12)}
+              onCollapse={() => setDisplayLimit(6)}
+            />
           </div>
         </div>
       </div>

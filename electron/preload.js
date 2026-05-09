@@ -9,8 +9,11 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   setTheme: (theme) => ipcRenderer.invoke('settings:setTheme', theme),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (config) => ipcRenderer.invoke('settings:save', config),
-  loadVocab: () => ipcRenderer.invoke('vocab:load'),
+  loadVocab: (includeArchived) => ipcRenderer.invoke('vocab:load', includeArchived),
   saveVocab: (list) => ipcRenderer.invoke('vocab:save', list),
+  deleteVocabItem: (id) => ipcRenderer.invoke('vocab:delete-item', id),
+  archiveVocabItem: (id) => ipcRenderer.invoke('vocab:archive-item', id),
+  restoreVocabItem: (id) => ipcRenderer.invoke('vocab:restore-item', id),
   loadCollections: () => ipcRenderer.invoke('collections:load'),
   saveCollections: (list) => ipcRenderer.invoke('collections:save', list),
   explainWord: (data) => ipcRenderer.invoke('ai:explain', data),
@@ -30,5 +33,7 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
     ipcRenderer.on('download:done', listener)
     return () => ipcRenderer.removeListener('download:done', listener)
   },
+  getLibraryStats: () => ipcRenderer.invoke('vocab:get-stats'),
+  loadVocabPage: (criteria) => ipcRenderer.invoke('vocab:load-page', criteria),
   triggerSync: () => ipcRenderer.invoke('settings:trigger-sync'),
 })

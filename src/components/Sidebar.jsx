@@ -210,7 +210,6 @@ export default function Sidebar({
                   name: "Neural Archive",
                   icon: Brain,
                 },
-                { id: "trash", name: "Trash", icon: Trash2 },
               ].map((folder) => {
                 const active = selectedCollection === folder.id;
                 return (

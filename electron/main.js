@@ -737,8 +737,8 @@ function registerIpcHandlers() {
   })
 
   // ─── Data Persistence (SQLite3 Powered) ──────────────────────────────────
-  ipcMain.handle('vocab:load', () => {
-    try { return getLibrary() } catch (e) { console.error('DB Load vocab fail', e); return [] }
+  ipcMain.handle('vocab:load', (_e, includeArchived = false) => {
+    try { return getLibrary(includeArchived) } catch (e) { console.error('DB Load vocab fail', e); return [] }
   })
 
   ipcMain.handle('vocab:load-page', (_e, criteria) => {
@@ -759,6 +759,14 @@ function registerIpcHandlers() {
 
   ipcMain.handle('vocab:delete-item', (_e, id) => {
     try { deleteVocabItem(id); return true } catch (e) { console.error('DB Delete item fail', e); return false }
+  })
+
+  ipcMain.handle('vocab:archive-item', (_e, id) => {
+    try { archiveVocabItem(id); return true } catch (e) { console.error('DB Archive item fail', e); return false }
+  })
+
+  ipcMain.handle('vocab:restore-item', (_e, id) => {
+    try { restoreVocabItem(id); return true } catch (e) { console.error('DB Restore item fail', e); return false }
   })
 
   ipcMain.handle('collections:load', () => {

@@ -42,7 +42,11 @@ const WebAdapter = {
   stopAi: async () => true,
 
   // --- Data Persistence (SQLite Mock for Browser) ---
-  loadVocab: async () => JSON.parse(localStorage.getItem('study_library') || '[]'),
+  loadVocab: async (includeArchived = false) => {
+    let lib = JSON.parse(localStorage.getItem('study_library') || '[]');
+    if (!includeArchived) lib = lib.filter(v => !v.archived);
+    return lib;
+  },
   loadVocabPage: async ({ collection, sortBy, limit }) => {
     let lib = JSON.parse(localStorage.getItem('study_library') || '[]');
     
@@ -87,6 +91,24 @@ const WebAdapter = {
   deleteVocabItem: async (id) => {
     const lib = JSON.parse(localStorage.getItem('study_library') || '[]').filter(v => (v.id || v.date) !== id);
     localStorage.setItem('study_library', JSON.stringify(lib));
+    return true;
+  },
+  archiveVocabItem: async (id) => {
+    const lib = JSON.parse(localStorage.getItem('study_library') || '[]');
+    const idx = lib.findIndex(v => (v.id || v.date) === id);
+    if (idx >= 0) {
+      lib[idx].archived = 1;
+      localStorage.setItem('study_library', JSON.stringify(lib));
+    }
+    return true;
+  },
+  restoreVocabItem: async (id) => {
+    const lib = JSON.parse(localStorage.getItem('study_library') || '[]');
+    const idx = lib.findIndex(v => (v.id || v.date) === id);
+    if (idx >= 0) {
+      lib[idx].archived = 0;
+      localStorage.setItem('study_library', JSON.stringify(lib));
+    }
     return true;
   },
   getLibraryStats: async () => {
@@ -206,6 +228,11 @@ export const api = isElectron ? {
   ...window.youtubeAPI,
   getAppSettings: () => window.youtubeAPI.getSettings(),
   saveAppSettings: (config) => window.youtubeAPI.saveSettings(config),
+  getLibraryStats: () => window.youtubeAPI.getLibraryStats(),
+  loadVocab: (includeArchived) => window.youtubeAPI.loadVocab(includeArchived),
+  archiveVocabItem: (id) => window.youtubeAPI.archiveVocabItem(id),
+  restoreVocabItem: (id) => window.youtubeAPI.restoreVocabItem(id),
+  deleteVocabItem: (id) => window.youtubeAPI.deleteVocabItem(id),
   
   saveVocabItem: async (item) => {
     await window.youtubeAPI.saveVocabItem(item);

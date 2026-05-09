@@ -14,8 +14,8 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
   const loadTrash = useCallback(async () => {
     setLoading(true);
     try {
-      if (api?.getVocab) {
-        const vocab = await api.getVocab();
+      if (api?.loadVocab) {
+        const vocab = await api.loadVocab(true);
         const trashed = vocab.filter(item => item.archived || item.collection === "trash");
         setTrashItems(trashed);
       }
