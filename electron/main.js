@@ -738,7 +738,13 @@ function registerIpcHandlers() {
 
   // ─── Data Persistence (SQLite3 Powered) ──────────────────────────────────
   ipcMain.handle('vocab:load', (_e, includeArchived = false) => {
-    try { return getLibrary(includeArchived) } catch (e) { console.error('DB Load vocab fail', e); return [] }
+    try { 
+      const fetchArchived = Boolean(includeArchived);
+      return getLibrary(fetchArchived);
+    } catch (e) { 
+      console.error('DB Load vocab fail', e); 
+      return [];
+    }
   })
 
   ipcMain.handle('vocab:load-page', (_e, criteria) => {

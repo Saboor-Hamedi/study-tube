@@ -204,12 +204,12 @@ const Profile = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden"
+              className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden p-3 gap-3"
             >
               <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-                <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 flex flex-col min-h-0 gap-3">
                   {/* Global Mobile Diagnostics - Anchored at the top */}
-                  <div className="block md:hidden px-3 pt-3 shrink-0">
+                  <div className="block md:hidden shrink-0">
                     <SystemStatus forensicNodes={forensicNodes} />
                   </div>
 
@@ -265,9 +265,9 @@ const Profile = ({
                         historyRef={historyRef}
                       />
                     ) : (
-                      <div className="flex flex-col h-full min-h-0 overflow-hidden">
+                      <div className="flex flex-col h-full bg-surface border border-border rounded-[8px] overflow-hidden">
                         {/* Standardized Insights Header - Full Width */}
-                        <div className="hidden md:flex h-12 px-4 border-b border-border bg-surface-3/30 items-center justify-between shrink-0">
+                        <div className="hidden md:flex h-9 md:h-12 px-4 border-b border-border bg-surface-3/30 items-center justify-between shrink-0">
                           <div className="flex items-center gap-3">
                             <FileText className="h-4 w-4 text-accent" />
                             <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ const Profile = ({
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scroll">
-                          <div className="px-3 md:p-8 space-y-3 max-w-5xl mx-auto w-full pt-4 md:pt-8 pb-20">
+                          <div className="p-3 md:p-6 space-y-3 max-w-5xl mx-auto w-full pb-20">
                             {vocab
                               .filter((v) => !v.archived)
                               .slice(0, displayLimit)
@@ -372,7 +372,7 @@ const Profile = ({
               </div>
 
               {/* Diagnostics Sidebar (Desktop Only) */}
-              <div className="hidden md:block w-80 shrink-0 border-l border-border/10 overflow-y-auto custom-scroll">
+              <div className="hidden md:block w-80 shrink-0 overflow-y-auto custom-scroll">
                 <SystemStatus forensicNodes={forensicNodes} />
               </div>
             </motion.div>

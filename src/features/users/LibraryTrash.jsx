@@ -16,7 +16,12 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
     try {
       if (api?.loadVocab) {
         const vocab = await api.loadVocab(true);
-        const trashed = vocab.filter(item => item.archived || item.collection === "trash");
+        // Robust filter: handle both boolean and integer (0/1) flags
+        const trashed = vocab.filter(item => 
+          item.archived === 1 || 
+          item.archived === true || 
+          item.collection === "trash"
+        );
         setTrashItems(trashed);
       }
     } catch (err) {
@@ -53,8 +58,8 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-surface">
-      <div className="h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
+    <div className="flex flex-col h-full bg-surface rounded-[8px] border border-border overflow-hidden">
+      <div className="h-9 md:h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
         <div className="flex items-center gap-3">
           <Trash2 className="h-4 w-4 text-red-500" />
           <h2 className="text-[12px] font-black tracking-tight uppercase">
@@ -90,8 +95,8 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
         </div>
       </div>
 
-      {/* CONTENT: ALIGNED WITH LIBRARY VAULT STYLE */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 md:p-8 custom-scroll">
+      {/* CONTENT: ALIGNED WITH SYSTEM STATUS STYLE */}
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 custom-scroll">
         {loading ? (
           <div className="h-full py-20 flex flex-col items-center justify-center gap-4">
              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent/40" />

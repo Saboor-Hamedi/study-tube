@@ -4,7 +4,7 @@ import { Activity, BookOpen } from "lucide-react";
 
 export default function SystemStatus({ forensicNodes = 0 }) {
   return (
-    <div className="w-full md:w-[320px] h-auto md:h-full bg-surface flex flex-col border border-border md:border-t-0 md:border-b-0 md:border-l rounded-[8px] md:rounded-none min-h-0 shrink-0 overflow-hidden">
+    <div className="w-full md:w-[320px] h-auto md:h-full bg-surface flex flex-col border border-border rounded-[8px] min-h-0 shrink-0 overflow-hidden">
       <div className="h-9 md:h-12 px-4 border-b border-border flex items-center bg-surface-3/30 shrink-0">
         <Activity className="h-3 w-3 md:h-4 md:w-4 text-accent mr-2 md:mr-3" />
         <h2 className="text-[9px] md:text-[12px] font-black tracking-tight uppercase">

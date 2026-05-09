@@ -198,7 +198,7 @@ const LibraryView = ({
   }, [filteredVocab, displayLimit, onExpand, api, setVocab, vocab, showToast]);
 
   return (
-    <div className="h-full flex flex-col bg-background text-text font-sans relative overflow-hidden select-text">
+    <div className="h-full flex flex-col bg-surface border border-border rounded-[8px] text-text font-sans relative overflow-hidden select-text">
       {/* Standardized Control Bar - Hidden on small screens, Full Width */}
       <div className="hidden md:flex h-12 px-4 border-b border-border items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -215,7 +215,7 @@ const LibraryView = ({
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scroll ">
-        <div className="px-3 py-4 md:p-8 pb-128">
+        <div className="p-3 md:p-6 pb-128">
           <div className="max-w-[1400px] mx-auto relative ">
             <AnimatePresence>
               {loading && (
