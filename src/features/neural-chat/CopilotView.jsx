@@ -252,10 +252,9 @@ GUIDELINES:
   );
 
   const renderInput = () => (
-    <div className="p-4 border-t border-border/20 bg-surface/80 backdrop-blur-xl">
-      <div className="relative group transition-all">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-accent/20 to-emerald-500/20 rounded-[10px] blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
-        <div className="relative flex flex-col bg-surface-2 border border-border/40 rounded-[8px] focus-within:border-accent/40 transition-all overflow-hidden">
+    <div className="h-[56px] border-t border-border bg-surface flex items-center px-3 md:px-6 shrink-0 relative">
+      <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 relative flex items-center bg-surface-2 border border-border/10 rounded-[6px] focus-within:border-accent/40 transition-all overflow-hidden h-9">
           <textarea
             ref={textareaRef}
             rows={1}

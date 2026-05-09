@@ -1,9 +1,9 @@
 {
-  "name": "StudyTube",
+  "name": "writella",
   "version": "1.0.11",
   "private": true,
   "type": "module",
-  "description": "Premium AI-powered YouTube learning studio.",
+  "description": "Premium AI-powered writing assistant.",
   "author": "Saboor Hamedi",
   "main": "electron/main.js",
   "scripts": {

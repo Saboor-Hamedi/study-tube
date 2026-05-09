@@ -18,11 +18,11 @@ export default function NeuralFeedbackHub({
   getCategoryColor,
 }) {
   return (
-    <div className="w-full md:max-w-[280px] bg-surface flex flex-col border-l border-border min-h-0 h-full">
-      <div className="h-9 md:h-10 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-3 w-3 md:h-3.5 md:w-3.5 text-accent" />
-          <h2 className="text-[10px] md:text-[11px] font-black tracking-tight uppercase">
+    <div className="w-full md:w-[300px] bg-surface flex flex-col border-l border-border min-h-0 h-full">
+      <div className="h-9 md:h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-accent" />
+          <h2 className="text-[10px] md:text-[12px] font-black tracking-tight uppercase">
             Diagnostics
           </h2>
         </div>
@@ -38,8 +38,8 @@ export default function NeuralFeedbackHub({
 
       <div className="flex-1 overflow-y-auto custom-scroll">
         {/* High-Density Metrics Grid */}
-        <div className="p-3 border-b border-border/5 bg-surface-2/10">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="border-b border-border/5 bg-surface-2/10">
+          <div className="grid grid-cols-2 ">
             {[
               {
                 label: "Grammar",

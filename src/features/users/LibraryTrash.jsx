@@ -1,51 +1,50 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Trash2, RefreshCcw, Search, Trash,
-  AlertCircle, ChevronRight
-} from "lucide-react";
-import DeleteModal from "../research-vault/DeleteModal";
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2, RefreshCcw, AlertCircle, Loader2 } from 'lucide-react';
+import DeleteModal from '../research-vault/DeleteModal';
 
-export default function LibraryTrash({ api, onRestore, onDeletePermanent }) {
+const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
   const [trashItems, setTrashItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isPurgingAll, setIsPurgingAll] = useState(false);
   const [isRestoringAll, setIsRestoringAll] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const loadTrash = async () => {
+  const loadTrash = useCallback(async () => {
     setLoading(true);
     try {
-      // Use the paginated loader with 'trash' criteria
-      const items = await api.loadVocabPage({ 
-        collection: 'trash', 
-        limit: 100,
-        sortBy: 'newest'
-      });
-      setTrashItems(items || []);
+      if (api?.getVocab) {
+        const vocab = await api.getVocab();
+        const trashed = vocab.filter(item => item.archived || item.collection === "trash");
+        setTrashItems(trashed);
+      }
     } catch (err) {
-      console.error("Trash load failure", err);
+      console.error("Failed to load neural trash:", err);
+      if (showToast) showToast("Trash Retrieval Failed", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, showToast]);
 
   useEffect(() => {
     loadTrash();
-  }, []);
+  }, [loadTrash]);
 
   const filteredItems = trashItems.filter(item => 
     item.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.definition?.toLowerCase().includes(searchQuery.toLowerCase())
+    item.videoTitle?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleRestore = async (item) => {
     try {
-      await onRestore(item);
-      setTrashItems(prev => prev.filter(p => p.id !== item.id));
+      if (onRestore) {
+        await onRestore(item);
+        setTrashItems(prev => prev.filter(i => i.id !== item.id));
+        if (showToast) showToast("Fragment Restored to Archive", "success");
+      }
     } catch (err) {
-      console.error("Restore failure", err);
+      if (showToast) showToast("Restoration Failure", "error");
     }
   };
 
@@ -55,16 +54,12 @@ export default function LibraryTrash({ api, onRestore, onDeletePermanent }) {
 
   return (
     <div className="flex flex-col h-full bg-surface">
-      {/* HEADER: INDUSTRIAL AUDIT STYLE */}
-      <div className="h-20 px-12 border-b border-border/10 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-red-500/10 rounded-[4px]">
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </div>
-          <div className="flex flex-col">
-            <h2 className="text-xl font-black text-text tracking-tight uppercase">Neural Trash</h2>
-            <span className="text-[10px] font-black text-muted uppercase tracking-[0.3em] opacity-40">Decommissioned Research Fragments</span>
-          </div>
+      <div className="h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
+        <div className="flex items-center gap-3">
+          <Trash2 className="h-4 w-4 text-red-500" />
+          <h2 className="text-[12px] font-black tracking-tight uppercase">
+            Trash
+          </h2>
         </div>
         
         <div className="flex items-center gap-2">
@@ -96,14 +91,14 @@ export default function LibraryTrash({ api, onRestore, onDeletePermanent }) {
       </div>
 
       {/* CONTENT: ALIGNED WITH LIBRARY VAULT STYLE */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scroll">
+      <div className="flex-1 overflow-y-auto px-3 py-4 md:p-8 custom-scroll">
         {loading ? (
-          <div className="h-full flex flex-col items-center justify-center gap-4">
+          <div className="h-full py-20 flex flex-col items-center justify-center gap-4">
              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent/40" />
              <span className="text-[9px] font-black uppercase tracking-widest text-muted/40">Synchronizing Void...</span>
           </div>
         ) : filteredItems.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             <AnimatePresence mode="popLayout">
               {filteredItems.map(item => (
                 <motion.div 
@@ -112,7 +107,7 @@ export default function LibraryTrash({ api, onRestore, onDeletePermanent }) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="group flex items-center justify-between p-5 bg-surface border border-border hover:border-accent/40 transition-all rounded-[10px] relative overflow-hidden"
+                  className="group flex items-center justify-between p-3 sm:p-4 bg-surface border border-border hover:border-accent/40 transition-all rounded-[10px] relative overflow-hidden"
                 >
                   <div className="absolute top-0 left-0 bottom-0 w-1 bg-red-500/10 group-hover:bg-red-500/60 transition-colors" />
 
@@ -159,63 +154,68 @@ export default function LibraryTrash({ api, onRestore, onDeletePermanent }) {
                 </motion.div>
               ))}
             </AnimatePresence>
-
-            <DeleteModal 
-              isOpen={!!itemToDelete}
-              onClose={() => setItemToDelete(null)}
-              title="Permanent Erasure"
-              message="This fragment will be purged from existence. Recover is impossible."
-              onConfirm={async () => {
-                if (itemToDelete) {
-                  await onDeletePermanent(itemToDelete);
-                  setTrashItems(prev => prev.filter(item => item.id !== itemToDelete));
-                }
-                setItemToDelete(null);
-              }}
-            />
-
-            <DeleteModal 
-              isOpen={isRestoringAll}
-              onClose={() => setIsRestoringAll(false)}
-              title="Global Restoration"
-              message="Return ALL decommissioned research nodes to the active library?"
-              confirmLabel="Execute Restore"
-              variant="info"
-              onConfirm={async () => {
-                for (const item of trashItems) {
-                  await onRestore(item);
-                }
-                setTrashItems([]);
-                setIsRestoringAll(false);
-              }}
-            />
-
-            <DeleteModal 
-              isOpen={isPurgingAll}
-              onClose={() => setIsPurgingAll(false)}
-              title="Global Decommission"
-              message="Erase ALL decommissioned research nodes? This protocol is final."
-              confirmLabel="Confirm Purge"
-              variant="danger"
-              onConfirm={async () => {
-                for (const item of trashItems) {
-                  await api.deleteVocabItem(item.id);
-                }
-                setTrashItems([]);
-                setIsPurgingAll(false);
-              }}
-            />
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center opacity-10">
-            <Trash className="h-16 w-16 mb-6 font-thin" />
-            <div className="flex flex-col gap-1">
-              <span className="text-[12px] font-black uppercase tracking-[0.4em]">Entropy Zero</span>
-              <span className="text-[9px] font-medium uppercase tracking-[0.2em]">All fragments purged or restored</span>
+          <div className="h-full py-20 flex flex-col items-center justify-center text-center space-y-3 opacity-20">
+            <Trash2 className="h-12 w-12 text-muted" />
+            <div className="space-y-1">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.2em]">The Void is Empty</h3>
+              <p className="text-[9px] font-medium uppercase tracking-widest">No neural fragments detected in disposal stream.</p>
             </div>
           </div>
         )}
       </div>
+
+      <DeleteModal 
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        title="Permanent Erasure"
+        message="This fragment will be purged from existence. Recover is impossible."
+        onConfirm={async () => {
+          if (itemToDelete) {
+            await onDeletePermanent(itemToDelete);
+            setTrashItems(prev => prev.filter(item => item.id !== itemToDelete));
+          }
+          setItemToDelete(null);
+        }}
+      />
+
+      <DeleteModal 
+        isOpen={isRestoringAll}
+        onClose={() => setIsRestoringAll(false)}
+        title="Global Restoration"
+        message="Return ALL decommissioned research nodes to the active library?"
+        confirmLabel="Execute Restore"
+        variant="info"
+        onConfirm={async () => {
+          for (const item of trashItems) {
+            await onRestore(item);
+          }
+          setTrashItems([]);
+          setIsRestoringAll(false);
+        }}
+      />
+
+      <DeleteModal 
+        isOpen={isPurgingAll}
+        onClose={() => setIsPurgingAll(false)}
+        title="Global Decommission"
+        message="Erase ALL decommissioned research nodes? This protocol is final."
+        confirmLabel="Confirm Purge"
+        variant="danger"
+        onConfirm={async () => {
+          for (const item of trashItems) {
+            if (api?.deleteVocabItem) {
+              await api.deleteVocabItem(item.id);
+            }
+          }
+          setTrashItems([]);
+          setIsPurgingAll(false);
+          if (showToast) showToast("Neural Vault Purged", "success");
+        }}
+      />
     </div>
   );
-}
+};
+
+export default LibraryTrash;

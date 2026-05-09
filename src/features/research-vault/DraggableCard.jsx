@@ -98,3 +98,4 @@ export const DraggableCard = memo(({ id, v, children, useHandle = false }) => {
     </div>
   );
 });
+export default DraggableCard;
