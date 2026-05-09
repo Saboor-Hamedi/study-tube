@@ -50,8 +50,33 @@ const Profile = ({
     { id: "profile", label: "Profile", icon: User },
     { id: "insights", label: "Archive", icon: FileText },
     { id: "library", label: "Library", icon: LibraryIcon },
+    { id: "sync", label: "Sync", icon: RefreshCcw },
     { id: "trash", label: "Trash", icon: Trash2 },
   ];
+
+  const handleSync = async () => {
+    if (api?.pullFromCloud && !isSyncing) {
+      setIsSyncing(true);
+      try {
+        const result = await api.pullFromCloud();
+        if (result?.success) {
+          const updated = await api.loadVocab();
+          setVocab(updated || []);
+          if (showToast)
+            showToast(
+              `Writella Cloud Synchronized: ${result.count || 0} items`,
+              "success",
+            );
+        } else {
+          if (showToast) showToast("Cloud Connection Refused", "error");
+        }
+      } catch (err) {
+        if (showToast) showToast("Sync Failure", "error");
+      } finally {
+        setIsSyncing(false);
+      }
+    }
+  };
 
   const handleCollapse = () => {
     setDisplayLimit(6);
@@ -113,16 +138,22 @@ const Profile = ({
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                if (tab.id === "sync") {
+                  handleSync();
+                } else {
+                  setActiveTab(tab.id);
+                }
+              }}
               className={`flex items-center gap-1.5 px-2.5 border-r border-border/10 group transition-all h-full relative ${activeTab === tab.id ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
             >
               <tab.icon
-                className={`h-2.5 w-2.5 ${activeTab === tab.id ? "text-accent" : "text-muted"} group-hover:text-accent transition-all`}
+                className={`h-2.5 w-2.5 ${activeTab === tab.id ? "text-accent" : "text-muted"} group-hover:text-accent transition-all ${tab.id === "sync" && isSyncing ? "animate-spin text-accent" : ""}`}
               />
               <span
                 className={`text-[9px] font-black tracking-tight leading-tight uppercase ${activeTab === tab.id ? "text-text" : "text-muted"} group-hover:text-text transition-all`}
               >
-                {tab.id === "profile" ? "Saboor" : tab.label}
+                {tab.id === "profile" ? "Saboor" : tab.id === "sync" && isSyncing ? "Syncing..." : tab.label}
               </span>
               {activeTab === tab.id && (
                 <motion.div
@@ -132,38 +163,6 @@ const Profile = ({
               )}
             </button>
           ))}
-        </div>
-
-        {/* Sync Cloud Action */}
-        <div className="flex items-center">
-          <button
-            onClick={async () => {
-              if (api?.pullFromCloud && !isSyncing) {
-                setIsSyncing(true);
-                try {
-                  const result = await api.pullFromCloud();
-                  if (result?.success) {
-                    const updated = await api.loadVocab();
-                    setVocab(updated || []);
-                    if (showToast) showToast(`Neural Cloud Synchronized: ${result.count || 0} items`, "success");
-                  } else {
-                    if (showToast) showToast("Cloud Connection Refused", "error");
-                  }
-                } catch (err) {
-                  if (showToast) showToast("Sync Failure", "error");
-                } finally {
-                  setIsSyncing(false);
-                }
-              }
-            }}
-            disabled={isSyncing}
-            className={`h-6 px-2 bg-surface-3 border border-border/10 rounded-[4px] flex items-center gap-1.5 hover:bg-accent/10 hover:text-accent transition-all group ${isSyncing ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            <RefreshCcw className={`h-2.5 w-2.5 text-muted group-hover:text-accent transition-all ${isSyncing ? "animate-spin text-accent" : ""}`} />
-            <span className="text-[7px] font-black uppercase tracking-widest text-muted group-hover:text-accent">
-              {isSyncing ? "Syncing..." : "Sync"}
-            </span>
-          </button>
         </div>
       </div>
 

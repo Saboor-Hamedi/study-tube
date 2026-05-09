@@ -6,12 +6,12 @@ from pathlib import Path
 # Industrial Path Resolution for Windows
 db_path = Path.home() / "AppData" / "Roaming" / "StudyTube" / "studytube.db"
 
-print("--- StudyTube Neural Configurator (Python Edition) ---")
+print("--- Writella Neural Configurator (Python Edition) ---")
 print(f"Targeting Database: {db_path}")
 
 if not db_path.exists():
     print(f"CRITICAL ERROR: Database not found at {db_path}")
-    print("Please make sure you have run the StudyTube app at least once.")
+    print("Please make sure you have run the Writella app at least once.")
     exit(1)
 
 try:
@@ -40,8 +40,8 @@ try:
 
     print("--- CONFIGURATION COMPLETE ---")
     print("✅ Your local research is now connected to the Cloud Bridge.")
-    print("Please restart your StudyTube app to begin synchronization.")
+    print("Please restart your Writella app to begin synchronization.")
 
 except Exception as e:
     print(f"CRITICAL ERROR: {e}")
-    print("\nTip: Make sure the StudyTube app is CLOSED before running this script.")
+    print("\nTip: Make sure the Writella app is CLOSED before running this script.")

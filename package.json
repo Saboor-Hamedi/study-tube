@@ -22,8 +22,8 @@
     "preview": "vite preview"
   },
   "build": {
-    "appId": "com.studytube.app",
-    "productName": "StudyTube",
+    "appId": "com.writella.app",
+    "productName": "Writella",
     "directories": {
       "output": "dist-electron"
     },

@@ -99,7 +99,7 @@ export default memo(function CopilotView({
     isTypingRef.current = true;
 
     const systemPrompt = contextItem
-      ? `You are the StudyTube Neural Research Assistant & Linguistic Expert.
+      ? `You are the Writella Neural Research Assistant & Linguistic Expert.
 
 PRIMARY RESEARCH CONTEXT:
 - Node Title: "${contextItem.text}"
@@ -119,7 +119,7 @@ GUIDELINES:
    - Use '1. ❌ "[Original]" / ✅ "[Corrected]"' for linguistic edits.
    - Use '•' for lists.
 5. Keep explanations concise, professional, and high-fidelity.`
-      : `You are the StudyTube Neural Assistant. Fulfill the user's request with surgical precision. User Instruction: "${input}"`;
+      : `You are the Writella Neural Assistant. Fulfill the user's request with surgical precision. User Instruction: "${input}"`;
 
     const finalMessagesForAI = [
       ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),

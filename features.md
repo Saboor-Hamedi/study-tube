@@ -1,6 +1,6 @@
-# StudyTube: Product Roadmap & Commercial Strategy
+# Writella: Product Roadmap & Commercial Strategy
 
-This document outlines the strategic evolution of StudyTube from a research tool to a sellable, premium desktop application.
+This document outlines the strategic evolution of Writella from a research tool to a sellable, premium desktop application.
 
 ---
 
@@ -13,14 +13,14 @@ This document outlines the strategic evolution of StudyTube from a research tool
 
 ### 2. AI Intelligence Management
 *   BYOK Model (Current): Market as Privacy-First and Cost-Effective. Users maintain full control over their expenses.
-*   Managed Pipeline (Future): Provide an integrated AI experience where StudyTube handles the keys and charges a monthly subscription. This lowers the barrier to entry for non-technical users.
+*   Managed Pipeline (Future): Provide an integrated AI experience where Writella handles the keys and charges a monthly subscription. This lowers the barrier to entry for non-technical users.
 
 ### 3. Intellectual Property Hardening
 *   Code Obfuscation: Implement javascript-obfuscator in the build pipeline to protect core logic and UI architecture.
 *   V8 Bytecode: Package critical main-process logic as binary to prevent reverse engineering of the data persistence and AI protocols.
 
 ### 4. Market Differentiation (The Neural Sentry Aesthetic)
-*   Industrial Advantage: Leverage the High-Fidelity Neural Dashboard look and feel. Position StudyTube as a workstation, not just a utility.
+*   Industrial Advantage: Leverage the High-Fidelity Neural Dashboard look and feel. Position Writella as a workstation, not just a utility.
 *   Brand Positioning: Focus on Deep Work and High-Retention Learning rather than simple video downloading.
 
 ### 5. Distribution Maturity

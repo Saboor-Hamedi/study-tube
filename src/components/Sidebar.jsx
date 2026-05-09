@@ -214,25 +214,43 @@ export default function Sidebar({
               ].map((folder) => {
                 const active = selectedCollection === folder.id;
                 return (
-                  <button
+                  <div
                     key={folder.id}
-                    onClick={() => handleCollectionSelect(folder.id)}
-                    className={`w-full group relative flex items-center transition-all duration-200 px-3 py-2 rounded-[5px] border border-transparent ${active ? "bg-accent/5 text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`}
+                    className="group relative flex justify-center"
                   >
-                    <folder.icon
-                      className={`h-3.5 w-3.5 shrink-0 mr-3 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
-                    />
-                    {!isCollapsed && (
-                      <div className="flex-1 flex items-center justify-between overflow-hidden">
-                        <span className="text-[11px] font-black truncate">
+                    <button
+                      onClick={() => handleCollectionSelect(folder.id)}
+                      style={
+                        isCollapsed ? { width: "40px", height: "40px" } : {}
+                      }
+                      className={`flex items-center transition-all duration-200 text-left shrink-0 ${
+                        isCollapsed
+                          ? `justify-center rounded-full border-0 ${active ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
+                          : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${active ? "bg-accent/10 text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
+                      }`}
+                    >
+                      <folder.icon
+                        className={`h-3.5 w-3.5 shrink-0 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
+                      />
+                      {!isCollapsed && (
+                        <div className="flex-1 flex items-center justify-between overflow-hidden">
+                          <span className="text-[11px] font-black truncate">
+                            {folder.name}
+                          </span>
+                          <span className="text-[9px] font-mono opacity-30 group-hover:opacity-100">
+                            {getCount(folder.id)}
+                          </span>
+                        </div>
+                      )}
+                      {isCollapsed && (
+                        <div
+                          className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[10px] font-black opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
+                        >
                           {folder.name}
-                        </span>
-                        <span className="text-[9px] font-mono opacity-30 group-hover:opacity-100">
-                          {getCount(folder.id)}
-                        </span>
-                      </div>
-                    )}
-                  </button>
+                        </div>
+                      )}
+                    </button>
+                  </div>
                 );
               })}
 

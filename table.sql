@@ -1,5 +1,5 @@
 -- ==========================================
--- STUDYTUBE UNIVERSAL POSTGRESQL SCHEMA
+-- WRITELLA UNIVERSAL POSTGRESQL SCHEMA
 -- Matches local SQLite (studytube.db)
 -- ==========================================
 

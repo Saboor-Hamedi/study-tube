@@ -1,8 +1,8 @@
-# StudyTube Technical Documentation: The SQLite Transformation
+# Writella Technical Documentation: The SQLite Transformation
 
 ## Architectural Pivot: JSON to SQLite3
 
-As of version 1.0.3, StudyTube has successfully migrated its entire data persistence layer from legacy JSON files (`library.json`, `notes.json`, `collections.json`) to a high-performance, ACID-compliant **SQLite3** database engine.
+As of version 1.0.3, Writella has successfully migrated its entire data persistence layer from legacy JSON files (`library.json`, `notes.json`, `collections.json`) to a high-performance, ACID-compliant **SQLite3** database engine.
 
 ### Why the Migration?
 
@@ -14,7 +14,7 @@ As of version 1.0.3, StudyTube has successfully migrated its entire data persist
 
 ### 1. Neural FTS Discovery Engine
 
-StudyTube has evolved its search capabilities into a dual-intelligence system:
+Writella has evolved its search capabilities into a dual-intelligence system:
 
 - **Linguistically Intelligent Search**: Integrated the **Porter Stemmer** and **Unicode 61** tokenization. The search engine now understands word roots (e.g., "lets" matches "let's" and "let"), ensuring that punctuation or grammatical variations do not stop your research.
 - **Context-Aware Highlights**: Leverages SQLite's `snippet()` function to generate real-time "Research Snippets" in the search dropdown, highlighting exact query matches within definitions and source sentences.
@@ -45,7 +45,7 @@ We utilize the `better-sqlite3` native driver for Node.js. It is the fastest SQL
 
 ### 2. Database Schema
 
-StudyTube utilizes three primary tables designed for relational research:
+Writella utilizes three primary tables designed for relational research:
 
 - **`library`**: Stores captured vocabulary, definitions, and AI metadata.
 - **`notes`**: A high-performance singleton table storing the primary Research Editor state.

@@ -8,12 +8,12 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
   const [content, setContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isMaximized, setIsMaximized] = useState(() => {
-    return localStorage.getItem('studytube_capture_maximized') === 'true'
+    return localStorage.getItem('writella_capture_maximized') === 'true'
   })
 
   // Persistence Protocol
   useEffect(() => {
-    localStorage.setItem('studytube_capture_maximized', isMaximized)
+    localStorage.setItem('writella_capture_maximized', isMaximized)
   }, [isMaximized])
 
   // Reset state on open

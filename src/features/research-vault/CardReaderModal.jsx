@@ -109,7 +109,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
   const [editVal, setEditVal] = useState('')
   const [titleEditVal, setTitleEditVal] = useState('')
   const [isMaximized, setIsMaximized] = useState(() => {
-    return localStorage.getItem('studytube_reader_maximized') !== 'false' // Default to true as before
+    return localStorage.getItem('writella_reader_maximized') !== 'false' // Default to true as before
   })
 
   const stats = useMemo(() => {
@@ -124,7 +124,7 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
 
   // Persistence Protocol
   useEffect(() => {
-    localStorage.setItem('studytube_reader_maximized', isMaximized)
+    localStorage.setItem('writella_reader_maximized', isMaximized)
   }, [isMaximized])
 
   // Hydration Protocol: Prevents main-thread freeze on mount

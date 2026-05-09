@@ -11,7 +11,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="StudyTube Cloud API")
+app = FastAPI(title="Writella Cloud API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -243,7 +243,7 @@ async def sync_settings(payload: SettingsPayload):
 
 @app.get("/")
 def read_root():
-    return {"message": "StudyTube Cloud Engine Online"}
+    return {"message": "Writella Cloud Engine Online"}
 
 @app.get("/library")
 def get_cloud_library():
