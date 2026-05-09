@@ -224,7 +224,7 @@ const WebAdapter = {
 /**
  * The Unified API Instance
  */
-export const api = isElectron ? {
+const api = isElectron ? {
   ...window.youtubeAPI,
   getAppSettings: () => window.youtubeAPI.getSettings(),
   saveAppSettings: (config) => window.youtubeAPI.saveSettings(config),
@@ -295,3 +295,5 @@ export const api = isElectron ? {
      }
   }
 };
+
+export { api, isElectron };

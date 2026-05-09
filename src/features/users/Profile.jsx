@@ -297,14 +297,8 @@ const Profile = ({
                                       <FileText className="h-4 w-4 text-muted group-hover:text-accent transition-colors" />
                                     </div>
                                     <div className="min-w-0">
-                                      <h4 className="text-[13px] font-bold text-text truncate break-all group-hover:text-accent transition-colors">
-                                        {item.text
-                                          ?.split(/\s+/)
-                                          .slice(0, 10)
-                                          .join(" ")}
-                                        {item.text?.split(/\s+/).length > 10
-                                          ? "..."
-                                          : ""}
+                                      <h4 className="text-[13px] font-bold text-text break-words group-hover:text-accent transition-colors">
+                                        {item.text}
                                       </h4>
                                       <div className="flex items-center gap-3 mt-1">
                                         <span className="text-[9px] text-muted font-bold uppercase tracking-widest shrink-0 opacity-40">

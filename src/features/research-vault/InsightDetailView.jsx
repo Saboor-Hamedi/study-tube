@@ -69,7 +69,11 @@ const InsightDetailView = ({
 
   useEffect(() => {
     if (item) {
-      setEditVal(item.definition || "");
+      // Normalize text: Replace single newlines with spaces, preserve double newlines
+      const raw = item.definition || "";
+      const cleaned = raw.replace(/(?<!\n)\n(?!\n)/g, " ").trim();
+      
+      setEditVal(cleaned);
       setTitleEditVal(item.text || "");
       setDiagnostics(item.diagnostics || { highlights: [] });
       setIsAnalyzing(!!item.diagnostics);
@@ -136,46 +140,37 @@ const InsightDetailView = ({
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
         
-        {/* Source Analysis Window */}
-        <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative border-r border-border/5">
+        {/* Source Analysis Window (Seamless) */}
+        <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative">
           <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative" ref={containerRef}>
-            <div className="p-5 md:p-10 pb-96 min-h-full flex flex-col relative">
+            {/* Added PB-96 (384px) safe zone for bottom-of-page highlights */}
+            <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
               
-              {/* Refined Industrial Header */}
-              <div className="mb-10 flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="px-2 py-0.5 bg-accent/5 border border-accent/10 rounded-full flex items-center gap-1.5 shrink-0">
-                      <Brain className="h-2.5 w-2.5 text-accent" />
-                      <span className="text-[8px] font-black text-accent uppercase tracking-widest">
-                        {item.collection || "Unsorted"}
-                      </span>
-                    </div>
-                    <div className="h-px flex-1 bg-border/5" />
+              {/* Document Identity Rail */}
+              <div className="mb-8 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="px-2 py-0.5 bg-accent/5 border border-accent/10 rounded-full flex items-center gap-1.5 shrink-0">
+                    <Brain className="h-2.5 w-2.5 text-accent" />
+                    <span className="text-[8px] font-black text-accent uppercase tracking-widest">
+                      {item.collection || "Unsorted"}
+                    </span>
                   </div>
-                  
-                  {isEditing ? (
-                    <input
-                      value={titleEditVal}
-                      onChange={(e) => setTitleEditVal(e.target.value)}
-                      className="w-full bg-transparent border-none p-0 text-[18px] md:text-[24px] font-black text-text focus:outline-none placeholder:text-muted/20"
-                      placeholder="Insight Title..."
-                    />
-                  ) : (
-                    <h1 className="text-[18px] md:text-[24px] font-black text-text tracking-tight uppercase leading-tight break-all">
-                      {item.text}
-                    </h1>
-                  )}
+                  <div className="h-px flex-1 bg-border/5" />
                 </div>
-
-                <button 
-                  onClick={onClose} 
-                  className="mt-1 p-2 hover:bg-surface-3 rounded-[8px] text-muted/40 hover:text-red-500 transition-all shrink-0 border border-transparent hover:border-red-500/10"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                
+                {isEditing ? (
+                  <input
+                    value={titleEditVal}
+                    onChange={(e) => setTitleEditVal(e.target.value)}
+                    className="w-full bg-transparent border-none p-0 text-[18px] md:text-[24px] font-black text-text focus:outline-none placeholder:text-muted/20"
+                    placeholder="Insight Title..."
+                  />
+                ) : (
+                  <h1 className="text-[18px] md:text-[24px] font-black text-text tracking-tight uppercase leading-tight break-all">
+                    {item.text}
+                  </h1>
+                )}
               </div>
-
               {isAnalyzing ? (
                 <div className="flex-1">
                   <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
@@ -192,7 +187,7 @@ const InsightDetailView = ({
                             key={i}
                             initial={{ backgroundColor: "rgba(255, 107, 0, 0)" }}
                             animate={{ backgroundColor: getCategoryBg(hl.type) }}
-                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} px-0.5 rounded-sm transition-colors relative inline-flex items-center gap-0.5 leading-none group/hl`}
+                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} px-0.5 rounded-sm transition-colors relative inline-block group/hl`}
                             onMouseEnter={(e) => showHl(hl, i, e)}
                             onMouseLeave={hideHl}
                             onClick={(e) => {
@@ -229,7 +224,7 @@ const InsightDetailView = ({
               )}
 
               {/* Synthesis Abstract */}
-              {item.summary && !isEditing && (
+              {item.summary && !isEditing && !isAnalyzing && (
                 <div className="mt-12 p-6 md:p-8 bg-accent/5 border border-accent/10 space-y-4 rounded-[12px] animate-in fade-in slide-in-from-bottom-4 duration-700">
                   <div className="flex items-center gap-2 text-accent">
                     <Sparkles className="h-4 w-4" />
@@ -298,7 +293,7 @@ const InsightDetailView = ({
         )}
       </div>
 
-      {/* Industrial Footer */}
+      {/* Unified Industrial Footer (Responsive) */}
       <div className="h-[48px] md:h-[56px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
         <div className="flex items-center gap-3 md:gap-8">
           <div className="flex items-center gap-3 md:gap-6">
@@ -330,7 +325,7 @@ const InsightDetailView = ({
           <button
             onClick={() => isEditing ? handleSaveEdit() : setIsEditing(true)}
             className={`h-8 md:h-10 px-3 md:px-6 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest ${
-              isEditing ? "bg-accent text-white" : "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
+              isEditing ? "bg-accent text-white shadow-lg shadow-accent/20" : "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
             }`}
           >
             {isEditing ? <><Save className="h-3 w-3" /> Save</> : <><Pencil className="h-3 w-3" /> Edit</>}
@@ -340,12 +335,24 @@ const InsightDetailView = ({
             onClick={() => isAnalyzing ? setIsAnalyzing(false) : handleDeepAnalyze()}
             disabled={isNeuralScanning}
             className={`h-8 md:h-10 px-3 md:px-6 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest ${
-              isAnalyzing ? "bg-surface-3 text-text border border-border/10" : "bg-accent text-white"
+              isNeuralScanning 
+                ? "bg-accent/20 text-accent animate-pulse" 
+                : isAnalyzing 
+                  ? "bg-surface-3 text-text border border-border/10" 
+                  : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20"
             }`}
           >
             {isNeuralScanning ? <Activity className="h-3 w-3 animate-spin" /> : isAnalyzing ? "Reset" : "Scan"}
           </button>
 
+          <div className="h-6 w-px bg-border/10 mx-1" />
+          
+          <button
+            onClick={onClose}
+            className="h-8 md:h-10 w-8 md:w-10 flex items-center justify-center text-muted/40 hover:text-red-500 hover:bg-red-500/10 rounded-[4px] transition-all border border-transparent hover:border-red-500/20"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>

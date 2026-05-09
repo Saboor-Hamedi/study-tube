@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 /**
  * Global Keyboard Shortcut Hook
  * Centralizes all workspace commands:
- * - Ctrl + P: Focus Search
+ * - Ctrl + K: Focus Search
  * - Ctrl + B: Toggle Sidebar
  * - Escape: Blur Focus
  */
@@ -23,8 +23,8 @@ export const useShortcuts = (librarySearch) => {
       const isCmd = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
 
-      // Ctrl + P: Focus Search
-      if (isCmd && key === 'p') {
+      // Ctrl + K: Focus Search
+      if (isCmd && key === 'k') {
         e.preventDefault();
         librarySearch?.searchInputRef?.current?.focus();
       }

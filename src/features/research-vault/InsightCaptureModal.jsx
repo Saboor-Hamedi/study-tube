@@ -44,7 +44,7 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
     
     const newItem = {
       text: title,
-      definition: content,
+      definition: content.replace(/(?<!\n)\n(?!\n)/g, " ").trim(),
       date: new Date().toISOString(),
       type: 'Manual Research',
       videoTitle: 'Internal Forge',

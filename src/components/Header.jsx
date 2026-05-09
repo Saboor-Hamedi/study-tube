@@ -7,10 +7,12 @@ import {
   Trash2,
   X,
   Sparkles,
+  Globe,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { useShortcuts } from "../utils/useShortcuts";
+import { api, isElectron } from "../utils/api-bridge";
 import Dropdow from "../features/users/Dropdow";
 import Notifications from "../features/notifications/Notifications";
 
@@ -25,6 +27,16 @@ export default function Header({
 }) {
   // ATOMIC COMMAND CENTER
   useShortcuts(librarySearch);
+
+  const handleOpenBrowser = async () => {
+    try {
+      const settings = await api.getAppSettings();
+      const baseUrl = settings.websiteUrl || "http://localhost:5173/";
+      api.openExternal(baseUrl);
+    } catch (err) {
+      console.error("Failed to open browser:", err);
+    }
+  };
 
   const getHeaderTitle = () => {
     if (view === "vocab") return "Library View";
@@ -124,13 +136,25 @@ export default function Header({
                     librarySearch.setIsHistoryOpen(true);
                   librarySearch.setSelectedIndex(-1);
                 }}
-                placeholder="Search neural archive... (Ctrl+F)"
-                className="w-full bg-surface-2/50 border border-border py-1 px-10 text-[11px] text-text outline-none focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[4px] shadow-sm"
+                placeholder="Search neural archive... (Ctrl+K)"
+                className="w-full bg-surface-2/40 border border-border/60 py-2 px-10 text-[12px] text-text outline-none focus:bg-surface-3 focus:border-accent/40 focus:ring-1 focus:ring-accent/20 transition-all placeholder:text-muted/30 rounded-[8px] shadow-inner-md"
               />
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
                 <SearchIcon
                   className={`h-3.5 w-3.5 transition-colors ${librarySearch.isSearching ? "text-accent animate-pulse" : "text-muted group-focus-within:text-accent"}`}
                 />
+              </div>
+
+              {/* Shortcut Hint Badge */}
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-60 pointer-events-none select-none group-focus-within:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-accent/5 border border-accent/20 rounded-[4px] shadow-sm">
+                  <span className="text-[9px] font-black text-accent/60 tracking-tighter">
+                    ⌘
+                  </span>
+                  <span className="text-[9px] font-black text-accent/80">
+                    K
+                  </span>
+                </div>
               </div>
 
               <AnimatePresence>
@@ -283,7 +307,7 @@ export default function Header({
                   ? "Search for another video..."
                   : "Paste URL or keywords..."
               }
-              className="w-full bg-surface-2 border border-border py-1.5 pl-4 pr-10 text-[11px] text-text outline-none focus:border-accent/40 focus:bg-surface-3 transition-all placeholder:text-muted/20 rounded-[3px]"
+              className="w-full bg-surface-2/40 border border-border/60 py-2 pl-4 pr-10 text-[12px] text-text outline-none focus:bg-surface-3 focus:border-accent/40 focus:ring-1 focus:ring-accent/20 transition-all placeholder:text-muted/30 rounded-[8px] shadow-inner-md"
             />
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
               {videoSearch.busy ? (
@@ -296,7 +320,19 @@ export default function Header({
         )}
       </div>
 
-      <div className="flex items-center justify-end flex-1 min-w-[120px]">
+      <div className="flex items-center justify-end flex-1 min-w-[120px] gap-2">
+        {isElectron && (
+          <>
+            <button
+              onClick={handleOpenBrowser}
+              className="h-8 w-8 flex items-center justify-center text-muted hover:text-accent hover:bg-accent/10 rounded-full transition-all group"
+              title="Open in Website"
+            >
+              <Globe className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+            </button>
+            <div className="w-[1px] h-4 bg-white/10 mx-1" />
+          </>
+        )}
         <Notifications />
         <div className="mx-1 w-[1px] h-5 bg-white/30" />
         <Dropdow

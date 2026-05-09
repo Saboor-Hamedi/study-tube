@@ -39,7 +39,7 @@ export default function NeuralFeedbackHub({
       <div className="flex-1 overflow-y-auto custom-scroll">
         {/* High-Density Metrics Grid */}
         <div className="border-b border-border/5 bg-surface-2/10">
-          <div className="grid grid-cols-2 ">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 p-1.5">
             {[
               {
                 label: "Grammar",
@@ -50,6 +50,14 @@ export default function NeuralFeedbackHub({
                 border: "border-blue-500/10",
               },
               {
+                label: "Syntax",
+                score: diagnostics?.syntax || 0,
+                icon: Activity,
+                color: "text-emerald-500",
+                bg: "bg-emerald-500/5",
+                border: "border-emerald-500/10",
+              },
+              {
                 label: "Academic",
                 score: diagnostics?.academic || 0,
                 icon: GraduationCap,
@@ -58,17 +66,17 @@ export default function NeuralFeedbackHub({
                 border: "border-purple-500/10",
               },
               {
-                label: "Index",
-                score: diagnostics?.index || 0,
-                icon: Activity,
-                color: "text-green-500",
-                bg: "bg-green-500/5",
-                border: "border-green-500/10",
+                label: "Diction",
+                score: diagnostics?.diction || 0,
+                icon: Zap,
+                color: "text-orange-500",
+                bg: "bg-orange-500/5",
+                border: "border-orange-500/10",
               },
               {
                 label: "Writing",
                 score: diagnostics?.writing || 0,
-                icon: Zap,
+                icon: Brain,
                 color: "text-accent",
                 bg: "bg-accent/5",
                 border: "border-accent/10",
@@ -76,15 +84,11 @@ export default function NeuralFeedbackHub({
             ].map((stat) => (
               <div
                 key={stat.label}
-                className={`p-1.5 rounded-[6px] border ${stat.bg} ${stat.border} flex items-center justify-between transition-all hover:border-accent/20`}
+                className={`p-2 rounded-[6px] border ${stat.bg} ${stat.border} flex flex-col items-center justify-center transition-all hover:border-accent/20 group`}
               >
-                <div className="flex items-center gap-1.5">
-                  <div
-                    className={`p-1 rounded-[3px] ${stat.bg.replace("/5", "/20")}`}
-                  >
-                    <stat.icon className={`h-2.5 w-2.5 ${stat.color}`} />
-                  </div>
-                  <span className="text-[7px] md:text-[8px] font-black text-muted uppercase tracking-tighter">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <stat.icon className={`h-2.5 w-2.5 ${stat.color} group-hover:scale-110 transition-transform`} />
+                  <span className="text-[7px] md:text-[8px] font-black text-muted uppercase tracking-tight">
                     {stat.label}
                   </span>
                 </div>

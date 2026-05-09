@@ -128,7 +128,7 @@ const LibraryView = ({
                   <div className="p-4 flex-1 flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-[13px] font-bold text-text leading-tight group-hover:text-accent transition-colors line-clamp-2">
+                        <h4 className="text-[13px] font-bold text-text leading-tight group-hover:text-accent transition-colors">
                           {v.text}
                         </h4>
                         <div className="flex items-center gap-2 mt-2">
