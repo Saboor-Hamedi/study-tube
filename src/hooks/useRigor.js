@@ -42,6 +42,27 @@ export const useRigor = () => {
     }
   };
 
+  // --- Neural Similarity Algorithm (Levenshtein Distance) ---
+  const getLevenshteinDistance = (a, b) => {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1,
+          );
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  };
+
   const analyze = useCallback(async (content) => {
     if (!content) return null;
 
@@ -475,6 +496,43 @@ export const useRigor = () => {
       }
     });
 
+    // 2. NEURAL FUZZY LOOP (Similarity Scoring)
+    const truthSet = [...legitimateDoubles, ...academicLexicon];
+    const words = text.split(/(\s+)/);
+    let currentIndex = 0;
+    words.forEach((word) => {
+      const cleanWord = word.toLowerCase().replace(/[^a-z]/g, "");
+      if (cleanWord.length >= 3 && !truthSet.includes(cleanWord)) {
+        // Only check if not already highlighted by forensic rules
+        const isAlreadyFlagged = highlights.some(
+          (h) => currentIndex >= h.start && currentIndex < h.end,
+        );
+
+        if (!isAlreadyFlagged) {
+          // Find the closest legitimate match
+          for (const target of truthSet) {
+            // Only check words of similar length for performance
+            if (Math.abs(target.length - cleanWord.length) <= 1) {
+              const distance = getLevenshteinDistance(cleanWord, target);
+              if (distance >= 1 && distance <= 2) {
+                // We found a near-miss!
+                highlights.push({
+                  start: currentIndex,
+                  end: currentIndex + word.length,
+                  type: "spelling",
+                  reason: "Spelling Anomaly",
+                  suggestion: target,
+                  explanation: `Fuzzy logic detected a similarity to "${target}".`,
+                });
+                break;
+              }
+            }
+          }
+        }
+      }
+      currentIndex += word.length;
+    });
+
     const spellCount = highlights.filter((h) => h.type === "spelling").length;
     const gramCount = highlights.filter((h) => h.type === "grammar").length;
     const syntaxCount = highlights.filter((h) => h.type === "syntax").length;
@@ -485,9 +543,9 @@ export const useRigor = () => {
     const syntaxScore = Math.max(0, 100 - syntaxCount * 5);
     const dictionScore = Math.max(0, 100 - dictionCount * 5);
     const academicScore = Math.max(0, 80 - highlights.length * 1.5);
-    
+
     const writingScore = Math.round(
-      (gramScore + spellScore + syntaxScore + dictionScore + academicScore) / 5
+      (gramScore + spellScore + syntaxScore + dictionScore + academicScore) / 5,
     );
 
     setIsNeuralScanning(false);
