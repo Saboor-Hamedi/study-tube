@@ -283,27 +283,30 @@ function buildQualityOptions(heights) {
 let isSyncing = false;
 async function performCloudSync() {
   if (isSyncing) return { success: false, message: "Sync already in progress" };
-  const settings = getAppSettings();
-  if (!settings.cloudApiUrl)
+  const dbSettings = getAppSettings();
+  if (!dbSettings.cloudApiUrl)
     return { success: false, message: "Cloud API URL not configured" };
 
   const items = getUnsyncedLibraryItems();
-  if (items.length === 0)
+  if (items.length === 0 && !dbSettings.aiApiKey) // Check if at least there is something to sync
     return { success: true, message: "Everything up to date" };
 
   isSyncing = true;
   console.log(
-    `[CLOUD SYNC] Starting synchronization of ${items.length} items...`,
+    `[CLOUD SYNC] Starting synchronization of ${items.length} items and architectural settings...`,
   );
 
   try {
-    const response = await fetch(`${settings.cloudApiUrl}/sync`, {
+    const response = await fetch(`${dbSettings.cloudApiUrl}/sync`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${settings.cloudApiToken || ""}`,
+        Authorization: `Bearer ${dbSettings.cloudApiToken || ""}`,
       },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ 
+        items,
+        settings: dbSettings // Now pushing settings to PostgreSQL too
+      }),
     });
 
     if (response.ok) {

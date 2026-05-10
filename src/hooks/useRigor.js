@@ -732,21 +732,41 @@ Manuscript: "${content}"`;
       
       const rawAnomalies = JSON.parse(jsonMatch[0]);
       const aiHighlights = [];
+      let currentPos = 0;
 
       rawAnomalies.forEach((anomaly) => {
-        const start = content.indexOf(anomaly.text);
+        // Search for the word starting from the last found position to handle multiple occurrences
+        const start = content.toLowerCase().indexOf(anomaly.text.toLowerCase(), currentPos);
+        
         if (start !== -1) {
-          aiHighlights.push({
-            start: start,
-            end: start + anomaly.text.length,
-            type: anomaly.type,
-            reason: `Neural ${anomaly.type.charAt(0).toUpperCase() + anomaly.type.slice(1)} Audit`,
-            suggestion: anomaly.suggestion,
-            explanation: anomaly.explanation,
-            isAI: true
-          });
+          const end = start + anomaly.text.length;
+          
+          // Deduplication: Ensure this AI highlight doesn't overlap with any existing highlight
+          const isOverlapping = aiHighlights.some(h => 
+            (start >= h.start && start < h.end) || 
+            (end > h.start && end <= h.end) ||
+            (start <= h.start && end >= h.end)
+          );
+
+          if (!isOverlapping) {
+            aiHighlights.push({
+              start,
+              end,
+              type: anomaly.type || 'grammar',
+              reason: `Neural ${anomaly.type?.charAt(0).toUpperCase() + anomaly.type?.slice(1) || 'Audit'}`,
+              suggestion: anomaly.suggestion,
+              explanation: anomaly.explanation,
+              isAI: true
+            });
+            // Advance currentPos slightly past the start of this word 
+            // but not past the end, in case of overlapping suggestions 
+            // (though we filtered overlaps above)
+            currentPos = end; 
+          }
         }
       });
+
+      return aiHighlights.sort((a, b) => a.start - b.start);
 
       return aiHighlights;
     } catch (err) {

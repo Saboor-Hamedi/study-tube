@@ -4,7 +4,6 @@ import {
   GraduationCap,
   Activity,
   Zap,
-  Brain,
   CheckCircle,
   Archive,
   Pencil,
@@ -31,13 +30,12 @@ export default function GrammarForensicView({
   setIsAnalyzing,
   onOpenCapture,
 }) {
-  const { analyze, analyzeAI, isNeuralScanning, getCategoryColor, getCategoryBg } =
+  const { analyze, isNeuralScanning, getCategoryColor, getCategoryBg } =
     useRigor();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 800);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
   const [selectedHl, setSelectedHl] = useState(null);
-  const [isAIScanning, setIsAIScanning] = useState(false);
   const containerRef = useRef(null);
   const closeTimeoutRef = useRef(null);
 
@@ -74,32 +72,7 @@ export default function GrammarForensicView({
     }
   };
 
-  const handleAIScan = async () => {
-    if (!content.trim() || !api) return;
-    setIsAIScanning(true);
-    if (showToast) showToast("Initializing Deep Neural Audit...", "info");
 
-    try {
-      const aiResults = await analyzeAI(content, api);
-      if (aiResults && aiResults.length > 0) {
-        setDiagnostics((prev) => ({
-          ...prev,
-          highlights: [...prev.highlights, ...aiResults].sort(
-            (a, b) => a.start - b.start,
-          ),
-        }));
-        if (showToast)
-          showToast(`Neural Scan Complete: ${aiResults.length} anomalies found`, "success");
-      } else {
-        if (showToast) showToast("Neural Scan: No complex anomalies found", "success");
-      }
-    } catch (err) {
-      console.error("AI Scan Error:", err);
-      if (showToast) showToast("Neural Scan Failed", "error");
-    } finally {
-      setIsAIScanning(false);
-    }
-  };
 
   const handleApplySuggestion = async (suggestion) => {
     if (!selectedHl) return;
@@ -212,6 +185,9 @@ export default function GrammarForensicView({
                       );
 
                       sorted.forEach((hl, i) => {
+                        // Spatial Safety: Prevent backwards jumps or overlapping renders
+                        if (hl.start < lastIndex) return;
+
                         elements.push(content.substring(lastIndex, hl.start));
                         elements.push(
                           <motion.span
@@ -370,20 +346,7 @@ export default function GrammarForensicView({
             )}
           </button>
           
-          {isAnalyzing && (
-            <button
-              onClick={handleAIScan}
-              disabled={isAIScanning || !content.trim()}
-              className={`h-8 md:h-10 px-3 md:px-6 rounded-[4px] border border-purple-500/30 bg-purple-500/10 text-purple-400 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 hover:bg-purple-500/20 active:scale-95 disabled:opacity-50 ${isAIScanning ? "animate-pulse" : ""}`}
-            >
-              {isAIScanning ? (
-                <Brain className="h-3 w-3 animate-spin" />
-              ) : (
-                <Brain className="h-3 w-3" />
-              )}
-              <span className="hidden xs:inline">Neural Scan</span>
-            </button>
-          )}
+
 
           <button
             onClick={handleArchive}

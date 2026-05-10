@@ -1,34 +1,78 @@
 /**
  * Universal API Bridge - 2026 Industrial Edition
  * Detects the environment (Electron vs Browser) and routes calls to either
- * Electron IPC or a Local Web Adapter.
+ * Electron IPC or a Direct Cloud Proxy.
+ * ELIMINATES localStorage cache for library data to ensure scalability (Millions of items).
  */
 
 const isElectron = typeof window !== 'undefined' && window.youtubeAPI !== undefined;
 
 /**
- * Web Adapter for Browser Mode
- * Mocks or redirects calls to local/cloud services when running outside Electron.
+ * Cloud Proxy Helper
+ * Facilitates direct communication with the PostgreSQL/Cloud cluster.
  */
-const WebAdapter = {
+const getCloudConfig = async () => {
+  if (isElectron) {
+    const s = await window.youtubeAPI.getSettings();
+    return { url: s.cloudApiUrl || 'http://127.0.0.1:8000', token: s.cloudApiToken || '' };
+  }
+  const s = JSON.parse(localStorage.getItem('study_settings') || '{}');
+  return { url: s.cloudApiUrl || 'http://127.0.0.1:8000', token: s.cloudApiToken || '' };
+};
+
+const skippedEndpoints = new Set();
+
+const cloudRequest = async (path, options = {}) => {
+  // If we've already discovered this endpoint is missing, skip the noise
+  const endpoint = path.split('?')[0];
+  if (skippedEndpoints.has(endpoint)) {
+    throw new Error('ENDPOINT_SKIPPED');
+  }
+
+  try {
+    const { url, token } = await getCloudConfig();
+    const res = await fetch(`${url}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
+      }
+    });
+    
+    if (res.status === 404) {
+      console.log(`[HYBRID] Cloud endpoint ${endpoint} not ready. Silencing for session.`);
+      skippedEndpoints.add(endpoint);
+      throw new Error('ENDPOINT_NOT_FOUND');
+    }
+    
+    if (!res.ok) throw new Error(`Cloud Error: ${res.statusText}`);
+    return res.json();
+  } catch (err) {
+    throw err;
+  }
+};
+
+const HybridRouter = {
   // --- Neural Dialogue & AI Core ---
-  getAiKey: async () => localStorage.getItem('study_ai_api_key') || '',
+  getAiKey: async () => {
+    if (isElectron) return await window.youtubeAPI.getAiKey();
+    return localStorage.getItem('aiApiKey') || '';
+  },
+
   setAiKey: async (key) => {
-    localStorage.setItem('study_ai_api_key', key);
+    localStorage.setItem('aiApiKey', key);
+    if (isElectron) await window.youtubeAPI.setAiKey(key);
     return key;
   },
-  
+
   chat: async ({ messages, context }) => {
-    const apiKey = localStorage.getItem('study_ai_api_key');
-    if (!apiKey) throw new Error('DeepSeek API Key missing in browser storage.');
+    const apiKey = await HybridRouter.getAiKey();
+    if (!apiKey) throw new Error('Neural API Key missing.');
     
-    // Direct call (May require CORS proxy in production)
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': `Bearer ${apiKey}` 
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [{ role: 'system', content: `Neural Assistant. Context: ${context}` }, ...messages],
@@ -39,226 +83,164 @@ const WebAdapter = {
     return data.choices?.[0]?.message?.content || 'No response.';
   },
 
-  stopAi: async () => true,
+  checkGrammar: async () => {
+    if (isElectron) return await window.youtubeAPI.checkGrammar();
+    return []; 
+  },
 
-  // --- Data Persistence (SQLite Mock for Browser) ---
+  // --- Scalable Data Persistence (Million-Record Capable) ---
   loadVocab: async (includeArchived = false) => {
-    let lib = JSON.parse(localStorage.getItem('study_library') || '[]');
-    if (!includeArchived) lib = lib.filter(v => !v.archived);
-    return lib.sort((a, b) => new Date(b.date) - new Date(a.date));
-  },
-  loadVocabPage: async ({ collection, sortBy, limit }) => {
-    let lib = JSON.parse(localStorage.getItem('study_library') || '[]');
-    
-    // Filtering
-    if (collection && collection !== 'all') {
-      if (collection === 'trash') lib = lib.filter(v => v.archived);
-      else if (collection === 'unorganized') lib = lib.filter(v => !v.collection && !v.archived);
-      else lib = lib.filter(v => v.collection === collection && !v.archived);
-    } else {
-      lib = lib.filter(v => !v.archived);
-    }
-    
-    // Sorting
-    if (sortBy === 'alpha') lib.sort((a, b) => a.text.localeCompare(b.text));
-    else lib.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    // Limiting
-    return lib.slice(0, limit);
-  },
-  saveVocabItem: async (item) => {
-    // 1. Local Storage fallback
-    const lib = JSON.parse(localStorage.getItem('study_library') || '[]');
-    const idx = lib.findIndex(v => (v.id || v.date) === (item.id || item.date));
-    if (idx >= 0) lib[idx] = item;
-    else lib.unshift(item);
-    localStorage.setItem('study_library', JSON.stringify(lib));
-
-    // 2. Direct Cloud Push (Same as Electron mode)
     try {
-      const settings = JSON.parse(localStorage.getItem('study_settings') || '{}');
-      const cloudUrl = settings.cloudApiUrl || 'http://127.0.0.1:8000';
-      await fetch(`${cloudUrl}/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: [item], notes: null, collections: null, settings: null })
-      });
-    } catch (e) {
-      console.warn('[CLOUD] Web Sync Bypass', e);
-    }
-    return true;
-  },
-  deleteVocabItem: async (id) => {
-    const lib = JSON.parse(localStorage.getItem('study_library') || '[]').filter(v => (v.id || v.date) !== id);
-    localStorage.setItem('study_library', JSON.stringify(lib));
-    return true;
-  },
-  archiveVocabItem: async (id) => {
-    const lib = JSON.parse(localStorage.getItem('study_library') || '[]');
-    const idx = lib.findIndex(v => (v.id || v.date) === id);
-    if (idx >= 0) {
-      lib[idx].archived = 1;
-      localStorage.setItem('study_library', JSON.stringify(lib));
-    }
-    return true;
-  },
-  restoreVocabItem: async (id) => {
-    const lib = JSON.parse(localStorage.getItem('study_library') || '[]');
-    const idx = lib.findIndex(v => (v.id || v.date) === id);
-    if (idx >= 0) {
-      lib[idx].archived = 0;
-      localStorage.setItem('study_library', JSON.stringify(lib));
-    }
-    return true;
-  },
-  getLibraryStats: async () => {
-    const lib = JSON.parse(localStorage.getItem('study_library') || '[]').filter(v => !v.archived);
-    const trash = JSON.parse(localStorage.getItem('study_library') || '[]').filter(v => v.archived);
-    return { all: lib.length, trash: trash.length, collections: [] };
-  },
-
-  loadNotes: async () => JSON.parse(localStorage.getItem('study_notes') || '{"blocks":[]}'),
-  saveNotes: async (data) => {
-    localStorage.setItem('study_notes', JSON.stringify(data));
-    return true;
-  },
-
-  // --- Neural Engine (Python Sidecar) ---
-  getEngineStatus: async () => {
-    try {
-      const r = await fetch('http://127.0.0.1:8008/status', { mode: 'cors' });
-      const d = await r.json();
-      return d.status || 'OFFLINE';
-    } catch {
-      return 'OFFLINE';
-    }
-  },
-
-  // --- YouTube Bridge ---
-  // These require a server-side proxy to bypass CORS and use ytdl-core
-  youtubeSearch: async (query) => {
-    console.warn('YouTube Search in Browser requires a local Node proxy.');
-    return [];
-  },
-  youtubeMetadata: async (url) => {
-    throw new Error('YouTube Metadata extraction restricted in Browser.');
-  },
-
-  // --- Settings & UI ---
-  getTheme: async () => localStorage.getItem('study_theme') || 'dark',
-  setTheme: async (theme) => {
-    localStorage.setItem('study_theme', theme);
-    return theme;
-  },
-  getVersion: async () => '1.0.11-web',
-  getSavePath: async () => localStorage.getItem('study_save_path') || 'Browser Standard Storage',
-  setSavePath: async (path) => {
-    localStorage.setItem('study_save_path', path);
-    return path;
-  },
-  pickSavePath: async () => {
-    console.warn('Folder picking restricted in browser mode.');
-    return 'Browser Standard Storage';
-  },
-  
-  // Event System Mock
-  onEngineStatus: (callback) => {
-    const timer = setInterval(async () => {
-      try {
-        const r = await fetch('http://127.0.0.1:8008/status', { mode: 'cors' });
-        const d = await r.json();
-        callback(d.status || 'OFFLINE');
-      } catch {
-        callback('OFFLINE');
+      return await cloudRequest(`/library?archived=${includeArchived ? 1 : 0}`);
+    } catch (err) {
+      if (isElectron || err.message === 'ENDPOINT_NOT_FOUND' || err.message === 'ENDPOINT_SKIPPED') {
+        if (isElectron) return await window.youtubeAPI.loadVocab(includeArchived);
+        return [];
       }
-    }, 5000);
-    return () => clearInterval(timer);
+      throw err;
+    }
   },
 
-  // Updater Mock
-  updater: {
-    check: async () => { console.log('Update check skipped in web mode.'); return { success: true }; },
-    install: async () => true,
-    onUpdateStatus: (callback) => () => {}, // No-op unsubscription
+  loadVocabPage: async (criteria) => {
+    try {
+      const query = new URLSearchParams(criteria).toString();
+      return await cloudRequest(`/library/page?${query}`);
+    } catch (err) {
+      if (isElectron || err.message === 'ENDPOINT_NOT_FOUND' || err.message === 'ENDPOINT_SKIPPED') {
+        if (isElectron) return await window.youtubeAPI.loadVocabPage(criteria);
+        return [];
+      }
+      throw err;
+    }
   },
 
-  // Fallbacks for missing handlers
-  checkGrammar: async () => [],
-  exportDossier: async () => ({ success: false, message: 'Export restricted in browser mode.' }),
-  openExternal: async (url) => {
-    window.open(url, '_blank');
+  saveVocabItem: async (item) => {
+    let cloudSuccess = false;
+    try {
+      await cloudRequest('/sync', { method: 'POST', body: JSON.stringify({ items: [item] }) });
+      cloudSuccess = true;
+    } catch (err) { console.warn('[HYBRID] Cloud sync deferred:', err.message); }
+
+    if (isElectron) {
+      await window.youtubeAPI.saveVocabItem({ ...item, synced: cloudSuccess ? 1 : 0 });
+    }
     return true;
   },
-  // --- Settings (Universal Blueprint) ---
-  getAppSettings: async () => JSON.parse(localStorage.getItem('study_settings') || '{}'),
-  saveAppSettings: async (config) => {
-    localStorage.setItem('study_settings', JSON.stringify(config));
+
+  deleteVocabItem: async (id) => {
+    try {
+      await cloudRequest(`/library/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      if (isElectron) await window.youtubeAPI.deleteVocabItem(id);
+      else throw err;
+    }
     return true;
   },
 
-  getSearchLog: async () => JSON.parse(localStorage.getItem('study_search_log') || '[]'),
+  // --- Collection & Research Logic ---
+  loadCollections: async () => {
+    try {
+      return await cloudRequest('/collections');
+    } catch (err) {
+      if (isElectron || err.message === 'ENDPOINT_NOT_FOUND' || err.message === 'ENDPOINT_SKIPPED') {
+        return isElectron ? await window.youtubeAPI.loadCollections() : [];
+      }
+      return [];
+    }
+  },
+  saveCollections: async (list) => {
+    if (isElectron) await window.youtubeAPI.saveCollections(list);
+    try {
+      await cloudRequest('/collections', { method: 'POST', body: JSON.stringify({ collections: list }) });
+    } catch (e) { console.warn('Cloud collection sync deferred', e); }
+    return true;
+  },
+
+  loadNotes: async () => {
+    try {
+      return await cloudRequest('/notes');
+    } catch (err) {
+      if (isElectron || err.message === 'ENDPOINT_NOT_FOUND' || err.message === 'ENDPOINT_SKIPPED') {
+        return isElectron ? await window.youtubeAPI.loadNotes() : { blocks: [] };
+      }
+      return { blocks: [] };
+    }
+  },
+  saveNotes: async (data) => {
+    if (isElectron) await window.youtubeAPI.saveNotes(data);
+    try {
+      await cloudRequest('/notes', { method: 'POST', body: JSON.stringify(data) });
+    } catch (e) { console.warn('Cloud notes sync deferred', e); }
+    return true;
+  },
+
+  getLibraryStats: async () => {
+    try {
+      return await cloudRequest('/library/stats');
+    } catch (err) {
+      if (isElectron || err.message === 'ENDPOINT_NOT_FOUND' || err.message === 'ENDPOINT_SKIPPED') {
+        return isElectron ? await window.youtubeAPI.getLibraryStats() : { all: 0, trash: 0, collections: [] };
+      }
+      return { all: 0, trash: 0, collections: [] };
+    }
+  },
+
+  archiveVocabItem: async (id) => {
+    try {
+      await cloudRequest(`/library/${id}/archive`, { method: 'POST' });
+    } catch {
+      if (isElectron) await window.youtubeAPI.archiveVocabItem(id);
+    }
+    return true;
+  },
+
+  restoreVocabItem: async (id) => {
+    try {
+      await cloudRequest(`/library/${id}/restore`, { method: 'POST' });
+    } catch {
+      if (isElectron) await window.youtubeAPI.restoreVocabItem(id);
+    }
+    return true;
+  },
+
+  // --- Search History (Cached Locally for Privacy) ---
+  getSearchLog: async () => {
+    if (isElectron) return await window.youtubeAPI.getSearchLog();
+    return JSON.parse(localStorage.getItem('study_search_log') || '[]');
+  },
   addSearchLog: async (q) => {
+    if (isElectron) return await window.youtubeAPI.addSearchLog(q);
     const log = JSON.parse(localStorage.getItem('study_search_log') || '[]').filter(i => i !== q);
     log.unshift(q);
     localStorage.setItem('study_search_log', JSON.stringify(log.slice(0, 10)));
   },
   deleteSearchLog: async (q) => {
+    if (isElectron) return await window.youtubeAPI.deleteSearchLog(q);
     const log = JSON.parse(localStorage.getItem('study_search_log') || '[]').filter(i => i !== q);
     localStorage.setItem('study_search_log', JSON.stringify(log));
   },
-  clearSearchLog: async () => localStorage.removeItem('study_search_log'),
-
-  // --- Neural Cloud Bridge (Web Mode) ---
-  triggerSync: async () => {
-    console.log('[CLOUD] Web mode: Syncing via Direct Cloud Access...');
-    // In web mode, we are already talking to the cloud or will be soon.
-    return { success: true, message: 'Cloud Active' };
+  clearSearchLog: async () => {
+    if (isElectron) return await window.youtubeAPI.clearSearchLog();
+    localStorage.removeItem('study_search_log');
   },
-  loadCollections: async () => JSON.parse(localStorage.getItem('study_collections') || '[]'),
-  saveCollections: async (list) => {
-    localStorage.setItem('study_collections', JSON.stringify(list));
-    return true;
-  }
-};
 
-/**
- * The Unified API Instance
- */
-const api = isElectron ? {
-  ...window.youtubeAPI,
-  getAppSettings: () => window.youtubeAPI.getSettings(),
-  saveAppSettings: (config) => window.youtubeAPI.saveSettings(config),
-  getLibraryStats: () => window.youtubeAPI.getLibraryStats(),
-  loadVocab: (includeArchived) => window.youtubeAPI.loadVocab(includeArchived),
-  archiveVocabItem: (id) => window.youtubeAPI.archiveVocabItem(id),
-  restoreVocabItem: (id) => window.youtubeAPI.restoreVocabItem(id),
-  deleteVocabItem: (id) => window.youtubeAPI.deleteVocabItem(id),
-  
-  saveVocabItem: async (item) => {
-    await window.youtubeAPI.saveVocabItem(item);
-    try {
-      const settings = await window.youtubeAPI.getSettings();
-      const cloudUrl = settings.cloud_api_url || settings.cloudApiUrl || 'http://127.0.0.1:8000';
-      await fetch(`${cloudUrl}/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: [item], notes: null, collections: null, settings: null })
-      });
-    } catch (e) {
-      console.warn('[CLOUD] Direct Sync Bypass', e);
-    }
+  // --- Settings & UI (Always Synchronized) ---
+  getSettings: async () => {
+    if (isElectron) return await window.youtubeAPI.getSettings();
+    return JSON.parse(localStorage.getItem('study_settings') || '{}');
+  },
+
+  saveSettings: async (config) => {
+    if (isElectron) await window.youtubeAPI.saveSettings(config);
+    localStorage.setItem('study_settings', JSON.stringify(config));
     return true;
   },
 
   pullFromCloud: async () => {
+    if (!isElectron) return { success: true, message: 'Cloud Mode Active' };
     try {
-      const settings = await window.youtubeAPI.getSettings();
-      const cloudUrl = settings.cloud_api_url || settings.cloudApiUrl || 'http://127.0.0.1:8000';
-      console.log(`[CLOUD] Electron Pull: Connecting to ${cloudUrl}/library...`);
-      const response = await fetch(`${cloudUrl}/library`);
-      const cloudItems = await response.json();
+      const cloudItems = await cloudRequest('/library');
       if (Array.isArray(cloudItems)) {
-        console.log(`[CLOUD] Electron Pull: Received ${cloudItems.length} items. Syncing to SQLite...`);
         for (const item of cloudItems) {
           const localItem = { ...item, videoTitle: item.video_title, archived: item.archived ? 1 : 0, synced: 1 };
           delete localItem.video_title;
@@ -266,34 +248,79 @@ const api = isElectron ? {
         }
         return { success: true, count: cloudItems.length };
       }
-    } catch (err) {
-      console.error('[CLOUD] Electron Pull Failed:', err);
-      return { success: false };
-    }
-  }
-} : {
-  ...WebAdapter,
-  pullFromCloud: async () => {
-     try {
-       const settings = JSON.parse(localStorage.getItem('study_settings') || '{}');
-       const cloudUrl = settings.cloudApiUrl || 'http://127.0.0.1:8000';
-       console.log(`[CLOUD] Web Pull: Connecting to ${cloudUrl}/library...`);
-       const response = await fetch(`${cloudUrl}/library`);
-       const cloudItems = await response.json();
-       if (Array.isArray(cloudItems)) {
-         console.log(`[CLOUD] Web Pull: Received ${cloudItems.length} items. Syncing to LocalStorage...`);
-         for (const item of cloudItems) {
-           const localItem = { ...item, videoTitle: item.video_title, archived: item.archived ? 1 : 0 };
-           delete localItem.video_title;
-           await WebAdapter.saveVocabItem(localItem);
+    } catch (err) { return { success: false, message: err.message }; }
+  },
+
+  refineNotes: async (data) => {
+    if (isElectron) return await window.youtubeAPI.refineNotes(data);
+    
+    // Web implementation: Mirror of main.js ai:refine
+    const apiKey = await HybridRouter.getAiKey();
+    if (!apiKey) throw new Error('Neural API Key missing.');
+    
+    const textToRefine = data.blocks
+      .map((b, i) => `[ID:${i}] ${b.data.text || b.data.caption || ""}`)
+      .join("\n\n");
+
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: 'Professional research editor. Correct grammar/flow. Keep [ID:n] tags. Return only: [ID:n] Corrected text.' },
+          { role: 'user', content: textToRefine }
+        ],
+        temperature: 0.3
+      })
+    });
+    const result = await response.json();
+    const content = result.choices?.[0]?.message?.content || '';
+    
+    const refinedBlocks = JSON.parse(JSON.stringify(data.blocks));
+    content.split('\n').forEach(line => {
+       const match = line.match(/\[ID:(\d+)\]\s*(.*)/i);
+       if (match) {
+         const idx = parseInt(match[1]);
+         const text = match[2].trim();
+         if (refinedBlocks[idx]) {
+            if (refinedBlocks[idx].data.text !== undefined) refinedBlocks[idx].data.text = text;
+            else if (refinedBlocks[idx].data.caption !== undefined) refinedBlocks[idx].data.caption = text;
          }
-         return { success: true, count: cloudItems.length };
        }
-     } catch (err) {
-       console.error('[CLOUD] Web Pull Failed:', err);
-       return { success: false };
-     }
-  }
+    });
+    return refinedBlocks;
+  },
+
+  checkGrammar: async (text) => {
+    if (isElectron) return await window.youtubeAPI.checkGrammar(text);
+    return []; // Web fallback for now
+  },
+
+  // Metadata & Shell (Electron Only)
+  youtubeMetadata: async (url) => isElectron ? window.youtubeAPI.metadata(url) : null,
+  youtubeSearch: async (q) => isElectron ? window.youtubeAPI.search(q) : [],
+  openExternal: async (url) => isElectron ? window.youtubeAPI.openExternal(url) : window.open(url, '_blank'),
+  pickSavePath: async () => isElectron ? window.youtubeAPI.pickSavePath() : null,
+  getSavePath: async () => isElectron ? await window.youtubeAPI.getSavePath() : 'Cloud Root',
+  setSavePath: async (path) => isElectron ? await window.youtubeAPI.setSavePath(path) : 'Cloud Root',
+  getTheme: async () => isElectron ? await window.youtubeAPI.getTheme() : localStorage.getItem('study_theme') || 'dark',
+  setTheme: async (t) => {
+    if (isElectron) await window.youtubeAPI.setTheme(t);
+    localStorage.setItem('study_theme', t);
+    return t;
+  },
+  getVersion: async () => isElectron ? await window.youtubeAPI.getAppVersion?.() || '1.0.11' : '1.0.11-web',
+  
+  onEngineStatus: (callback) => isElectron ? (window.youtubeAPI.onEngineStatus || (() => {}))(callback) : () => {}, 
+  onProgress: (callback) => isElectron ? (window.youtubeAPI.onProgress || (() => {}))(callback) : () => {},
+  onDownloadComplete: (callback) => isElectron ? (window.youtubeAPI.onDownloadComplete || (() => {}))(callback) : () => {},
+  onDownloadError: (callback) => isElectron ? (window.youtubeAPI.onDownloadError || (() => {}))(callback) : () => {},
+  onDownloadStatus: (callback) => isElectron ? (window.youtubeAPI.onDownloadStatus || (() => {}))(callback) : () => {},
+  onDone: (callback) => isElectron ? (window.youtubeAPI.onDone || (() => {}))(callback) : () => {},
+  
+  updater: isElectron ? window.youtubeAPI.updater : { check: async () => ({}), install: async () => {} }
 };
 
+const api = HybridRouter;
 export { api, isElectron };
