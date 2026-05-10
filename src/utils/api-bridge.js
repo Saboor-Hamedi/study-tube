@@ -397,11 +397,15 @@ const HybridRouter = {
   // Metadata & Shell (Electron Only)
   youtubeMetadata: async (url) =>
     isElectron ? window.youtubeAPI.metadata(url) : null,
+  search: async (q) => {
+    return await HybridRouter.youtubeSearch(q);
+  },
   youtubeSearch: async (q) => {
     if (isElectron) return await window.youtubeAPI.search(q);
     try {
       return await cloudRequest(`/youtube/search?q=${encodeURIComponent(q)}`);
     } catch (err) {
+      console.warn("[HYBRID] Cloud YouTube search unavailable:", err.message);
       return []; // Web fallback
     }
   },

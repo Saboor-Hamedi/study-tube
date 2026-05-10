@@ -251,7 +251,8 @@ export default function App() {
   );
 
   const commitToHistory = async (q) => {
-    const query = q?.trim();
+    // Neural Scrub: Strip HTML marks before committing to history
+    const query = q?.replace(/<[^>]*>/g, "")?.trim();
     if (!query) return;
     try {
       await api.addSearchLog(query);

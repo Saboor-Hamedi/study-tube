@@ -131,7 +131,6 @@ export default function Sidebar({
               {[
                 { id: "home", name: "Home", icon: LayoutGrid },
                 { id: "search", name: "Video Intel", icon: Search },
-                { id: "vocab", name: "Research Vault", icon: Library },
                 { id: "class", name: "My Class", icon: GraduationCap },
                 { id: "editor", name: "Analytical Writing", icon: FileText },
                 { id: "assignment", name: "Writing Assignment", icon: Pencil },
@@ -185,97 +184,7 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* Collections & Folders */}
-          <div className="space-y-4">
-            {!isCollapsed && (
-              <div className="px-2 flex items-center justify-between group/title">
-                <p className="text-[10px] font-black text-muted/20 uppercase tracking-widest">
-                  Collections
-                </p>
-                <button
-                  onClick={() => setIsCreatingCollection(true)}
-                  className="p-1 hover:bg-accent/10 text-muted/20 hover:text-accent transition-all rounded-[3px]"
-                >
-                  <Plus className="h-2.5 w-2.5" />
-                </button>
-              </div>
-            )}
 
-            <div className="space-y-1">
-              {/* Special Folders */}
-              {[
-                { id: "all", name: "All Research", icon: Library },
-                {
-                  id: "__neural_drafts__",
-                  name: "Neural Archive",
-                  icon: Brain,
-                },
-              ].map((folder) => {
-                const active = selectedCollection === folder.id;
-                return (
-                  <div
-                    key={folder.id}
-                    className="group relative flex justify-center"
-                  >
-                    <button
-                      onClick={() => handleCollectionSelect(folder.id)}
-                      style={
-                        isCollapsed ? { width: "40px", height: "40px" } : {}
-                      }
-                      className={`flex items-center transition-all duration-200 text-left shrink-0 ${
-                        isCollapsed
-                          ? `justify-center rounded-full border-0 ${active ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
-                          : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${active ? "bg-accent/10 text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
-                      }`}
-                    >
-                      <folder.icon
-                        className={`h-3.5 w-3.5 shrink-0 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
-                      />
-                      {!isCollapsed && (
-                        <div className="flex-1 flex items-center justify-between overflow-hidden">
-                          <span className="text-[11px] font-black truncate">
-                            {folder.name}
-                          </span>
-                          <span className="text-[9px] font-mono opacity-30 group-hover:opacity-100">
-                            {getCount(folder.id)}
-                          </span>
-                        </div>
-                      )}
-                      {isCollapsed && (
-                        <div
-                          className={`absolute ${side === "left" ? "left-full ml-4" : "right-full mr-4"} px-3 py-1.5 bg-text text-background text-[10px] font-black opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]`}
-                        >
-                          {folder.name}
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-
-              <div className="h-px bg-border/5 mx-2 my-2" />
-
-              {/* User Collections */}
-              {collections?.map((name) => (
-                <DroppableFolder
-                  key={name}
-                  id={name}
-                  active={selectedCollection === name}
-                  onClick={() => handleCollectionSelect(name)}
-                  isCollapsed={isCollapsed}
-                >
-                  <div className="flex-1 flex items-center justify-between overflow-hidden">
-                    <span className="text-[11px] font-black truncate">
-                      {name}
-                    </span>
-                    <span className="text-[9px] font-mono opacity-30 group-hover:opacity-100">
-                      {getCount(name)}
-                    </span>
-                  </div>
-                </DroppableFolder>
-              ))}
-            </div>
-          </div>
         </div>
 
         <SidebarFooter isCollapsed={isCollapsed} setView={setView} />

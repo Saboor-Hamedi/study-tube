@@ -47,6 +47,22 @@ const Profile = ({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const historyRef = useRef(null);
 
+  useEffect(() => {
+    // Neural Hydration: Sync collections and stats for the embedded LibraryView
+    const hydrate = async () => {
+      if (!api) return;
+      try {
+        const list = await api.loadCollections();
+        setCollections(
+          (list || []).filter((c) => c && typeof c === "string" && c.trim()),
+        );
+      } catch (err) {
+        console.error("[PROFILE] Collection Hydration Failure:", err);
+      }
+    };
+    hydrate();
+  }, [api]);
+
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
     { id: "insights", label: "Archive", icon: FileText },

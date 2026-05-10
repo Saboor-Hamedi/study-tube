@@ -260,6 +260,100 @@ def get_cloud_library():
     finally:
         conn.close()
 
+@app.get("/library/search")
+def search_cloud_library(q: str):
+    import re
+    conn = get_db_connection()
+    if not conn: raise HTTPException(status_code=500, detail="DB Connection Failed")
+    try:
+        with conn.cursor() as cur:
+            query_param = f"%{q}%"
+            cur.execute("""
+                SELECT * FROM library 
+                WHERE text ILIKE %s OR video_title ILIKE %s 
+                ORDER BY updated_at DESC
+            """, (query_param, query_param))
+            rows = cur.fetchall()
+            
+            # Apply Neural Highlighting (Simulating SQLite FTS snippet)
+            highlight_tag = r'<mark>\g<0></mark>'
+            pattern = re.compile(re.escape(q), re.IGNORECASE)
+            
+            for row in rows:
+                text = row.get('text', '')
+                definition = row.get('definition', '')
+                
+                # Create the snippet expected by the frontend (with highlights)
+                snippet_source = definition if definition else text
+                highlighted_snippet = pattern.sub(highlight_tag, snippet_source)
+                
+                # Truncate for high-density visualization if too long
+                if len(highlighted_snippet) > 150:
+                    row['definitionSnippet'] = highlighted_snippet[:150] + "..."
+                else:
+                    row['definitionSnippet'] = highlighted_snippet
+                    
+            return rows
+    finally:
+        conn.close()
+
+@app.get("/library/stats")
+def get_library_stats():
+    conn = get_db_connection()
+    if not conn: raise HTTPException(status_code=500, detail="DB Connection Failed")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) as all_count FROM library WHERE archived = FALSE")
+            all_count = cur.fetchone()['all_count']
+            cur.execute("SELECT COUNT(*) as trash_count FROM library WHERE archived = TRUE")
+            trash_count = cur.fetchone()['trash_count']
+            return {"all": all_count, "trash": trash_count, "collections": []}
+    finally:
+        conn.close()
+
+@app.get("/collections")
+def get_collections():
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name FROM collections ORDER BY name ASC")
+            return [row['name'] for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+@app.get("/notes")
+def get_notes():
+    conn = get_db_connection()
+    if not conn: return {"blocks": []}
+    SINGLETON_ID = "00000000-0000-0000-0000-000000000001"
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT data FROM notes WHERE user_id = %s", (SINGLETON_ID,))
+            row = cur.fetchone()
+            return row['data'] if row else {"blocks": []}
+    finally:
+        conn.close()
+
+@app.get("/settings")
+def get_settings():
+    conn = get_db_connection()
+    if not conn: return {}
+    SINGLETON_ID = "00000000-0000-0000-0000-000000000001"
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT config FROM settings WHERE user_id = %s", (SINGLETON_ID,))
+            row = cur.fetchone()
+            return row['config'] if row else {}
+    finally:
+        conn.close()
+
+@app.get("/youtube/search")
+def proxy_youtube_search(q: str):
+    # This is a placeholder for a real YouTube Search API.
+    # For now, it returns a simulated result to prevent 404 noise.
+    return []
+
 @app.on_event("startup")
 async def startup_event():
     bootstrap_db()

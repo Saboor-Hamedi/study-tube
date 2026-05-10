@@ -69,12 +69,12 @@ const InsightDetailView = ({
 
   useEffect(() => {
     if (item) {
-      // Normalize text: Replace single newlines with spaces, preserve double newlines
-      const raw = item.definition || "";
+      // Neural Scrub: Ensure node data is clean of technical markers
+      const raw = (item.definition || "").replace(/<[^>]*>/g, "");
       const cleaned = raw.replace(/(?<!\n)\n(?!\n)/g, " ").trim();
       
       setEditVal(cleaned);
-      setTitleEditVal(item.text || "");
+      setTitleEditVal((item.text || "").replace(/<[^>]*>/g, ""));
       setDiagnostics(item.diagnostics || { highlights: [] });
       setIsAnalyzing(!!item.diagnostics);
     }

@@ -87,7 +87,9 @@ export default function Header({
                     ) {
                       const item = items[librarySearch.selectedIndex];
                       if (typeof item === "string") {
-                        librarySearch.setQuery(item);
+                        librarySearch.setQuery(
+                          item.replace(/<[^>]*>/g, ""),
+                        );
                         librarySearch.setIsHistoryOpen(false);
                       } else {
                         librarySearch.onSelect(item);
@@ -230,7 +232,7 @@ export default function Header({
                             key={idx}
                             className={`group flex items-center justify-between px-4 py-2.5 cursor-pointer border-b border-border/10 last:border-0 relative transition-colors ${librarySearch.selectedIndex === idx ? "bg-accent/30 border-l-2 border-l-accent" : "hover:bg-white/[0.03] border-l-2 border-l-transparent"}`}
                             onClick={() => {
-                              librarySearch.setQuery(q);
+                              librarySearch.setQuery(q.replace(/<[^>]*>/g, ""));
                               librarySearch.setIsHistoryOpen(false);
                             }}
                           >
