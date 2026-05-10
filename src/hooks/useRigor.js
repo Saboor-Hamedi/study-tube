@@ -237,6 +237,72 @@ export const useRigor = () => {
         exp: "Subject-case and agreement mismatch.",
       },
       {
+        regex: /\bia\s+m\b/gi,
+        type: "grammar",
+        suggestion: "I am",
+        exp: "Subject-auxiliary typographic anomaly.",
+      },
+      {
+        regex: /\bi\s+am\s+([a-z]{2,})(?<!ing|being|doing|going)\b/gi,
+        type: "grammar",
+        suggestion: "I am $1ing",
+        exp: "Incorrect present continuous form. Verbs following 'am' usually require the '-ing' suffix.",
+      },
+      {
+        regex: /\bi\b/g,
+        type: "grammar",
+        suggestion: "I",
+        exp: "First-person pronoun must always be capitalized.",
+      },
+      {
+        regex: /\bMe\s+(\w+)\b/gi,
+        type: "grammar",
+        suggestion: "I $1",
+        exp: "Subject-case pronoun error.",
+      },
+      {
+        regex: /\bda\b/gi,
+        type: "grammar",
+        suggestion: "the",
+        exp: "Non-standard article usage.",
+      },
+      {
+        regex: /\bdem\s+dont\b/gi,
+        type: "grammar",
+        suggestion: "they don't",
+        exp: "Subject-case and auxiliary agreement error.",
+      },
+      {
+        regex: /\bu\s+no\s+has\b/gi,
+        type: "grammar",
+        suggestion: "you don't have",
+        exp: "Subject-case and verb agreement error.",
+      },
+      {
+        regex: /\bwanna\b/gi,
+        type: "grammar",
+        suggestion: "want to",
+        exp: "Colloquial contraction is non-academic.",
+      },
+      {
+        regex: /\bgunna\b/gi,
+        type: "grammar",
+        suggestion: "going to",
+        exp: "Colloquial contraction is non-academic.",
+      },
+      {
+        regex: /\bgetted\b/gi,
+        type: "syntax",
+        suggestion: "got",
+        exp: "Irregular verb form anomaly.",
+      },
+      {
+        regex: /\bkeeped\b/gi,
+        type: "syntax",
+        suggestion: "kept",
+        exp: "Irregular verb form anomaly.",
+      },
+      {
         regex: /\b(it|this)\s+are\b/gi,
         type: "grammar",
         suggestion: "$1 is",
@@ -339,6 +405,27 @@ export const useRigor = () => {
         type: "syntax",
         suggestion: "he cried",
         exp: "Subject-case and verb form anomaly.",
+      },
+
+      // Tone & Sophistication (PURPLE)
+      {
+        regex: /\b(is|was|were|been|being)\s+\w+ed\s+by\b/gi,
+        type: "tone",
+        suggestion: "Use active voice",
+        exp: "Passive voice weakens scholarly authority. Consider rephrasing with an active subject.",
+      },
+      {
+        regex: /\bThe\s+\w+(tion|ment|ity|ance|ence)\s+of\b/gi,
+        type: "diction",
+        suggestion: "Simplify structure",
+        exp: "Nominalization (turning verbs into heavy nouns) can make academic writing 'sticky' and harder to read.",
+      },
+      {
+        regex:
+          /\b(seems\s+to|appears\s+to|could\s+possibly|may\s+be|might\s+be)\b/gi,
+        type: "tone",
+        suggestion: "Use assertive language",
+        exp: "Over-hedging reduces the impact of your findings. Use more definitive academic phrasing.",
       },
 
       // Diction & Modifiers (ORANGE)
@@ -461,8 +548,8 @@ export const useRigor = () => {
         if (!highlights.find((h) => h.start === match.index)) {
           // Process regex placeholders like $1, $2 in the suggestion string
           let processedSuggestion = rule.suggestion;
-          if (rule.suggestion.includes("$")) {
-            processedSuggestion = rule.suggestion.replace(
+          if (processedSuggestion && processedSuggestion.includes("$")) {
+            processedSuggestion = processedSuggestion.replace(
               /\$(\d+)/g,
               (m, g) => {
                 return match[parseInt(g)] || m;
@@ -509,23 +596,65 @@ export const useRigor = () => {
         );
 
         if (!isAlreadyFlagged) {
-          // Find the closest legitimate match
+          // Find the BEST legitimate match (Minimum Distance)
+          let bestMatch = null;
+          let minDistance = 99;
+
           for (const target of truthSet) {
             // Only check words of similar length for performance
             if (Math.abs(target.length - cleanWord.length) <= 1) {
               const distance = getLevenshteinDistance(cleanWord, target);
-              if (distance >= 1 && distance <= 2) {
-                // We found a near-miss!
-                highlights.push({
-                  start: currentIndex,
-                  end: currentIndex + word.length,
-                  type: "spelling",
-                  reason: "Spelling Anomaly",
-                  suggestion: target,
-                  explanation: `Fuzzy logic detected a similarity to "${target}".`,
-                });
-                break;
+              if (distance < minDistance) {
+                minDistance = distance;
+                bestMatch = target;
               }
+              // Optimization: if we find distance 1, it's very likely the best we can do
+              if (minDistance === 1) break;
+            }
+          }
+
+          if (bestMatch && minDistance <= 2) {
+            highlights.push({
+              start: currentIndex,
+              end: currentIndex + word.length,
+              type: "spelling",
+              reason: "Spelling Anomaly",
+              suggestion: bestMatch,
+              explanation: `Fuzzy logic detected a similarity to "${bestMatch}".`,
+            });
+          } else if (cleanWord.length > 0) {
+            // NEURAL OUTLIER DETECTION: If word is totally unknown and not a common short word
+            const commonShorts = [
+              "is",
+              "the",
+              "a",
+              "an",
+              "at",
+              "by",
+              "for",
+              "in",
+              "of",
+              "on",
+              "to",
+              "up",
+              "and",
+              "but",
+              "or",
+              "so",
+              "as",
+              "if",
+              "not",
+            ];
+            if (!commonShorts.includes(cleanWord)) {
+              highlights.push({
+                start: currentIndex,
+                end: currentIndex + word.length,
+                type: "diction",
+                reason: "Linguistic Outlier",
+                suggestion: null,
+                explanation:
+                  "This term has zero correlation with academic or technical English datasets.",
+              });
             }
           }
         }
@@ -533,16 +662,19 @@ export const useRigor = () => {
       currentIndex += word.length;
     });
 
-    const spellCount = highlights.filter((h) => h.type === "spelling").length;
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const penaltyMultiplier = wordCount < 30 ? 3 : 1; // Triple the penalty for short, high-error snippets
+
     const gramCount = highlights.filter((h) => h.type === "grammar").length;
+    const spellCount = highlights.filter((h) => h.type === "spelling").length;
     const syntaxCount = highlights.filter((h) => h.type === "syntax").length;
     const dictionCount = highlights.filter((h) => h.type === "diction").length;
 
-    const gramScore = Math.max(0, 100 - gramCount * 5);
-    const spellScore = Math.max(0, 100 - spellCount * 5);
-    const syntaxScore = Math.max(0, 100 - syntaxCount * 5);
-    const dictionScore = Math.max(0, 100 - dictionCount * 5);
-    const academicScore = Math.max(0, 80 - highlights.length * 1.5);
+    const gramScore = Math.max(0, 100 - gramCount * 5 * penaltyMultiplier);
+    const spellScore = Math.max(0, 100 - spellCount * 5 * penaltyMultiplier);
+    const syntaxScore = Math.max(0, 100 - syntaxCount * 5 * penaltyMultiplier);
+    const dictionScore = Math.max(0, 100 - dictionCount * 5 * penaltyMultiplier);
+    const academicScore = Math.max(0, 80 - highlights.length * 1.5 * penaltyMultiplier);
 
     const writingScore = Math.round(
       (gramScore + spellScore + syntaxScore + dictionScore + academicScore) / 5,
@@ -572,5 +704,56 @@ export const useRigor = () => {
     };
   }, []);
 
-  return { analyze, isNeuralScanning, getCategoryColor, getCategoryBg };
+  const analyzeAI = useCallback(async (content, api) => {
+    if (!content || !api) return [];
+
+    try {
+      const prompt = `You are a High-Precision Forensic Academic Editor. 
+Your task is to audit the following manuscript with extreme rigor, as if for a top-tier scientific journal.
+1. CRITICAL: Identify all grammatical failures, especially Subject-Verb agreement (e.g., 'Have you add' must be 'Have you added').
+2. TONE: Identify all informal or colloquial phrasing (e.g., 'i am going to tell you') and suggest formal research-grade alternatives.
+3. CASING: Identify all improper pronoun or sentence capitalization.
+4. STRUCTURE: Identify awkward or non-academic sentence structures.
+
+If the manuscript is highly informal or contains multiple errors, you MUST return multiple specific anomaly objects.
+Return ONLY a valid JSON array of objects with this structure:
+{ "text": "the exact word or phrase from the text", "type": "grammar|syntax|diction|tone", "suggestion": "academic replacement", "explanation": "high-fidelity reason" }
+
+Manuscript: "${content}"`;
+
+      const response = await api.chat({
+        messages: [{ role: "user", content: prompt }],
+        context: "Surgical Academic Forensic Audit",
+      });
+
+      // Robust JSON extraction
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return [];
+      
+      const rawAnomalies = JSON.parse(jsonMatch[0]);
+      const aiHighlights = [];
+
+      rawAnomalies.forEach((anomaly) => {
+        const start = content.indexOf(anomaly.text);
+        if (start !== -1) {
+          aiHighlights.push({
+            start: start,
+            end: start + anomaly.text.length,
+            type: anomaly.type,
+            reason: `Neural ${anomaly.type.charAt(0).toUpperCase() + anomaly.type.slice(1)} Audit`,
+            suggestion: anomaly.suggestion,
+            explanation: anomaly.explanation,
+            isAI: true
+          });
+        }
+      });
+
+      return aiHighlights;
+    } catch (err) {
+      console.error("Neural Deep Scan Failure:", err);
+      return [];
+    }
+  }, []);
+
+  return { analyze, analyzeAI, isNeuralScanning, getCategoryColor, getCategoryBg };
 };
