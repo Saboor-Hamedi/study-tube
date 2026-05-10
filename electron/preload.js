@@ -43,4 +43,5 @@ contextBridge.exposeInMainWorld("youtubeAPI", {
   checkGrammar: (text) => ipcRenderer.invoke("ai:check-grammar", text),
   loadNotes: () => ipcRenderer.invoke("notes:load"),
   saveNotes: (data) => ipcRenderer.invoke("notes:save", data),
+  searchLibraryFTS: (query) => ipcRenderer.invoke("library:search-fts", query),
 });
