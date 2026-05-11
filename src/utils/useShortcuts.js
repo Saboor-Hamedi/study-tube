@@ -26,6 +26,7 @@ export const useShortcuts = (librarySearch) => {
       // Ctrl + K: Focus Search
       if (isCmd && key === 'k') {
         e.preventDefault();
+        librarySearch?.setIsHistoryOpen?.(true);
         librarySearch?.searchInputRef?.current?.focus();
       }
 

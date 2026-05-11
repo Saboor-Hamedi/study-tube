@@ -72,8 +72,10 @@ export default function Header({
                 type="text"
                 value={librarySearch.query}
                 onFocus={() => {
-                  librarySearch.setIsHistoryOpen(true);
                   if (librarySearch.syncHistory) librarySearch.syncHistory();
+                }}
+                onMouseDown={() => {
+                  librarySearch.setIsHistoryOpen(true);
                 }}
                 onKeyDown={(e) => {
                   const items = librarySearch.query.trim()

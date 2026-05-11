@@ -29,6 +29,7 @@ import {
 import DraggableCard from "./DraggableCard";
 import PulseLoader from "./PulseLoader";
 import StreamControls from "../../components/StreamControls";
+import { truncateWords } from "../../utils/textUtils";
 
 const LibraryView = ({
   vocab,
@@ -123,21 +124,21 @@ const LibraryView = ({
             >
               {(visible) => (
                 <div
-                  className={`w-full flex-1 flex flex-col transition-all duration-500 rounded-[12px] overflow-hidden border ${v.archived ? "border-red-500/20 bg-red-500/5" : "border-border bg-white dark:bg-surface shadow-sm hover:border-accent/40"}`}
+                  className={`w-full h-[180px] flex flex-col transition-all duration-500 rounded-[12px] overflow-hidden border ${v.archived ? "border-red-500/20 bg-red-500/5" : "border-border bg-white dark:bg-surface shadow-sm hover:border-accent/40"}`}
                 >
-                  <div className="p-4 flex-1 flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
+                  <div className="p-3 flex-1 flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <h4 className="text-[13px] font-bold text-text leading-tight group-hover:text-accent transition-colors">
-                          {v.text}
+                          {truncateWords(v.text, 20)}
                         </h4>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 mt-1.5">
                           <span className="text-[9px] font-bold text-muted uppercase tracking-widest shrink-0 opacity-40">
                             {new Date(v.date).toLocaleDateString()}
                           </span>
                           {v.videoTitle && (
                             <span className="text-[9px] font-black text-accent truncate opacity-80 uppercase tracking-widest">
-                              {v.videoTitle}
+                              {truncateWords(v.videoTitle, 3)}
                             </span>
                           )}
                           {(v.band || v.metadata?.band || v.diagnostics?.ielts || v.metadata?.diagnostics?.ielts) && (
@@ -148,19 +149,19 @@ const LibraryView = ({
                           )}
                         </div>
                       </div>
-                      <div className="w-8 h-8 rounded-[8px] bg-surface-2 flex items-center justify-center border border-border shrink-0">
-                        <FileText className="h-3.5 w-3.5 text-muted group-hover:text-accent transition-colors" />
+                      <div className="w-7 h-7 rounded-[6px] bg-surface-2 flex items-center justify-center border border-border shrink-0">
+                        <FileText className="h-3 w-3 text-muted group-hover:text-accent transition-colors" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-border/10">
-                      <div className="flex items-center gap-3">
+                    <div className="mt-auto flex items-center justify-between pt-2 border-t border-border/10">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onExpand(v);
                           }}
-                          className="h-6 px-3 bg-surface-3 border border-border/10 text-muted text-[8px] font-black uppercase tracking-widest rounded-[4px] hover:bg-accent hover:text-white transition-all"
+                          className="h-5 px-2.5 bg-surface-3 border border-border/10 text-muted text-[8px] font-black uppercase tracking-widest rounded-[3px] hover:bg-accent hover:text-white transition-all"
                         >
                           Open
                         </button>

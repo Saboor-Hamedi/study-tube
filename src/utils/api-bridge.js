@@ -81,7 +81,9 @@ const HybridRouter = {
   },
 
   saveAppSettings: async (config) => {
-    if (isElectron) return await window.youtubeAPI.saveSettings(config);
+    if (isElectron) {
+      await window.youtubeAPI.saveSettings(config);
+    }
     try {
       await cloudRequest("/settings", {
         method: "POST",
@@ -90,7 +92,9 @@ const HybridRouter = {
     } catch (err) {
       console.warn("[HYBRID] Cloud settings save deferred:", err.message);
     }
-    localStorage.setItem("study_settings", JSON.stringify(config));
+    if (!isElectron) {
+      localStorage.setItem("study_settings", JSON.stringify(config));
+    }
     return true;
   },
 
@@ -429,6 +433,18 @@ const HybridRouter = {
   pullFromCloud: async () => {
     if (!isElectron) return { success: true, message: "Cloud Mode Active" };
     try {
+      // 1. Sync Settings
+      try {
+        const cloudSettings = await cloudRequest("/settings");
+        if (cloudSettings && Object.keys(cloudSettings).length > 0) {
+          if (isElectron) await window.youtubeAPI.saveSettings(cloudSettings);
+          else localStorage.setItem("study_settings", JSON.stringify(cloudSettings));
+        }
+      } catch (sErr) {
+        console.warn("[HYBRID] Settings sync skipped:", sErr.message);
+      }
+
+      // 2. Sync Library
       const cloudItems = await cloudRequest("/library");
       if (Array.isArray(cloudItems)) {
         for (const item of cloudItems) {
@@ -443,6 +459,7 @@ const HybridRouter = {
         }
         return { success: true, count: cloudItems.length };
       }
+      return { success: true, count: 0 };
     } catch (err) {
       return { success: false, message: err.message };
     }

@@ -21,6 +21,7 @@ import GrammarForensicView from "../grammar/GrammarForensicView";
 import PulseLoader from "../research-vault/PulseLoader";
 import SystemStatus from "./SystemStatus";
 import StreamControls from "../../components/StreamControls";
+import { truncateWords } from "../../utils/textUtils";
 
 const Profile = ({
   vocab,
@@ -314,7 +315,7 @@ const Profile = ({
                                     </div>
                                     <div className="min-w-0">
                                       <h4 className="text-[13px] font-bold text-text break-words group-hover:text-accent transition-colors">
-                                        {item.text}
+                                        {truncateWords(item.text, 20)}
                                       </h4>
                                       <div className="flex items-center gap-3 mt-1">
                                         <span className="text-[9px] text-muted font-bold uppercase tracking-widest shrink-0 opacity-40">
