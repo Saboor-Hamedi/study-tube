@@ -87,9 +87,7 @@ export default function Header({
                     ) {
                       const item = items[librarySearch.selectedIndex];
                       if (typeof item === "string") {
-                        librarySearch.setQuery(
-                          item.replace(/<[^>]*>/g, ""),
-                        );
+                        librarySearch.setQuery(item.replace(/<[^>]*>/g, ""));
                         librarySearch.setIsHistoryOpen(false);
                       } else {
                         librarySearch.onSelect(item);
@@ -330,7 +328,7 @@ export default function Header({
               className="h-8 w-8 flex items-center justify-center text-muted hover:text-accent hover:bg-accent/10 rounded-full transition-all group"
               title="Open in Website"
             >
-              <Globe className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+              <Globe className="h-4 w-4  transition-transform" />
             </button>
             <div className="w-[1px] h-4 bg-white/10 mx-1" />
           </>

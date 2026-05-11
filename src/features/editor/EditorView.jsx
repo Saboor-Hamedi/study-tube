@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import EditorJS from "@editorjs/editorjs";
 import { useStore } from "./../../store/useStore";
 import "./../../editor.css";
+import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Trash2, Loader2, Sparkles } from "lucide-react";
 import DeleteModal from "../research-vault/DeleteModal";
+import PulseLoader from "../research-vault/PulseLoader";
 
 // Import Tools
 import Header from "@editorjs/header";
@@ -157,13 +159,15 @@ export default function EditorView({ showToast, onOpenCopilot }) {
       }
 
       setIsRefining(true);
-      showToast("Neural Forge Active: Refining Draft...", "info");
 
-      const refinedBlocks = await api.refineNotes({ blocks: data.blocks });
+      const [refinedBlocks] = await Promise.all([
+        api.refineNotes({ blocks: data.blocks }),
+        new Promise((resolve) => setTimeout(resolve, 1500)), // Neural Delay for UI Stability
+      ]);
+
       if (refinedBlocks) {
         editorInstance.current.render({ blocks: refinedBlocks });
         await api.saveNotes({ blocks: refinedBlocks });
-        showToast("Neural Correction Applied", "success");
       }
     } catch (e) {
       console.error(e);
@@ -240,7 +244,7 @@ export default function EditorView({ showToast, onOpenCopilot }) {
           <button
             onClick={handleNeuralRefine}
             disabled={isRefining}
-            className={`p-1.5 rounded-[5px] transition-all ${isRefining ? "bg-accent/20 text-accent cursor-wait" : "text-muted hover:text-accent hover:bg-accent/10"}`}
+            className={`p-1.5 rounded-[5px] transition-all ${isRefining ? "bg-accent/20 text-accent" : "text-muted hover:text-accent hover:bg-accent/10"}`}
             title="Neural Forge: Polish Draft"
           >
             {isRefining ? (
@@ -262,11 +266,24 @@ export default function EditorView({ showToast, onOpenCopilot }) {
         <div
           className={`flex-1 overflow-y-auto scrollbar-thin px-8 py-10 transition-all relative ${isCopilotOpen ? "pr-[25px] pl-8" : "lg:px-16 xl:px-24"}`}
         >
-          {isInitializing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
-              <Loader2 className="h-6 w-6 animate-spin text-accent" />
-            </div>
-          )}
+          <AnimatePresence>
+            {(isInitializing || isRefining) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px]"
+              >
+                <PulseLoader
+                  message={
+                    isInitializing
+                      ? "Initializing Neural Forge..."
+                      : "Refining Analytical Draft..."
+                  }
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
           <div className="max-w-5xl mx-auto">
             <div className="prose prose-invert prose-lg max-w-none editor-js-override">
               <div

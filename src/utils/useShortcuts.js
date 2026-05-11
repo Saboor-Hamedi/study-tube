@@ -21,7 +21,7 @@ export const useShortcuts = (librarySearch) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isCmd = e.ctrlKey || e.metaKey;
-      const key = e.key.toLowerCase();
+      const key = e.key ? e.key.toLowerCase() : '';
 
       // Ctrl + K: Focus Search
       if (isCmd && key === 'k') {

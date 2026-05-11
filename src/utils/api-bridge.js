@@ -64,14 +64,52 @@ const cloudRequest = async (path, options = {}) => {
 
 const HybridRouter = {
   // --- Neural Dialogue & AI Core ---
+  getAppSettings: async () => {
+    if (isElectron) return await window.youtubeAPI.getSettings();
+    try {
+      const cloudSettings = await cloudRequest("/settings");
+      if (cloudSettings && Object.keys(cloudSettings).length > 0) {
+        return cloudSettings;
+      }
+    } catch (err) {
+      console.warn("[HYBRID] Cloud settings fetch deferred:", err.message);
+    }
+    // Fallback to legacy local storage
+    return JSON.parse(localStorage.getItem("study_settings") || "{}");
+  },
+
+  saveAppSettings: async (config) => {
+    if (isElectron) return await window.youtubeAPI.saveSettings(config);
+    try {
+      await cloudRequest("/settings", {
+        method: "POST",
+        body: JSON.stringify({ config }),
+      });
+    } catch (err) {
+      console.warn("[HYBRID] Cloud settings save deferred:", err.message);
+    }
+    localStorage.setItem("study_settings", JSON.stringify(config));
+    return true;
+  },
+
   getAiKey: async () => {
     if (isElectron) return await window.youtubeAPI.getAiKey();
-    return localStorage.getItem("aiApiKey") || "";
+    const settings = await HybridRouter.getAppSettings();
+    return (
+      settings?.apiKey ||
+      settings?.neural_key ||
+      localStorage.getItem("aiApiKey") ||
+      ""
+    );
   },
 
   setAiKey: async (key) => {
-    localStorage.setItem("aiApiKey", key);
     if (isElectron) await window.youtubeAPI.setAiKey(key);
+    localStorage.setItem("aiApiKey", key);
+
+    // Sync to cloud settings as well for industrial persistence
+    const settings = await HybridRouter.getAppSettings();
+    await HybridRouter.saveAppSettings({ ...settings, apiKey: key });
     return key;
   },
 

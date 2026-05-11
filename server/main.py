@@ -177,7 +177,7 @@ async def sync_data(payload: SyncPayload, authorization: str = Header(None)):
         conn.close()
 
 # --- Neural Sync Endpoint (Notes) ---
-@app.post("/sync/notes")
+@app.post("/notes")
 async def sync_notes(payload: NotesPayload):
     import json
     conn = get_db_connection()
@@ -200,7 +200,7 @@ async def sync_notes(payload: NotesPayload):
         conn.close()
 
 # --- Neural Sync Endpoint (Collections) ---
-@app.post("/sync/collections")
+@app.post("/collections")
 async def sync_collections(payload: CollectionsPayload):
     conn = get_db_connection()
     if not conn: raise HTTPException(status_code=500, detail="Cloud Database Offline")
@@ -219,7 +219,7 @@ async def sync_collections(payload: CollectionsPayload):
         conn.close()
 
 # --- Neural Sync Endpoint (Settings) ---
-@app.post("/sync/settings")
+@app.post("/settings")
 async def sync_settings(payload: SettingsPayload):
     import json
     conn = get_db_connection()
