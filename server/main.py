@@ -4,6 +4,8 @@ from typing import List, Optional, Any
 import json
 import os
 from dotenv import load_dotenv
+import yt_dlp
+from youtube_transcript_api import YouTubeTranscriptApi
 
 load_dotenv()
 
@@ -350,9 +352,75 @@ def get_settings():
 
 @app.get("/youtube/search")
 def proxy_youtube_search(q: str):
-    # This is a placeholder for a real YouTube Search API.
-    # For now, it returns a simulated result to prevent 404 noise.
-    return []
+    ydl_opts = {
+        'quiet': True,
+        'extract_flat': 'in_playlist',
+        'skip_download': True,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        try:
+            search_results = ydl.extract_info(f"ytsearch15:{q}", download=False)
+            videos = []
+            for entry in search_results.get('entries', []):
+                if not entry: continue
+                v_id = entry.get('id')
+                videos.append({
+                    "id": v_id,
+                    "title": entry.get('title'),
+                    "duration": entry.get('duration'),
+                    # Standard high-quality thumbnail fallback
+                    "thumbnail": f"https://i.ytimg.com/vi/{v_id}/hqdefault.jpg",
+                    "url": f"https://www.youtube.com/watch?v={v_id}",
+                    "author": entry.get('uploader'),
+                    "views": entry.get('view_count'),
+                })
+            return videos
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/youtube/metadata")
+def proxy_youtube_metadata(url: str):
+    ydl_opts = {'quiet': True, 'skip_download': True}
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        try:
+            info = ydl.extract_info(url, download=False)
+            v_id = info.get('id')
+            heights = sorted(list(set([f.get('height') for f in info.get('formats', []) if f.get('height')] )), reverse=True)
+            quality_options = [{"label": f"{h}p", "value": f"video:{h}"} for h in heights[:6]]
+            quality_options.append({"label": "MP3 (192kbps)", "value": "audio:mp3"})
+            
+            return {
+                "id": v_id,
+                "title": info.get('title'),
+                "duration": info.get('duration'),
+                "thumbnail": f"https://i.ytimg.com/vi/{v_id}/hqdefault.jpg",
+                "url": url,
+                "author": info.get('uploader'),
+                "views": info.get('view_count'),
+                "description": info.get('description'),
+                "qualityOptions": quality_options
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/youtube/transcript")
+def proxy_youtube_transcript(videoId: str):
+    try:
+        # Fetching transcript using the correct instance-based API
+        api = YouTubeTranscriptApi()
+        transcript_list = api.list(videoId)
+        
+        # Prioritize English, but fall back to any available transcript
+        try:
+            t = transcript_list.find_transcript(['en'])
+        except:
+            # If English is not available, take the first one (could be any language)
+            t = next(iter(transcript_list))
+            
+        return t.fetch()
+    except Exception as e:
+        print(f"[CLOUD] Transcript error for {videoId}: {e}")
+        return []
 
 @app.on_event("startup")
 async def startup_event():

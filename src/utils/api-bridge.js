@@ -8,6 +8,8 @@
 const isElectron =
   typeof window !== "undefined" && window.youtubeAPI !== undefined;
 
+let chatChunkCallback = null;
+
 /**
  * Cloud Proxy Helper
  * Facilitates direct communication with the PostgreSQL/Cloud cluster.
@@ -136,8 +138,77 @@ const HybridRouter = {
     return data.choices?.[0]?.message?.content || "No response.";
   },
 
-  checkGrammar: async () => {
-    if (isElectron) return await window.youtubeAPI.checkGrammar();
+  chatWithAIStream: async ({ messages, context }) => {
+    if (isElectron)
+      return await window.youtubeAPI.chatWithAIStream({ messages, context });
+
+    const apiKey = await HybridRouter.getAiKey();
+    if (!apiKey) throw new Error("Neural API Key missing.");
+
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: `Neural Assistant. Context: ${context}` },
+          ...messages,
+        ],
+        temperature: 0.7,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`AI Stream Error: ${err}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === "data: [DONE]") continue;
+
+        if (trimmed.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+            const content = data.choices?.[0]?.delta?.content || "";
+            if (content && chatChunkCallback) {
+              fullText += content;
+              chatChunkCallback({ content });
+            }
+          } catch (e) {
+            console.warn("[AI STREAM] Chunk Parsing Anomalous:", trimmed);
+          }
+        }
+      }
+    }
+    return fullText;
+  },
+
+  onChatChunk: (callback) => {
+    if (isElectron) return window.youtubeAPI.onChatChunk(callback);
+    chatChunkCallback = callback;
+    return () => {
+      chatChunkCallback = null;
+    };
+  },
+
+  checkGrammar: async (text) => {
+    if (isElectron) return await window.youtubeAPI.checkGrammar(text);
     return [];
   },
 
@@ -427,17 +498,37 @@ const HybridRouter = {
     return refinedBlocks;
   },
 
-  checkGrammar: async (text) => {
-    if (isElectron) return await window.youtubeAPI.checkGrammar(text);
-    return []; // Web fallback for now
+
+
+  metadata: async (url) => {
+    if (isElectron) return await window.youtubeAPI.metadata(url);
+    try {
+      return await cloudRequest(`/youtube/metadata?url=${encodeURIComponent(url)}`);
+    } catch (err) {
+      console.warn("[HYBRID] Cloud YouTube metadata unavailable:", err.message);
+      return null;
+    }
   },
 
-  // Metadata & Shell (Electron Only)
-  youtubeMetadata: async (url) =>
-    isElectron ? window.youtubeAPI.metadata(url) : null,
+  getTranscript: async (videoId) => {
+    if (isElectron) return await window.youtubeAPI.getTranscript(videoId);
+    try {
+      return await cloudRequest(
+        `/youtube/transcript?videoId=${encodeURIComponent(videoId)}`,
+      );
+    } catch (err) {
+      console.warn(
+        "[HYBRID] Cloud YouTube transcript unavailable:",
+        err.message,
+      );
+      return [];
+    }
+  },
+
   search: async (q) => {
     return await HybridRouter.youtubeSearch(q);
   },
+
   youtubeSearch: async (q) => {
     if (isElectron) return await window.youtubeAPI.search(q);
     try {
@@ -446,6 +537,17 @@ const HybridRouter = {
       console.warn("[HYBRID] Cloud YouTube search unavailable:", err.message);
       return []; // Web fallback
     }
+  },
+
+  startDownload: async (payload) => {
+    if (isElectron) return await window.youtubeAPI.startDownload(payload);
+    console.warn("[HYBRID] Video download restricted in browser mode.");
+    return null;
+  },
+
+  cancelDownload: async (taskId) => {
+    if (isElectron) return await window.youtubeAPI.cancelDownload(taskId);
+    return null;
   },
   openExternal: async (url) =>
     isElectron

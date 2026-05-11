@@ -434,6 +434,7 @@ export default function App() {
   };
 
   const videoProps = {
+    api,
     savePath,
     setSavePath,
     onAddVocab: addVocab,
