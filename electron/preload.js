@@ -44,4 +44,7 @@ contextBridge.exposeInMainWorld("youtubeAPI", {
   loadNotes: () => ipcRenderer.invoke("notes:load"),
   saveNotes: (data) => ipcRenderer.invoke("notes:save", data),
   searchLibraryFTS: (query) => ipcRenderer.invoke("library:search-fts", query),
+  getForensicWhitelist: () => ipcRenderer.invoke("forensic:get-whitelist"),
+  addForensicWord: (word) => ipcRenderer.invoke("forensic:add-word", word),
+  removeForensicWord: (word) => ipcRenderer.invoke("forensic:remove-word", word),
 });

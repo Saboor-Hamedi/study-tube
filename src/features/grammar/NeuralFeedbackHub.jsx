@@ -7,6 +7,7 @@ import {
   Zap,
   Brain,
   MessageSquare,
+  ArrowRight,
 } from "lucide-react";
 
 export default function NeuralFeedbackHub({
@@ -87,7 +88,9 @@ export default function NeuralFeedbackHub({
                 className={`p-2 rounded-[6px] border ${stat.bg} ${stat.border} flex flex-col items-center justify-center transition-all hover:border-accent/20 group`}
               >
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <stat.icon className={`h-2.5 w-2.5 ${stat.color} group-hover:scale-110 transition-transform`} />
+                  <stat.icon
+                    className={`h-2.5 w-2.5 ${stat.color} group-hover:scale-110 transition-transform`}
+                  />
                   <span className="text-[7px] md:text-[8px] font-black text-muted uppercase tracking-tight">
                     {stat.label}
                   </span>
@@ -164,43 +167,90 @@ export default function NeuralFeedbackHub({
 
           <div className="grid grid-cols-2 gap-2">
             {isAnalyzing && (diagnostics?.highlights || []).length > 0 ? (
-              (diagnostics?.highlights || []).map((hl, i) => (
-                <div
-                  key={i}
-                  id={`anomaly-${i + 1}`}
-                  className="relative bg-surface-2/50 border border-border/10 rounded-[8px] p-2 hover:border-accent/30 transition-all group/card overflow-hidden flex flex-col"
-                >
-                  <div
-                    className={`absolute top-0 left-0 w-0.5 h-full ${getCategoryColor(hl.type)}`}
-                  />
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div
-                      className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black ${getCategoryColor(hl.type)} text-white shadow-sm`}
-                    >
-                      {i + 1}
-                    </div>
-                    <span className="text-[6px] font-black uppercase tracking-tighter text-muted/30">
-                      {hl.type}
-                    </span>
-                  </div>
+              (diagnostics?.highlights || []).map((hl, i) => {
+                // Sentential Context Extraction
+                const lookback = 100;
+                const lookahead = 100;
+                const startPos = Math.max(0, hl.start - lookback);
+                const endPos = Math.min(content.length, hl.end + lookahead);
+                const rawFragment = content.substring(startPos, endPos);
 
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex flex-col">
-                      <span className="text-[8px] md:text-[9px] font-bold text-text/40 line-through truncate">
-                        "{content.substring(hl.start, hl.end)}"
-                      </span>
-                      <span className="text-[9px] md:text-[10px] font-black text-green-500 tracking-tight leading-tight">
-                        {hl.suggestion}
-                      </span>
+                // Truncate to the nearest full sentence
+                const sentenceMatch = rawFragment.match(/[^.!?]*[.!?]/g);
+                const sentence = sentenceMatch
+                  ? sentenceMatch.find((s) =>
+                      s.includes(content.substring(hl.start, hl.end)),
+                    ) || rawFragment
+                  : rawFragment;
+
+                return (
+                  <div
+                    key={i}
+                    id={`anomaly-${i + 1}`}
+                    className="relative bg-surface-2/50 border border-border/10 rounded-[10px] p-3 hover:border-accent/40 transition-all group/card overflow-hidden flex flex-col col-span-2 shadow-sm hover:shadow-md"
+                  >
+                    <div
+                      className={`absolute top-0 left-0 w-1 h-full ${getCategoryColor(hl.type).replace("text-", "bg-")}`}
+                    />
+
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/20")} ${getCategoryColor(hl.type)}`}
+                        >
+                          {i + 1}
+                        </div>
+                        <span
+                          className={`text-[9px] font-black uppercase tracking-widest ${getCategoryColor(hl.type)}`}
+                        >
+                          {hl.type}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-20">
+                        <Brain className="h-3 w-3" />
+                        <span className="text-[7px] font-black uppercase">
+                          Neural
+                        </span>
+                      </div>
                     </div>
-                    <div className="pt-1.5 border-t border-border/5">
-                      <p className="text-[8px] font-medium text-text/60 leading-snug line-clamp-3">
-                        "{hl.explanation}"
-                      </p>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="space-y-2">
+                        <div className="p-2.5 bg-surface rounded-lg border border-border/5 text-[10px] leading-relaxed italic text-text/50">
+                          ...
+                          {sentence
+                            .trim()
+                            .replace(
+                              content.substring(hl.start, hl.end),
+                              `[[${content.substring(hl.start, hl.end)}]]`,
+                            )}
+                          ...
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-[8px] font-black text-muted uppercase mt-0.5">
+                            Logic:
+                          </span>
+                          <p className="text-[10px] font-medium text-text/80 leading-snug">
+                            {hl.explanation}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col justify-center space-y-1.5 bg-accent/5 p-3 rounded-lg border border-accent/10">
+                        <span className="text-[7px] font-black text-accent/40 uppercase tracking-widest">
+                          Neural Suggestion
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <ArrowRight className="h-3 w-3 text-accent" />
+                          <span className="text-[12px] font-black text-text tracking-tight">
+                            {hl.suggestion}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="py-12 text-center bg-surface-2/30 rounded-[10px] border border-dashed border-border/20 w-full col-span-2">
                 <span className="text-[9px] text-muted/40 italic font-medium uppercase tracking-widest">

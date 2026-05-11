@@ -8,7 +8,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "npm run dev:electron",
-    "dev:web": "concurrently -k \"vite --port 5173 --strictPort\" \"npm:dev:cloud\"",
+    "dev:web": "concurrently -k \"vite --port 5173 --strictPort\" \"npm:dev:cloud\" \"npm:python:dev\"",
     "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\"",
     "dev:cloud": "uvicorn server.main:app --reload --port 8000",
     "python:dev": "python electron/services/ai_detection.py",

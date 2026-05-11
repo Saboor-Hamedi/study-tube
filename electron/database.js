@@ -97,7 +97,17 @@ export function initDatabase() {
   `,
   ).run();
 
-  // 7. Migrations: Add new columns if missing
+  // 7. Forensic Whitelist (Custom Dictionary)
+  db.prepare(
+    `
+    CREATE TABLE IF NOT EXISTS forensic_whitelist (
+      word TEXT PRIMARY KEY,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `,
+  ).run();
+
+  // 8. Migrations: Add new columns if missing
   try {
     const tableInfo = db.prepare("PRAGMA table_info(library)").all();
 
@@ -275,6 +285,20 @@ export function archiveVocabItem(id) {
 
 export function restoreVocabItem(id) {
   db.prepare("UPDATE library SET archived = 0 WHERE id = ?").run(id);
+}
+
+// --- Forensic Whitelist System ---
+
+export function getForensicWhitelist() {
+  return db.prepare("SELECT word FROM forensic_whitelist").all().map(r => r.word);
+}
+
+export function addForensicWord(word) {
+  db.prepare("INSERT OR IGNORE INTO forensic_whitelist (word) VALUES (?)").run(word);
+}
+
+export function removeForensicWord(word) {
+  db.prepare("DELETE FROM forensic_whitelist WHERE word = ?").run(word);
 }
 
 /**

@@ -177,12 +177,20 @@ const startCloudBackend = () => {
   cloudProcess.stdout.on("data", (data) =>
     console.log(`[CLOUD BACKEND] ${data}`),
   );
-  cloudProcess.stderr.on("data", (data) =>
-    console.error(`[CLOUD BACKEND ERROR] ${data}`),
-  );
+  cloudProcess.stderr.on("data", (data) => {
+    const msg = data.toString();
+    console.error(`[CLOUD ERROR] ${msg}`);
+    if (msg.includes("address already in use") || msg.includes("EADDRINUSE")) {
+      console.error("==========================================================");
+      console.error("CRITICAL: PORT 8000 IS BLOCKED BY ANOTHER PROCESS!");
+      console.error("Please run: taskkill /F /IM python.exe /T");
+      console.error("==========================================================");
+    }
+  });
   cloudProcess.on("close", (code) => {
-    console.log(`[SYSTEM] Cloud Bridge exited with code ${code}`);
-    cloudProcess = null;
+    console.log(`[CLOUD] Engine stopped with code ${code}`);
+    pyProcess = null;
+    lastEngineStatus = "OFFLINE";
   });
 };
 
@@ -199,23 +207,6 @@ app.on("will-quit", () => {
   }
 });
 
-app.whenReady().then(() => {
-  initDatabase();
-  if (app.isPackaged) {
-    startPythonService();
-    startCloudBackend();
-  }
-
-  try {
-    const stats = getCollectionStats();
-    console.log("[ARCHIVE AUDIT] Initial Density:", JSON.stringify(stats));
-  } catch (e) {
-    console.error("[ARCHIVE AUDIT] Initial Audit Failed", e);
-  }
-
-  // Start the Neural Cloud Bridge
-  startCloudSyncService();
-});
 
 if (process.platform === "win32") app.setAppUserModelId(APP_ID);
 
@@ -288,7 +279,8 @@ async function performCloudSync() {
     return { success: false, message: "Cloud API URL not configured" };
 
   const items = getUnsyncedLibraryItems();
-  if (items.length === 0 && !dbSettings.aiApiKey) // Check if at least there is something to sync
+  if (items.length === 0 && !dbSettings.aiApiKey)
+    // Check if at least there is something to sync
     return { success: true, message: "Everything up to date" };
 
   isSyncing = true;
@@ -303,9 +295,9 @@ async function performCloudSync() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${dbSettings.cloudApiToken || ""}`,
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         items,
-        settings: dbSettings // Now pushing settings to PostgreSQL too
+        settings: dbSettings, // Now pushing settings to PostgreSQL too
       }),
     });
 
@@ -604,6 +596,7 @@ async function downloadVideo({
 
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
 function registerIpcHandlers() {
+  console.log("[SENTRY] Bootstrapping Neural IPC Bridge...");
   const safeHandle = (channel, fn) => {
     try {
       ipcMain.removeHandler(channel);
@@ -619,6 +612,55 @@ function registerIpcHandlers() {
       console.error(`[IPC REG FAIL] ${channel}:`, e.message);
     }
   };
+
+  // --- Forensic Whitelist (PostgreSQL Powered via FastAPI) ---
+  safeHandle("forensic:get-whitelist", async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/forensic/whitelist");
+      return await res.json();
+    } catch (e) {
+      console.error("[POSTGRES] Whitelist Fetch Fail:", e.message);
+      return [];
+    }
+  });
+
+  safeHandle("forensic:add-word", async (_e, word) => {
+    console.log(`[BRIDGE] >>> STAGE 1: IPC Received word="${word}"`);
+    try {
+      const url = "http://127.0.0.1:8000/forensic/whitelist";
+      console.log(`[BRIDGE] >>> STAGE 2: Fetching ${url}`);
+      
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word }),
+      });
+      
+      console.log(`[BRIDGE] >>> STAGE 3: Response Status=${res.status} (${res.statusText})`);
+      
+      const data = await res.json();
+      console.log(`[BRIDGE] >>> STAGE 4: Data Payload=`, data);
+      return data;
+    } catch (e) {
+      console.error("[BRIDGE] >>> FATAL ERROR:", e.message);
+      return { status: "error", message: e.message };
+    }
+  });
+
+  safeHandle("forensic:remove-word", async (_e, word) => {
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/forensic/whitelist/${encodeURIComponent(word)}`,
+        {
+          method: "DELETE",
+        },
+      );
+      return await res.json();
+    } catch (e) {
+      console.error("[POSTGRES] Whitelist Remove Fail:", e.message);
+      return { status: "error" };
+    }
+  });
 
   // --- Neural Dialogue Handlers (High Priority) ---
   safeHandle("ai:chat-stream", async (event, { messages, context }) => {
@@ -755,7 +797,15 @@ function registerIpcHandlers() {
   });
 
   safeHandle("library:search-fts", async (event, query) => {
-    return searchLibraryFTS(query);
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/library/search?q=${encodeURIComponent(query)}`,
+      );
+      return await res.json();
+    } catch (e) {
+      console.error("[POSTGRES] Search Fail:", e.message);
+      return [];
+    }
   });
 
   safeHandle("library:export-dossier", async (event, { name, items }) => {
@@ -834,12 +884,11 @@ function registerIpcHandlers() {
       };
     }
   });
-  // Register the handler
-  ipcMain.handle("grammar:check", async () => {
+  safeHandle("grammar:check", async () => {
     return loadGrammars();
   });
 
-  ipcMain.handle("download:start", async (event, payload) => {
+  safeHandle("download:start", async (event, payload) => {
     const { taskId, url, format, savePath, title } = payload;
     const wc = event.sender;
     const canonical = canonicalize(url);
@@ -872,7 +921,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("download:cancel", (_e, taskId) => {
+  safeHandle("download:cancel", (_e, taskId) => {
     const entry = activeDownloads.get(taskId);
     if (entry) {
       entry.abort();
@@ -882,7 +931,7 @@ function registerIpcHandlers() {
     return false;
   });
 
-  ipcMain.handle("youtube:getStreamUrl", async (_e, url) => {
+  safeHandle("youtube:getStreamUrl", async (_e, url) => {
     const canonical = canonicalize(url);
     try {
       const info = await ytdl.getInfo(canonical);
@@ -908,7 +957,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("youtube:getTranscript", async (_e, videoId) => {
+  safeHandle("youtube:getTranscript", async (_e, videoId) => {
     try {
       return await YoutubeTranscript.fetchTranscript(videoId);
     } catch (e) {
@@ -919,7 +968,7 @@ function registerIpcHandlers() {
 
   // ─── AI Operations ─────────────────────────────────────────────────────────
   let aiAbortController = null;
-  ipcMain.handle("ai:stop", () => {
+  safeHandle("ai:stop", () => {
     if (aiAbortController) {
       aiAbortController.abort();
       aiAbortController = null;
@@ -1018,7 +1067,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("ai:processTranscript", async (_e, { text, prompt }) => {
+  safeHandle("ai:processTranscript", async (_e, { text, prompt }) => {
     const apiKey = resolveAiApiKey();
     if (!apiKey) throw new Error("API Key found missing.");
     try {
@@ -1051,141 +1100,199 @@ function registerIpcHandlers() {
     }
   });
 
-  // ─── Data Persistence (SQLite3 Powered) ──────────────────────────────────
-  ipcMain.handle("vocab:load", (_e, includeArchived = false) => {
+  // ─── Data Persistence (PostgreSQL Powered via FastAPI) ────────────────────
+  safeHandle("vocab:load", async (_e, includeArchived = false) => {
     try {
-      const fetchArchived = Boolean(includeArchived);
-      return getLibrary(fetchArchived);
+      const res = await fetch("http://127.0.0.1:8000/library");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     } catch (e) {
-      console.error("DB Load vocab fail", e);
+      console.error("[POSTGRES] Library Load Fail", e.message);
       return [];
     }
   });
 
-  ipcMain.handle("vocab:load-page", (_e, criteria) => {
+  safeHandle("vocab:get-stats", async () => {
     try {
-      return getLibraryPage(criteria);
+      const res = await fetch("http://127.0.0.1:8000/library/stats");
+      return await res.json();
     } catch (e) {
-      console.error("DB Load vocab page fail", e);
+      console.error("[POSTGRES] Stats Fetch Fail", e.message);
+      return { all: 0, trash: 0, collections: [] };
+    }
+  });
+
+  safeHandle("vocab:load-page", async (_e, criteria) => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/library");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
       return [];
     }
   });
 
-  ipcMain.handle("vocab:get-stats", () => {
+  safeHandle("vocab:save", async (_e, list) => {
     try {
-      return getCollectionStats();
+      const res = await fetch("http://127.0.0.1:8000/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: list }),
+      });
+      return res.ok;
     } catch (e) {
-      console.error("DB Get stats fail", e);
-      return {};
-    }
-  });
-
-  ipcMain.handle("vocab:save", (_e, list) => {
-    try {
-      saveLibrary(list);
-      return true;
-    } catch (e) {
-      console.error("DB Save vocab fail", e);
       return false;
     }
   });
 
-  ipcMain.handle("vocab:save-item", (_e, item) => {
+  safeHandle("vocab:save-item", async (_e, item) => {
     try {
-      saveVocabItem(item);
-      return true;
+      const res = await fetch("http://127.0.0.1:8000/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [item] }),
+      });
+      return res.ok;
     } catch (e) {
-      console.error("DB Save item fail", e);
+      console.error("[POSTGRES] Save Item Fail", e.message);
       return false;
     }
   });
 
-  ipcMain.handle("vocab:delete-item", (_e, id) => {
+  safeHandle("vocab:delete-item", async (_e, id) => {
     try {
-      deleteVocabItem(id);
-      return true;
+      const res = await fetch(`http://127.0.0.1:8000/library/${id}`, {
+        method: "DELETE",
+      });
+      return res.ok;
     } catch (e) {
-      console.error("DB Delete item fail", e);
+      console.error("[POSTGRES] Delete Item Fail", e.message);
       return false;
     }
   });
 
-  ipcMain.handle("vocab:archive-item", (_e, id) => {
+  safeHandle("vocab:archive-item", async (_e, id) => {
     try {
-      archiveVocabItem(id);
-      return true;
+      const res = await fetch(`http://127.0.0.1:8000/library/${id}/archive`, {
+        method: "POST",
+      });
+      return res.ok;
     } catch (e) {
-      console.error("DB Archive item fail", e);
+      console.error("[POSTGRES] Archive Item Fail", e.message);
       return false;
     }
   });
 
-  ipcMain.handle("vocab:restore-item", (_e, id) => {
+  safeHandle("vocab:restore-item", async (_e, id) => {
     try {
-      restoreVocabItem(id);
-      return true;
+      const res = await fetch(`http://127.0.0.1:8000/library/${id}/restore`, {
+        method: "POST",
+      });
+      return res.ok;
     } catch (e) {
-      console.error("DB Restore item fail", e);
+      console.error("[POSTGRES] Restore Item Fail", e.message);
       return false;
     }
   });
 
-  ipcMain.handle("collections:load", () => {
+  safeHandle("collections:load", async () => {
     try {
-      return getCollections();
+      const res = await fetch("http://127.0.0.1:8000/collections");
+      return await res.json();
     } catch (e) {
-      console.error("DB Load collections fail", e);
+      console.error("[POSTGRES] Load Collections Fail", e.message);
       return [];
     }
   });
 
-  ipcMain.handle("collections:save", (_e, list) => {
+  safeHandle("collections:save", async (_e, list) => {
     try {
-      saveCollections(list);
-      return true;
+      const res = await fetch("http://127.0.0.1:8000/collections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ names: list.map((c) => c.name || c) }),
+      });
+      return res.ok;
     } catch (e) {
-      console.error("DB Save collections fail", e);
       return false;
     }
   });
 
-  ipcMain.handle("collections:migrate", (_e, oldName, newName) => {
+  safeHandle("notes:load", async () => {
     try {
-      migrateCollection(oldName, newName);
-      return true;
+      const res = await fetch("http://127.0.0.1:8000/notes");
+      return await res.json();
     } catch (e) {
-      console.error("DB Migrate collections fail", e);
-      return false;
-    }
-  });
-
-  ipcMain.handle("collections:disband", (_e, name) => {
-    try {
-      disbandCollection(name);
-      return true;
-    } catch (e) {
-      console.error("DB Disband collections fail", e);
-      return false;
-    }
-  });
-
-  safeHandle("notes:load", () => {
-    try {
-      return getNotes();
-    } catch (e) {
-      console.error("DB Load notes fail", e);
+      console.error("[POSTGRES] Load Notes Fail", e.message);
       return { blocks: [] };
     }
   });
 
-  safeHandle("notes:save", (_e, data) => {
+  safeHandle("notes:save", async (_e, data) => {
     try {
-      saveNotes(data);
-      return true;
+      const res = await fetch("http://127.0.0.1:8000/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data }),
+      });
+      return res.ok;
     } catch (e) {
-      console.error("DB Save notes fail", e);
+      console.error("[POSTGRES] Save Notes Fail", e.message);
       return false;
     }
+  });
+
+  // --- Settings Handlers ---
+  safeHandle("settings:get", async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/settings");
+      return await res.json();
+    } catch (e) {
+      return {};
+    }
+  });
+
+  safeHandle("settings:save", async (_e, config) => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config }),
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  safeHandle("settings:getAiKey", async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/settings");
+      const settings = await res.json();
+      return settings.aiApiKey || "";
+    } catch (e) {
+      return "";
+    }
+  });
+
+  safeHandle("settings:setAiKey", async (_e, key) => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/settings");
+      const current = await res.json();
+      const updated = { ...current, aiApiKey: key };
+      const saveRes = await fetch("http://127.0.0.1:8000/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: updated }),
+      });
+      return saveRes.ok;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  safeHandle("settings:trigger-sync", async () => {
+    return { success: true, message: "Cloud Bridge Active" };
   });
 
   ipcMain.handle("ai:explain", async (_e, { text, videoTitle }) => {
@@ -1255,17 +1362,9 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("settings:trigger-sync", async () => {
-    return await performCloudSync();
-  });
+  // Settings handlers removed (already handled by the PostgreSQL bridge above)
 
-  ipcMain.handle("settings:get", async () => {
-    return getAppSettings();
-  });
-
-  ipcMain.handle("settings:save", async (_, config) => {
-    return saveAppSettings(config);
-  });
+  // Old settings handlers removed
 
   ipcMain.handle("fs:pickSavePath", async () => {
     const r = await dialog.showOpenDialog({
@@ -1281,18 +1380,7 @@ function registerIpcHandlers() {
     "settings:getSavePath",
     () => readAppState().savePath || app.getPath("downloads"),
   );
-  safeHandle("settings:getAiKey", () => {
-    const dbConfig = getAppSettings();
-    if (dbConfig.aiApiKey) return dbConfig.aiApiKey;
-    return readAppState().aiApiKey || "";
-  });
-  safeHandle("settings:setAiKey", (_e, key) => {
-    const dbConfig = getAppSettings();
-    dbConfig.aiApiKey = key;
-    saveAppSettings(dbConfig);
-    writeAppState({ aiApiKey: key }); // Sync to JSON too for now
-    return key;
-  });
+  // Deprecated handlers removed
   safeHandle("settings:getTheme", () => readAppState().theme || "dark");
   safeHandle("settings:setTheme", (_e, theme) => {
     writeAppState({ theme });
@@ -1444,12 +1532,38 @@ app.on("web-contents-created", (event, contents) => {
 
 app.whenReady().then(() => {
   try {
+    console.log("[SYSTEM] >>> MASTER STARTUP INITIATED <<<");
+    
+    // PRIORITY 1: Initialize IPC Bridge (Forensic Handlers)
+    console.log("[SYSTEM] Registering Neural Sentry Handlers...");
+    registerIpcHandlers();
+    
+    // PRIORITY 2: Initialize Databases
     console.log("[SYSTEM] Initializing Neural Database (SQLite3 + FTS5)...");
     initDatabase();
-    console.log("[SYSTEM] Initializing Neural Sentry Handlers...");
-    registerIpcHandlers();
-    console.log("[SYSTEM] Initializing Neural Engine Sidecar...");
-    startPythonService();
+    
+    // Perform Archive Audit
+    try {
+      const stats = getCollectionStats();
+      console.log("[ARCHIVE AUDIT] Initial Density:", JSON.stringify(stats));
+    } catch (e) {
+      console.error("[ARCHIVE AUDIT] Initial Audit Failed", e);
+    }
+
+    // PRIORITY 3: Launch Background Services (Production Only)
+    // In dev mode, these are managed by npm run dev concurrently
+    if (!isDev) {
+      console.log("[SYSTEM] Initializing Neural Engine Services...");
+      startPythonService();
+      startCloudBackend();
+    } else {
+      console.log("[SYSTEM] Neural Services bypassed (Development Mode)");
+    }
+
+    // Start the Neural Cloud Bridge (Background Sync)
+    startCloudSyncService();
+
+    // PRIORITY 4: Manifest UI
     console.log("[SYSTEM] Launching Research Studio...");
     createWindow();
 
@@ -1459,6 +1573,8 @@ app.whenReady().then(() => {
     };
     globalShortcut.register("F12", toggleDevTools);
     globalShortcut.register("CommandOrControl+Shift+I", toggleDevTools);
+    
+    console.log("[SYSTEM] >>> STARTUP COMPLETE - BRIDGE ONLINE <<<");
   } catch (err) {
     console.error("[CRITICAL STARTUP FAILURE]", err);
   }

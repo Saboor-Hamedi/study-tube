@@ -39,6 +39,7 @@ def bootstrap_db():
     if not conn: return
     try:
         with conn.cursor() as cur:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS \"pg_trgm\"")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS library (
                     id TEXT PRIMARY KEY,
@@ -74,6 +75,12 @@ def bootstrap_db():
                     user_id UUID PRIMARY KEY,
                     config JSONB,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS forensic_whitelist (
+                    word TEXT PRIMARY KEY,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             conn.commit()
@@ -377,6 +384,51 @@ def proxy_youtube_transcript(videoId: str):
     except Exception as e:
         print(f"Transcript Error: {e}")
         return []
+@app.get("/forensic/whitelist")
+def get_forensic_whitelist():
+    conn = get_db_connection()
+    if not conn: return []
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT word FROM forensic_whitelist")
+            return [row['word'] for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+class WhitelistPayload(BaseModel):
+    word: str
+
+@app.post("/forensic/whitelist")
+async def add_to_whitelist(payload: WhitelistPayload):
+    print(f"[FASTAPI] Whitelisting Word: {payload.word}")
+    conn = get_db_connection()
+    if not conn: 
+        print("[FASTAPI] DB Connection Failure")
+        raise HTTPException(status_code=500, detail="DB Offline")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO forensic_whitelist (word) VALUES (%s) ON CONFLICT DO NOTHING", (payload.word,))
+            conn.commit()
+            print(f"[FASTAPI] Word Persisted Successfully: {payload.word}")
+            return {"status": "success"}
+    except Exception as e:
+        print(f"[FASTAPI] Persistence Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            conn.close()
+
+@app.delete("/forensic/whitelist/{word}")
+async def remove_from_whitelist(word: str):
+    conn = get_db_connection()
+    if not conn: raise HTTPException(status_code=500, detail="DB Offline")
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM forensic_whitelist WHERE word = %s", (word,))
+            conn.commit()
+            return {"status": "success"}
+    finally:
+        conn.close()
 
 @app.on_event("startup")
 async def startup_event():

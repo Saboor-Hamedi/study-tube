@@ -69,3 +69,9 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_library_modtime BEFORE UPDATE ON library FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_notes_modtime BEFORE UPDATE ON notes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_settings_modtime BEFORE UPDATE ON settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 6. Forensic Whitelist (Dictionary)
+CREATE TABLE IF NOT EXISTS forensic_whitelist (
+    word TEXT PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

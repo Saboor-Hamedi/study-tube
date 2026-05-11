@@ -91,4 +91,8 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
     return () => ipcRenderer.removeListener('editor:refine-trigger', fn)
   },
   triggerSync: () => ipcRenderer.invoke('settings:trigger-sync'),
+  // --- Forensic Whitelist System ---
+  getForensicWhitelist: () => ipcRenderer.invoke("forensic:get-whitelist"),
+  addForensicWord: (word) => ipcRenderer.invoke("forensic:add-word", word),
+  removeForensicWord: (word) => ipcRenderer.invoke("forensic:remove-word", word),
 })
