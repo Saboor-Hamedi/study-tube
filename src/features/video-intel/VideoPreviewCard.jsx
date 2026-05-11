@@ -208,7 +208,7 @@ export default function VideoPreviewCard({
     setIsTyping(true)
     
     try {
-      const tr = (transcript || []).map(t => t.text).join(' ').slice(0, 5000)
+      const tr = (Array.isArray(transcript) ? transcript : []).map(t => t.text).join(' ').slice(0, 5000)
       const context = `Video: ${video.title}\nTranscript: ${tr}`
       const reply = await api.chatWithAI({ messages: [...messages, { role: 'user', content: text }], context })
       if (reply) {
@@ -248,41 +248,46 @@ export default function VideoPreviewCard({
 
 
 
-      <div className="flex flex-1 overflow-hidden lg:flex-row flex-col max-w-[1400px] w-full mx-auto p-4 lg:p-6 gap-6">
+      <div className="flex flex-1 md:overflow-hidden overflow-y-auto md:flex-row flex-col max-w-[1700px] w-full mx-auto p-2 lg:p-3 gap-3 custom-scroll">
         {/* Left Side: Video & Transcript */}
-        <div className="flex-1 min-w-0 flex flex-col gap-6">
-          <div className="w-full aspect-video bg-surface-2 overflow-hidden border border-border relative shadow-2xl group transition-colors duration-500">
+        <div className="flex-1 min-w-0 flex flex-col gap-4 md:overflow-y-auto custom-scroll">
+          <div className="w-full aspect-video bg-zinc-950 rounded-xl overflow-hidden border border-border/10 relative group transition-colors duration-500">
             {isStreamStarted ? (
               <VideoPlayer videoId={video.id} onClose={() => setIsStreamStarted(false)} seekTo={seekTo} />
             ) : (
               <>
-                <img src={video.thumbnail} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-all duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent flex items-center justify-center">
+                <img src={video.thumbnail} alt="" className="w-full h-full object-cover opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
                   <button 
                     onClick={handlePlay} 
-                    className="h-10 w-10 bg-accent text-white  flex items-center justify-center hover:scale-110 transition-all shadow-2xl group/btn"
+                    className="h-16 w-16 bg-red-600/90 text-white rounded-full flex items-center justify-center hover:scale-105 hover:bg-red-600 transition-all shadow-lg group/btn"
                   >
-                    <Play className="h-4 w-4 fill-white ml-0.5 transition-transform group-hover/btn:scale-110" />
+                    <Play className="h-6 w-6 fill-white ml-1" />
                   </button>
                 </div>
               </>
             )}
           </div>
 
-          <div className="p-1 px-2 space-y-4">
+          <div className="space-y-4">
              <div className="space-y-2">
                 <h1 className="text-xl lg:text-2xl font-bold text-text leading-snug tracking-tight selection:bg-accent/30 select-text cursor-text">{video.title}</h1>
                 <div className="flex items-center gap-3 select-text cursor-text">
-                   <span className="text-sm font-medium text-muted">{video.author}</span>
+                   <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-full bg-surface-3 flex items-center justify-center border border-border/50 text-[10px] font-black uppercase">
+                        {video.author?.slice(0, 2)}
+                      </div>
+                      <span className="text-[14px] font-bold text-text">{video.author}</span>
+                   </div>
                    <span className="text-muted/20">•</span>
                    <span className="text-sm text-muted">{video.views} views</span>
                    <span className="text-muted/20">•</span>
-                   <span className="text-xs text-muted flex items-center gap-1"><Clock className="h-3 w-3"/> {fmtTime(video.durationSec || video.duration)}</span>
+                   <span className="text-xs text-muted flex items-center gap-1 font-bold"><Clock className="h-3.5 w-3.5"/> {fmtTime(video.durationSec || video.duration)}</span>
                 </div>
              </div>
              
              {video.description && (
-                <div className="p-4 bg-surface-2 border border-border select-text cursor-text transition-colors duration-500">
+                <div className="p-4 bg-surface-2/50 rounded-xl border border-border/10 select-text cursor-text hover:bg-surface-2 transition-colors duration-300">
                    <p className="text-xs text-muted leading-relaxed line-clamp-3">{video.description}</p>
                 </div>
              )}
@@ -290,7 +295,7 @@ export default function VideoPreviewCard({
         </div>
 
         {/* Right Side: 3 Tabs (Cards) - COMPACTED */}
-        <div className="w-full lg:w-[480px] shrink-0 flex flex-col bg-surface-2 border border-border overflow-hidden shadow-2xl transition-colors duration-500">
+        <div className="w-full md:w-[400px] lg:w-[480px] min-h-[500px] md:min-h-0 shrink-0 flex flex-col bg-surface rounded-xl border border-border/50 overflow-hidden transition-all duration-500">
           <div className="flex border-b border-border bg-surface-2 transition-colors duration-500">
             {[
               { id: 'learn', label: 'AI Tutor', icon: Sparkles },
@@ -325,7 +330,7 @@ export default function VideoPreviewCard({
                     </div>
                     <button 
                       onClick={() => {
-                         const content = scriptMode === 'neural' ? refinedTranscript : (transcript || []).map(t => t.text).join('\n\n')
+                         const content = scriptMode === 'neural' ? refinedTranscript : (Array.isArray(transcript) ? transcript : []).map(t => t.text).join('\n\n')
                          onAddVocab({ text: video.title, definition: content, type: 'Collection', videoTitle: video.title, date: new Date().toISOString(), skipAI: true })
                          showToast(`Collection "${video.title}" saved!`)
                       }}
@@ -391,10 +396,10 @@ export default function VideoPreviewCard({
                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`max-w-[90%] p-4 text-[13px] leading-relaxed transition-all select-text cursor-text ${
+                      <div className={`max-w-[85%] p-3.5 text-[13px] leading-relaxed transition-all select-text cursor-text rounded-2xl ${
                         m.role === 'user' 
-                          ? 'bg-accent text-white shadow-xl' 
-                          : 'bg-surface border border-border text-text shadow-sm'
+                          ? 'bg-accent text-white rounded-tr-none' 
+                          : 'bg-surface-3 border border-border/40 text-text rounded-tl-none'
                       }`}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                       </div>
@@ -410,15 +415,15 @@ export default function VideoPreviewCard({
                     </div>
                   )}
                 </div>
-                <div className="pt-4 border-t border-border mt-4 relative">
+                <div className="pt-4 border-t border-border/40 mt-4 flex gap-2">
                   <input value={chatInp} onChange={e => setChatInp(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                    placeholder="Ask about this video..." className="w-full bg-background border border-border  px-4 py-3 pr-12 text-sm text-text outline-none focus:border-accent/50" disabled={isTyping} />
+                    placeholder="Ask about this video..." className="flex-1 bg-surface-2 border border-border/10 rounded-xl px-4 py-3 text-sm text-text outline-none focus:border-accent/30 transition-all" disabled={isTyping} />
                   {isTyping ? (
-                    <button onClick={handleStop} className="absolute right-2 top-6 h-8 w-8 bg-red-500/20 text-red-500  flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+                    <button onClick={handleStop} className="h-11 w-11 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shrink-0">
                       <StopCircle className="h-4 w-4" />
                     </button>
                   ) : (
-                    <button onClick={sendMessage} className="absolute right-2 top-6 h-8 w-8 bg-accent text-white  flex items-center justify-center hover:shadow-lg transition-all">
+                    <button onClick={sendMessage} className="h-11 w-11 bg-accent text-white rounded-xl flex items-center justify-center hover:scale-105 transition-all shrink-0 shadow-lg shadow-accent/20">
                       <MessageCircle className="h-4 w-4" />
                     </button>
                   )}

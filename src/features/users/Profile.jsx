@@ -5,14 +5,8 @@ import {
   Trash2,
   Archive as ArchiveIcon,
   Library as LibraryIcon,
-  FileText,
-  Clock,
-  Activity,
   Award,
-  Zap,
-  BookOpen,
-  Plus,
-  RefreshCcw,
+  FileText,
 } from "lucide-react";
 import LibraryTrash from "./LibraryTrash";
 import LibraryView from "../research-vault/LibraryView";
@@ -68,33 +62,8 @@ const Profile = ({
     { id: "profile", label: "Profile", icon: User },
     { id: "insights", label: "Archive", icon: FileText },
     { id: "library", label: "Library", icon: LibraryIcon },
-    { id: "sync", label: "Sync", icon: RefreshCcw },
     { id: "trash", label: "Trash", icon: Trash2 },
   ];
-
-  const handleSync = async () => {
-    if (api?.pullFromCloud && !isSyncing) {
-      setIsSyncing(true);
-      try {
-        const result = await api.pullFromCloud();
-        if (result?.success) {
-          const updated = await api.loadVocab();
-          setVocab(updated || []);
-          if (showToast)
-            showToast(
-              `Writella Cloud Synchronized: ${result.count || 0} items`,
-              "success",
-            );
-        } else {
-          if (showToast) showToast("Cloud Connection Refused", "error");
-        }
-      } catch (err) {
-        if (showToast) showToast("Sync Failure", "error");
-      } finally {
-        setIsSyncing(false);
-      }
-    }
-  };
 
   const handleCollapse = () => {
     setDisplayLimit(6);
@@ -172,11 +141,7 @@ const Profile = ({
               <span
                 className={`text-[9px] font-black tracking-tight leading-tight uppercase ${activeTab === tab.id ? "text-text" : "text-muted"} group-hover:text-text transition-all`}
               >
-                {tab.id === "profile"
-                  ? "Saboor"
-                  : tab.id === "sync" && isSyncing
-                    ? "Syncing..."
-                    : tab.label}
+                {tab.id === "profile" ? "Saboor" : tab.label}
               </span>
               {activeTab === tab.id && (
                 <motion.div

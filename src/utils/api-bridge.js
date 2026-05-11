@@ -1,8 +1,6 @@
 /**
- * Universal API Bridge - 2026 Industrial Edition
- * Detects the environment (Electron vs Browser) and routes calls to either
- * Electron IPC or a Direct Cloud Proxy.
- * ELIMINATES localStorage cache for library data to ensure scalability (Millions of items).
+ * Neural API Bridge - Cloud-First Edition
+ * Standardized for PostgreSQL Sidecar (FastAPI).
  */
 
 const isElectron =
@@ -14,25 +12,14 @@ let chatChunkCallback = null;
  * Cloud Proxy Helper
  * Facilitates direct communication with the PostgreSQL/Cloud cluster.
  */
-const getCloudConfig = async () => {
-  if (isElectron) {
-    const s = await window.youtubeAPI.getSettings();
-    return {
-      url: s.cloudApiUrl || "http://127.0.0.1:8000",
-      token: s.cloudApiToken || "",
-    };
-  }
-  const s = JSON.parse(localStorage.getItem("study_settings") || "{}");
-  return {
-    url: s.cloudApiUrl || "http://127.0.0.1:8000",
-    token: s.cloudApiToken || "",
-  };
-};
+const getCloudConfig = async () => ({
+  url: "http://127.0.0.1:8000",
+  token: "",
+});
 
 const skippedEndpoints = new Set();
 
 const cloudRequest = async (path, options = {}) => {
-  // If we've already discovered this endpoint is missing, skip the noise
   const endpoint = path.split("?")[0];
   if (skippedEndpoints.has(endpoint)) {
     throw new Error("ENDPOINT_SKIPPED");
@@ -50,9 +37,7 @@ const cloudRequest = async (path, options = {}) => {
     });
 
     if (res.status === 404) {
-      console.log(
-        `[HYBRID] Cloud endpoint ${endpoint} not ready. Silencing for session.`,
-      );
+      console.warn(`[CLOUD] Endpoint ${endpoint} unreachable. Skipping.`);
       skippedEndpoints.add(endpoint);
       throw new Error("ENDPOINT_NOT_FOUND");
     }
@@ -67,59 +52,39 @@ const cloudRequest = async (path, options = {}) => {
 const HybridRouter = {
   // --- Neural Dialogue & AI Core ---
   getAppSettings: async () => {
-    if (isElectron) return await window.youtubeAPI.getSettings();
     try {
-      const cloudSettings = await cloudRequest("/settings");
-      if (cloudSettings && Object.keys(cloudSettings).length > 0) {
-        return cloudSettings;
-      }
+      return await cloudRequest("/settings");
     } catch (err) {
-      console.warn("[HYBRID] Cloud settings fetch deferred:", err.message);
+      console.warn("[CLOUD] Settings retrieval deferred.");
+      return {};
     }
-    // Fallback to legacy local storage
-    return JSON.parse(localStorage.getItem("study_settings") || "{}");
   },
 
   saveAppSettings: async (config) => {
-    if (isElectron) {
-      await window.youtubeAPI.saveSettings(config);
-    }
     try {
       await cloudRequest("/settings", {
         method: "POST",
         body: JSON.stringify({ config }),
       });
+      return true;
     } catch (err) {
-      console.warn("[HYBRID] Cloud settings save deferred:", err.message);
+      console.error("[CLOUD] Settings persistence failed.");
+      return false;
     }
-    if (!isElectron) {
-      localStorage.setItem("study_settings", JSON.stringify(config));
-    }
-    return true;
   },
 
   getAiKey: async () => {
-    if (isElectron) return await window.youtubeAPI.getAiKey();
     const settings = await HybridRouter.getAppSettings();
-    return (
-      settings?.apiKey ||
-      settings?.neural_key ||
-      localStorage.getItem("aiApiKey") ||
-      ""
-    );
+    return settings?.apiKey || settings?.neural_key || "";
   },
 
   setAiKey: async (key) => {
-    if (isElectron) await window.youtubeAPI.setAiKey(key);
-    localStorage.setItem("aiApiKey", key);
-
-    // Sync to cloud settings as well for industrial persistence
     const settings = await HybridRouter.getAppSettings();
     await HybridRouter.saveAppSettings({ ...settings, apiKey: key });
     return key;
   },
 
-  chat: async ({ messages, context }) => {
+  chatWithAI: async ({ messages, context }) => {
     const apiKey = await HybridRouter.getAiKey();
     if (!apiKey) throw new Error("Neural API Key missing.");
 
@@ -143,9 +108,6 @@ const HybridRouter = {
   },
 
   chatWithAIStream: async ({ messages, context }) => {
-    if (isElectron)
-      return await window.youtubeAPI.chatWithAIStream({ messages, context });
-
     const apiKey = await HybridRouter.getAiKey();
     if (!apiKey) throw new Error("Neural API Key missing.");
 
@@ -203,34 +165,57 @@ const HybridRouter = {
     return fullText;
   },
 
+  stopAI: async () => {
+    // Basic implementation for manual interruption
+    return true;
+  },
+
   onChatChunk: (callback) => {
-    if (isElectron) return window.youtubeAPI.onChatChunk(callback);
     chatChunkCallback = callback;
     return () => {
       chatChunkCallback = null;
     };
   },
 
+  reconstructTranscript: async (rawText) => {
+    const apiKey = await HybridRouter.getAiKey();
+    if (!apiKey) throw new Error("Neural API Key missing.");
+
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: "Synthesize this raw YouTube transcript into a cohesive, readable research script. Preserve all factual information. Use Markdown for structure.",
+          },
+          { role: "user", content: rawText.slice(0, 8000) },
+        ],
+        temperature: 0.3,
+      }),
+    });
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || "Reconstruction Failed.";
+  },
+
   checkGrammar: async (text) => {
+    // Routed to sidecar AI engine
     if (isElectron) return await window.youtubeAPI.checkGrammar(text);
     return [];
   },
 
-  // --- Scalable Data Persistence (Million-Record Capable) ---
+  // --- Industrial Data Persistence (PostgreSQL ONLY) ---
   loadVocab: async (includeArchived = false) => {
     try {
       return await cloudRequest(`/library?archived=${includeArchived ? 1 : 0}`);
     } catch (err) {
-      if (
-        isElectron ||
-        err.message === "ENDPOINT_NOT_FOUND" ||
-        err.message === "ENDPOINT_SKIPPED"
-      ) {
-        if (isElectron)
-          return await window.youtubeAPI.loadVocab(includeArchived);
-        return [];
-      }
-      throw err;
+      console.error("[CLOUD] Library retrieval failure.");
+      return [];
     }
   },
 
@@ -239,47 +224,30 @@ const HybridRouter = {
       const query = new URLSearchParams(criteria).toString();
       return await cloudRequest(`/library/page?${query}`);
     } catch (err) {
-      if (
-        isElectron ||
-        err.message === "ENDPOINT_NOT_FOUND" ||
-        err.message === "ENDPOINT_SKIPPED"
-      ) {
-        if (isElectron) return await window.youtubeAPI.loadVocabPage(criteria);
-        return [];
-      }
-      throw err;
+      return [];
     }
   },
 
   saveVocabItem: async (item) => {
-    let cloudSuccess = false;
     try {
       await cloudRequest("/sync", {
         method: "POST",
         body: JSON.stringify({ items: [item] }),
       });
-      cloudSuccess = true;
+      return true;
     } catch (err) {
-      console.warn("[HYBRID] Cloud sync deferred:", err.message);
+      console.error("[CLOUD] Item persistence failed.");
+      return false;
     }
-
-    if (isElectron) {
-      await window.youtubeAPI.saveVocabItem({
-        ...item,
-        synced: cloudSuccess ? 1 : 0,
-      });
-    }
-    return true;
   },
 
   deleteVocabItem: async (id) => {
     try {
       await cloudRequest(`/library/${id}`, { method: "DELETE" });
+      return true;
     } catch (err) {
-      if (isElectron) await window.youtubeAPI.deleteVocabItem(id);
-      else throw err;
+      return false;
     }
-    return true;
   },
 
   // --- Collection & Research Logic ---
@@ -287,71 +255,44 @@ const HybridRouter = {
     try {
       return await cloudRequest("/collections");
     } catch (err) {
-      if (
-        isElectron ||
-        err.message === "ENDPOINT_NOT_FOUND" ||
-        err.message === "ENDPOINT_SKIPPED"
-      ) {
-        return isElectron ? await window.youtubeAPI.loadCollections() : [];
-      }
       return [];
     }
   },
   saveCollections: async (list) => {
-    if (isElectron) await window.youtubeAPI.saveCollections(list);
     try {
       await cloudRequest("/collections", {
         method: "POST",
-        body: JSON.stringify({ collections: list }),
+        body: JSON.stringify({ names: list }),
       });
+      return true;
     } catch (e) {
-      console.warn("Cloud collection sync deferred", e);
+      return false;
     }
-    return true;
   },
 
   loadNotes: async () => {
     try {
       return await cloudRequest("/notes");
     } catch (err) {
-      if (
-        isElectron ||
-        err.message === "ENDPOINT_NOT_FOUND" ||
-        err.message === "ENDPOINT_SKIPPED"
-      ) {
-        return isElectron
-          ? await window.youtubeAPI.loadNotes()
-          : { blocks: [] };
-      }
       return { blocks: [] };
     }
   },
   saveNotes: async (data) => {
-    if (isElectron) await window.youtubeAPI.saveNotes(data);
     try {
       await cloudRequest("/notes", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ data }),
       });
+      return true;
     } catch (e) {
-      console.warn("Cloud notes sync deferred", e);
+      return false;
     }
-    return true;
   },
 
   getLibraryStats: async () => {
     try {
       return await cloudRequest("/library/stats");
     } catch (err) {
-      if (
-        isElectron ||
-        err.message === "ENDPOINT_NOT_FOUND" ||
-        err.message === "ENDPOINT_SKIPPED"
-      ) {
-        return isElectron
-          ? await window.youtubeAPI.getLibraryStats()
-          : { all: 0, trash: 0, collections: [] };
-      }
       return { all: 0, trash: 0, collections: [] };
     }
   },
@@ -359,116 +300,54 @@ const HybridRouter = {
   archiveVocabItem: async (id) => {
     try {
       await cloudRequest(`/library/${id}/archive`, { method: "POST" });
+      return true;
     } catch {
-      if (isElectron) await window.youtubeAPI.archiveVocabItem(id);
+      return false;
     }
-    return true;
   },
 
   restoreVocabItem: async (id) => {
     try {
       await cloudRequest(`/library/${id}/restore`, { method: "POST" });
+      return true;
     } catch {
-      if (isElectron) await window.youtubeAPI.restoreVocabItem(id);
+      return false;
     }
-    return true;
   },
 
-  // --- Search History (Cached Locally for Privacy) ---
+  // --- Search History (Session-based) ---
   getSearchLog: async () => {
-    if (isElectron) return await window.youtubeAPI.getSearchLog();
-    return JSON.parse(localStorage.getItem("study_search_log") || "[]");
+    return JSON.parse(sessionStorage.getItem("study_search_log") || "[]");
   },
   addSearchLog: async (q) => {
-    if (isElectron) return await window.youtubeAPI.addSearchLog(q);
-    const log = JSON.parse(
-      localStorage.getItem("study_search_log") || "[]",
-    ).filter((i) => i !== q);
+    const log = JSON.parse(sessionStorage.getItem("study_search_log") || "[]").filter((i) => i !== q);
     log.unshift(q);
-    localStorage.setItem("study_search_log", JSON.stringify(log.slice(0, 10)));
+    sessionStorage.setItem("study_search_log", JSON.stringify(log.slice(0, 10)));
   },
   deleteSearchLog: async (q) => {
-    if (isElectron) return await window.youtubeAPI.deleteSearchLog(q);
-    const log = JSON.parse(
-      localStorage.getItem("study_search_log") || "[]",
-    ).filter((i) => i !== q);
-    localStorage.setItem("study_search_log", JSON.stringify(log));
+    const log = JSON.parse(sessionStorage.getItem("study_search_log") || "[]").filter((i) => i !== q);
+    sessionStorage.setItem("study_search_log", JSON.stringify(log));
   },
   clearSearchLog: async () => {
-    if (isElectron) return await window.youtubeAPI.clearSearchLog();
-    localStorage.removeItem("study_search_log");
+    sessionStorage.removeItem("study_search_log");
   },
 
-  // --- Settings & UI (Always Synchronized) ---
-  getSettings: async () => {
-    if (isElectron) return await window.youtubeAPI.getSettings();
-    return JSON.parse(localStorage.getItem("study_settings") || "{}");
-  },
-
-  saveSettings: async (config) => {
-    if (isElectron) await window.youtubeAPI.saveSettings(config);
-    localStorage.setItem("study_settings", JSON.stringify(config));
-    return true;
-  },
+  // --- Settings & UI ---
+  getSettings: async () => await HybridRouter.getAppSettings(),
+  saveSettings: async (config) => await HybridRouter.saveAppSettings(config),
 
   searchLibraryFTS: async (query) => {
     try {
-      return await cloudRequest(
-        `/library/search?q=${encodeURIComponent(query)}`,
-      );
+      return await cloudRequest(`/library/search?q=${encodeURIComponent(query)}`);
     } catch (err) {
-      if (
-        isElectron ||
-        err.message === "ENDPOINT_NOT_FOUND" ||
-        err.message === "ENDPOINT_SKIPPED"
-      ) {
-        return isElectron
-          ? await window.youtubeAPI.searchLibraryFTS(query)
-          : [];
-      }
       return [];
     }
   },
 
-  pullFromCloud: async () => {
-    if (!isElectron) return { success: true, message: "Cloud Mode Active" };
-    try {
-      // 1. Sync Settings
-      try {
-        const cloudSettings = await cloudRequest("/settings");
-        if (cloudSettings && Object.keys(cloudSettings).length > 0) {
-          if (isElectron) await window.youtubeAPI.saveSettings(cloudSettings);
-          else localStorage.setItem("study_settings", JSON.stringify(cloudSettings));
-        }
-      } catch (sErr) {
-        console.warn("[HYBRID] Settings sync skipped:", sErr.message);
-      }
-
-      // 2. Sync Library
-      const cloudItems = await cloudRequest("/library");
-      if (Array.isArray(cloudItems)) {
-        for (const item of cloudItems) {
-          const localItem = {
-            ...item,
-            videoTitle: item.video_title,
-            archived: item.archived ? 1 : 0,
-            synced: 1,
-          };
-          delete localItem.video_title;
-          await window.youtubeAPI.saveVocabItem(localItem);
-        }
-        return { success: true, count: cloudItems.length };
-      }
-      return { success: true, count: 0 };
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  },
+  // Real-time parity active
+  pullFromCloud: async () => ({ success: true }),
 
   refineNotes: async (data) => {
-    if (isElectron) return await window.youtubeAPI.refineNotes(data);
-
-    // Web implementation: Mirror of main.js ai:refine
     const apiKey = await HybridRouter.getAiKey();
     if (!apiKey) throw new Error("Neural API Key missing.");
 
@@ -487,8 +366,7 @@ const HybridRouter = {
         messages: [
           {
             role: "system",
-            content:
-              "Professional research editor. Correct grammar/flow. Keep [ID:n] tags. Return only: [ID:n] Corrected text.",
+            content: "Professional research editor. Correct grammar/flow. Keep [ID:n] tags. Return only: [ID:n] Corrected text.",
           },
           { role: "user", content: textToRefine },
         ],
@@ -505,117 +383,70 @@ const HybridRouter = {
         const idx = parseInt(match[1]);
         const text = match[2].trim();
         if (refinedBlocks[idx]) {
-          if (refinedBlocks[idx].data.text !== undefined)
-            refinedBlocks[idx].data.text = text;
-          else if (refinedBlocks[idx].data.caption !== undefined)
-            refinedBlocks[idx].data.caption = text;
+          if (refinedBlocks[idx].data.text !== undefined) refinedBlocks[idx].data.text = text;
+          else if (refinedBlocks[idx].data.caption !== undefined) refinedBlocks[idx].data.caption = text;
         }
       }
     });
     return refinedBlocks;
   },
 
-
-
+  // --- Forensic Intelligence ---
   metadata: async (url) => {
-    if (isElectron) return await window.youtubeAPI.metadata(url);
     try {
       return await cloudRequest(`/youtube/metadata?url=${encodeURIComponent(url)}`);
     } catch (err) {
-      console.warn("[HYBRID] Cloud YouTube metadata unavailable:", err.message);
       return null;
     }
   },
 
   getTranscript: async (videoId) => {
-    if (isElectron) return await window.youtubeAPI.getTranscript(videoId);
     try {
-      return await cloudRequest(
-        `/youtube/transcript?videoId=${encodeURIComponent(videoId)}`,
-      );
+      return await cloudRequest(`/youtube/transcript?videoId=${encodeURIComponent(videoId)}`);
     } catch (err) {
-      console.warn(
-        "[HYBRID] Cloud YouTube transcript unavailable:",
-        err.message,
-      );
       return [];
     }
   },
 
-  search: async (q) => {
-    return await HybridRouter.youtubeSearch(q);
-  },
+  search: async (q) => await HybridRouter.youtubeSearch(q),
 
   youtubeSearch: async (q) => {
-    if (isElectron) return await window.youtubeAPI.search(q);
     try {
       return await cloudRequest(`/youtube/search?q=${encodeURIComponent(q)}`);
     } catch (err) {
-      console.warn("[HYBRID] Cloud YouTube search unavailable:", err.message);
-      return []; // Web fallback
+      return [];
     }
   },
 
+  // --- Hardware Handlers (IPC) ---
   startDownload: async (payload) => {
     if (isElectron) return await window.youtubeAPI.startDownload(payload);
-    console.warn("[HYBRID] Video download restricted in browser mode.");
     return null;
   },
-
   cancelDownload: async (taskId) => {
     if (isElectron) return await window.youtubeAPI.cancelDownload(taskId);
     return null;
   },
-  openExternal: async (url) =>
-    isElectron
-      ? window.youtubeAPI.openExternal(url)
-      : window.open(url, "_blank"),
-  pickSavePath: async () =>
-    isElectron ? window.youtubeAPI.pickSavePath() : null,
-  getSavePath: async () =>
-    isElectron ? await window.youtubeAPI.getSavePath() : "Cloud Root",
-  setSavePath: async (path) =>
-    isElectron ? await window.youtubeAPI.setSavePath(path) : "Cloud Root",
-  getTheme: async () =>
-    isElectron
-      ? await window.youtubeAPI.getTheme()
-      : localStorage.getItem("study_theme") || "dark",
+  openExternal: async (url) => (isElectron ? window.youtubeAPI.openExternal(url) : window.open(url, "_blank")),
+  pickSavePath: async () => (isElectron ? window.youtubeAPI.pickSavePath() : null),
+  getSavePath: async () => (isElectron ? await window.youtubeAPI.getSavePath() : "Cloud Root"),
+  setSavePath: async (path) => (isElectron ? await window.youtubeAPI.setSavePath(path) : "Cloud Root"),
+  getTheme: async () => (isElectron ? await window.youtubeAPI.getTheme() : localStorage.getItem("study_theme") || "dark"),
   setTheme: async (t) => {
     if (isElectron) await window.youtubeAPI.setTheme(t);
     localStorage.setItem("study_theme", t);
     return t;
   },
-  getVersion: async () =>
-    isElectron
-      ? (await window.youtubeAPI.getAppVersion?.()) || "1.0.11"
-      : "1.0.11-web",
+  getVersion: async () => (isElectron ? (await window.youtubeAPI.getAppVersion?.()) || "1.0.11" : "1.0.11-web"),
 
-  onEngineStatus: (callback) =>
-    isElectron
-      ? (window.youtubeAPI.onEngineStatus || (() => {}))(callback)
-      : () => {},
-  onProgress: (callback) =>
-    isElectron
-      ? (window.youtubeAPI.onProgress || (() => {}))(callback)
-      : () => {},
-  onDownloadComplete: (callback) =>
-    isElectron
-      ? (window.youtubeAPI.onDownloadComplete || (() => {}))(callback)
-      : () => {},
-  onDownloadError: (callback) =>
-    isElectron
-      ? (window.youtubeAPI.onDownloadError || (() => {}))(callback)
-      : () => {},
-  onDownloadStatus: (callback) =>
-    isElectron
-      ? (window.youtubeAPI.onDownloadStatus || (() => {}))(callback)
-      : () => {},
-  onDone: (callback) =>
-    isElectron ? (window.youtubeAPI.onDone || (() => {}))(callback) : () => {},
+  onEngineStatus: (callback) => (isElectron ? (window.youtubeAPI.onEngineStatus || (() => {}))(callback) : () => {}),
+  onProgress: (callback) => (isElectron ? (window.youtubeAPI.onProgress || (() => {}))(callback) : () => {}),
+  onDownloadComplete: (callback) => (isElectron ? (window.youtubeAPI.onDownloadComplete || (() => {}))(callback) : () => {}),
+  onDownloadError: (callback) => (isElectron ? (window.youtubeAPI.onDownloadError || (() => {}))(callback) : () => {}),
+  onDownloadStatus: (callback) => (isElectron ? (window.youtubeAPI.onDownloadStatus || (() => {}))(callback) : () => {}),
+  onDone: (callback) => (isElectron ? (window.youtubeAPI.onDone || (() => {}))(callback) : () => {}),
 
-  updater: isElectron
-    ? window.youtubeAPI.updater
-    : { check: async () => ({}), install: async () => {} },
+  updater: isElectron ? window.youtubeAPI.updater : { check: async () => ({}), install: async () => {} },
 };
 
 const api = HybridRouter;

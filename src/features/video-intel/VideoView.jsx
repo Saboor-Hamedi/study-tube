@@ -233,17 +233,17 @@ export default function VideoView({
                       className="flex flex-col gap-3 group cursor-pointer"
                       onClick={() => selectResult(item)}
                     >
-                      <div className="relative aspect-video overflow-hidden bg-surface-2 border border-border transition-all group-hover:border-accent/40 rounded-[5px]">
-                        <img src={`https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-[10px] font-bold text-white tracking-widest">{item.duration}</div>
+                      <div className="relative aspect-video overflow-hidden bg-surface-2 border border-border/10 transition-all rounded-xl">
+                        <img src={`https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`} className="w-full h-full object-cover transition-transform duration-500" />
+                        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-[10px] font-bold text-white tracking-widest rounded-sm">{item.duration}</div>
                         <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors" />
                       </div>
-                      <div className="space-y-1">
-                        <h3 className="text-[12px] font-bold text-text line-clamp-2 leading-snug group-hover:text-accent transition-colors">{item.title}</h3>
-                        <div className="flex items-center gap-2 text-[10px] text-muted font-medium uppercase tracking-wider">
-                          <span>Analysis Ready</span>
-                          <span className="w-1 h-1 bg-muted/20 rounded-full" />
-                          <span>High Fidelity</span>
+                      <div className="space-y-1 px-1">
+                        <h3 className="text-[14px] font-bold text-text line-clamp-2 leading-snug group-hover:text-accent transition-colors">{item.title}</h3>
+                        <div className="flex items-center gap-2 text-[11px] text-muted font-bold uppercase tracking-wider opacity-60">
+                           <span>{item.author}</span>
+                           <span className="w-1 h-1 bg-muted/20 rounded-full" />
+                           <span>Analysis Ready</span>
                         </div>
                       </div>
                     </motion.div>
