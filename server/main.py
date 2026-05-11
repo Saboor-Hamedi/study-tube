@@ -375,6 +375,7 @@ def proxy_youtube_transcript(videoId: str):
         except: t = next(iter(transcript_list))
         return t.fetch()
     except Exception as e:
+        print(f"Transcript Error: {e}")
         return []
 
 @app.on_event("startup")

@@ -192,7 +192,8 @@ const HybridRouter = {
         messages: [
           {
             role: "system",
-            content: "Synthesize this raw YouTube transcript into a cohesive, readable research script. Preserve all factual information. Use Markdown for structure.",
+            content:
+              "Synthesize this raw YouTube transcript into a cohesive, readable research script. Preserve all factual information. Use Markdown for structure.",
           },
           { role: "user", content: rawText.slice(0, 8000) },
         ],
@@ -320,12 +321,19 @@ const HybridRouter = {
     return JSON.parse(sessionStorage.getItem("study_search_log") || "[]");
   },
   addSearchLog: async (q) => {
-    const log = JSON.parse(sessionStorage.getItem("study_search_log") || "[]").filter((i) => i !== q);
+    const log = JSON.parse(
+      sessionStorage.getItem("study_search_log") || "[]",
+    ).filter((i) => i !== q);
     log.unshift(q);
-    sessionStorage.setItem("study_search_log", JSON.stringify(log.slice(0, 10)));
+    sessionStorage.setItem(
+      "study_search_log",
+      JSON.stringify(log.slice(0, 10)),
+    );
   },
   deleteSearchLog: async (q) => {
-    const log = JSON.parse(sessionStorage.getItem("study_search_log") || "[]").filter((i) => i !== q);
+    const log = JSON.parse(
+      sessionStorage.getItem("study_search_log") || "[]",
+    ).filter((i) => i !== q);
     sessionStorage.setItem("study_search_log", JSON.stringify(log));
   },
   clearSearchLog: async () => {
@@ -338,7 +346,9 @@ const HybridRouter = {
 
   searchLibraryFTS: async (query) => {
     try {
-      return await cloudRequest(`/library/search?q=${encodeURIComponent(query)}`);
+      return await cloudRequest(
+        `/library/search?q=${encodeURIComponent(query)}`,
+      );
     } catch (err) {
       return [];
     }
@@ -366,7 +376,8 @@ const HybridRouter = {
         messages: [
           {
             role: "system",
-            content: "Professional research editor. Correct grammar/flow. Keep [ID:n] tags. Return only: [ID:n] Corrected text.",
+            content:
+              "Professional research editor. Correct grammar/flow. Keep [ID:n] tags. Return only: [ID:n] Corrected text.",
           },
           { role: "user", content: textToRefine },
         ],
@@ -383,8 +394,10 @@ const HybridRouter = {
         const idx = parseInt(match[1]);
         const text = match[2].trim();
         if (refinedBlocks[idx]) {
-          if (refinedBlocks[idx].data.text !== undefined) refinedBlocks[idx].data.text = text;
-          else if (refinedBlocks[idx].data.caption !== undefined) refinedBlocks[idx].data.caption = text;
+          if (refinedBlocks[idx].data.text !== undefined)
+            refinedBlocks[idx].data.text = text;
+          else if (refinedBlocks[idx].data.caption !== undefined)
+            refinedBlocks[idx].data.caption = text;
         }
       }
     });
@@ -394,7 +407,9 @@ const HybridRouter = {
   // --- Forensic Intelligence ---
   metadata: async (url) => {
     try {
-      return await cloudRequest(`/youtube/metadata?url=${encodeURIComponent(url)}`);
+      return await cloudRequest(
+        `/youtube/metadata?url=${encodeURIComponent(url)}`,
+      );
     } catch (err) {
       return null;
     }
@@ -402,7 +417,9 @@ const HybridRouter = {
 
   getTranscript: async (videoId) => {
     try {
-      return await cloudRequest(`/youtube/transcript?videoId=${encodeURIComponent(videoId)}`);
+      return await cloudRequest(
+        `/youtube/transcript?videoId=${encodeURIComponent(videoId)}`,
+      );
     } catch (err) {
       return [];
     }
@@ -419,34 +436,32 @@ const HybridRouter = {
   },
 
   // --- Hardware Handlers (IPC) ---
-  startDownload: async (payload) => {
-    if (isElectron) return await window.youtubeAPI.startDownload(payload);
-    return null;
-  },
-  cancelDownload: async (taskId) => {
-    if (isElectron) return await window.youtubeAPI.cancelDownload(taskId);
-    return null;
-  },
-  openExternal: async (url) => (isElectron ? window.youtubeAPI.openExternal(url) : window.open(url, "_blank")),
-  pickSavePath: async () => (isElectron ? window.youtubeAPI.pickSavePath() : null),
-  getSavePath: async () => (isElectron ? await window.youtubeAPI.getSavePath() : "Cloud Root"),
-  setSavePath: async (path) => (isElectron ? await window.youtubeAPI.setSavePath(path) : "Cloud Root"),
-  getTheme: async () => (isElectron ? await window.youtubeAPI.getTheme() : localStorage.getItem("study_theme") || "dark"),
+  openExternal: async (url) =>
+    isElectron
+      ? window.youtubeAPI.openExternal(url)
+      : window.open(url, "_blank"),
+  getTheme: async () =>
+    isElectron
+      ? await window.youtubeAPI.getTheme()
+      : localStorage.getItem("study_theme") || "dark",
   setTheme: async (t) => {
     if (isElectron) await window.youtubeAPI.setTheme(t);
     localStorage.setItem("study_theme", t);
     return t;
   },
-  getVersion: async () => (isElectron ? (await window.youtubeAPI.getAppVersion?.()) || "1.0.11" : "1.0.11-web"),
+  getVersion: async () =>
+    isElectron
+      ? (await window.youtubeAPI.getAppVersion?.()) || "1.0.11"
+      : "1.0.11-web",
 
-  onEngineStatus: (callback) => (isElectron ? (window.youtubeAPI.onEngineStatus || (() => {}))(callback) : () => {}),
-  onProgress: (callback) => (isElectron ? (window.youtubeAPI.onProgress || (() => {}))(callback) : () => {}),
-  onDownloadComplete: (callback) => (isElectron ? (window.youtubeAPI.onDownloadComplete || (() => {}))(callback) : () => {}),
-  onDownloadError: (callback) => (isElectron ? (window.youtubeAPI.onDownloadError || (() => {}))(callback) : () => {}),
-  onDownloadStatus: (callback) => (isElectron ? (window.youtubeAPI.onDownloadStatus || (() => {}))(callback) : () => {}),
-  onDone: (callback) => (isElectron ? (window.youtubeAPI.onDone || (() => {}))(callback) : () => {}),
+  onEngineStatus: (callback) =>
+    isElectron
+      ? (window.youtubeAPI.onEngineStatus || (() => {}))(callback)
+      : () => {},
 
-  updater: isElectron ? window.youtubeAPI.updater : { check: async () => ({}), install: async () => {} },
+  updater: isElectron
+    ? window.youtubeAPI.updater
+    : { check: async () => ({}), install: async () => {} },
 };
 
 const api = HybridRouter;

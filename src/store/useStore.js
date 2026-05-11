@@ -7,7 +7,6 @@ import { create } from 'zustand'
 export const useStore = create((set, get) => ({
   // --- Research Archive State ---
   vocabStats: { total: 0, collections: [] },
-  savePath: '',
   view: sessionStorage.getItem('study-view') || 'home',
   selectedResearchNode: null,
   vocab: [],
@@ -47,7 +46,6 @@ export const useStore = create((set, get) => ({
   // --- Global Actions & Neural Triggers ---
   
   setVocabStats: (val) => set((s) => ({ vocabStats: typeof val === 'function' ? val(s.vocabStats) : val })),
-  setSavePath: (val) => set((s) => ({ savePath: typeof val === 'function' ? val(s.savePath) : val })),
   setView: (val) => set((s) => {
     const nextView = typeof val === 'function' ? val(s.view) : val;
     sessionStorage.setItem('study-view', nextView);

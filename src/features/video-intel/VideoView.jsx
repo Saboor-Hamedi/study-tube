@@ -14,7 +14,7 @@ function fmtViews(n) {
 }
 
 export default function VideoView({ 
-  savePath, setSavePath, onAddVocab, 
+  onAddVocab, 
   query, setQuery, 
   results, setResults, 
   preview, setPreview, 
@@ -28,12 +28,8 @@ export default function VideoView({
   const api = passedApi || bridgeApi
 
   const [quality, setQuality] = useState('')
-  const [progress, setProgress] = useState({})
-  const [taskId, setTaskId] = useState(null)
-  const [lastFile, setLastFile] = useState(null)
 
   const isUrl = useMemo(() => YT_REGEX.test(query.trim()), [query])
-  const isDownloading = taskId ? (progress[taskId]?.percent ?? 0) < 100 : false
 
   // Trigger search from Global Header
   useEffect(() => {
@@ -59,14 +55,7 @@ export default function VideoView({
 
   useEffect(() => {
     if (!api) return
-    api.getSavePath().then(p => { if (p) setSavePath(p) }).catch(() => {})
-    const unP = api.onProgress(d => setProgress(p => ({ ...p, [d.taskId]: d })))
-    const unD = api.onDone(d => {
-      setProgress(p => ({ ...p, [d.taskId]: { percent: 100 } }))
-      setTaskId(null)
-      setLastFile(d.filePath)
-    })
-    return () => { unP(); unD() }
+    // api.getSavePath().then(p => { if (p) setSavePath(p) }).catch(() => {})
   }, [api])
 
   useEffect(() => {
@@ -121,37 +110,6 @@ export default function VideoView({
     setQuery('')
   }
 
-  async function pickPath() {
-    if (!api) return
-    const p = await api.pickSavePath()
-    if (p) { setSavePath(p) }
-  }
-
-  async function download() {
-    if (!api || !preview || !quality) return
-    let dest = savePath
-    if (!dest) {
-      const p = await api.pickSavePath()
-      if (!p) return
-      setSavePath(p); dest = p
-    }
-    const id = crypto.randomUUID()
-    setTaskId(id)
-    try {
-      await api.startDownload({ taskId: id, url: preview.url, format: quality, savePath: dest, title: preview.title })
-    } catch (e) {
-      setTaskId(null)
-      console.error(e)
-    }
-  }
-
-  async function cancelDownload() {
-    if (!api || !taskId) return
-    await api.cancelDownload(taskId)
-    setTaskId(null)
-    setProgress({})
-  }
-
   async function selectResult(v) {
     const optimisticMeta = { 
       id: v.id, 
@@ -164,10 +122,17 @@ export default function VideoView({
     setPreview(optimisticMeta)
     setQuality('')
     setTranscript(null)
+    setLoadingTranscript(true)
     
     try {
       const fullMeta = await api.metadata(v.url)
       
+      if (!fullMeta) {
+        setLoadingTranscript(false)
+        showToast('Failed to retrieve video intelligence', 'error')
+        return
+      }
+
       const isGeneric = (t) => !t || t.toLowerCase() === 'youtube video'
       const finalTitle = isGeneric(fullMeta.title) ? v.title : fullMeta.title
 
@@ -176,9 +141,18 @@ export default function VideoView({
         title: finalTitle
       })
       setQuality(fullMeta.qualityOptions?.[0]?.value || '')
-      api.getTranscript(fullMeta.id).then(t => setTranscript(t)).catch(() => {})
+      api.getTranscript(fullMeta.id)
+        .then(t => {
+          setTranscript(t)
+          setLoadingTranscript(false)
+        })
+        .catch(() => {
+          setLoadingTranscript(false)
+        })
     } catch (e) {
       console.error(e)
+      setLoadingTranscript(false)
+      showToast('Neural link failed', 'error')
     }
   }
 
@@ -197,13 +171,6 @@ export default function VideoView({
             showToast={showToast}
             quality={quality}
             onQualityChange={setQuality}
-            savePath={savePath}
-            onPickPath={pickPath}
-            onDownload={download}
-            onCancel={cancelDownload}
-            progress={taskId ? progress[taskId] : null}
-            downloading={isDownloading}
-            lastFile={lastFile}
           />
         </div>
       ) : (
