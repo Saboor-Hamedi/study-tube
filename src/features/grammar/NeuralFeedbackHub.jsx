@@ -17,6 +17,7 @@ export default function NeuralFeedbackHub({
   setIsAnalyzing,
   content,
   getCategoryColor,
+  scrollToHl,
 }) {
   return (
     <div className="w-full md:w-[300px] bg-surface flex flex-col border-l border-border min-h-0 h-full">
@@ -187,7 +188,8 @@ export default function NeuralFeedbackHub({
                   <div
                     key={i}
                     id={`anomaly-${i + 1}`}
-                    className="relative bg-surface-2/50 border border-border/10 rounded-[10px] p-3 hover:border-accent/40 transition-all group/card overflow-hidden flex flex-col col-span-2 shadow-sm hover:shadow-md"
+                    onClick={() => scrollToHl(i + 1)}
+                    className="relative bg-surface-2/50 border border-border/10 rounded-[10px] p-3 hover:border-accent/40 cursor-pointer transition-all group/card overflow-hidden flex flex-col col-span-2 shadow-sm hover:shadow-md"
                   >
                     <div
                       className={`absolute top-0 left-0 w-1 h-full ${getCategoryColor(hl.type).replace("text-", "bg-")}`}
@@ -196,7 +198,7 @@ export default function NeuralFeedbackHub({
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/20")} ${getCategoryColor(hl.type)}`}
+                          className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black cursor-pointer transition-colors ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)} hover:bg-accent hover:text-white shadow-sm`}
                         >
                           {i + 1}
                         </div>

@@ -82,40 +82,6 @@ export const useRigor = () => {
     }
   }, []);
 
-  const getCategoryColor = (type) => {
-    switch (type) {
-      case "grammar":
-        return "text-blue-500";
-      case "syntax":
-        return "text-emerald-500";
-      case "diction":
-        return "text-orange-500";
-      case "tone":
-        return "text-purple-500";
-      case "spelling":
-        return "text-red-500";
-      default:
-        return "text-accent";
-    }
-  };
-
-  const getCategoryBg = (type) => {
-    switch (type) {
-      case "grammar":
-        return "rgba(59, 130, 246, 0.1)";
-      case "syntax":
-        return "rgba(16, 185, 129, 0.1)";
-      case "diction":
-        return "rgba(249, 115, 22, 0.1)";
-      case "tone":
-        return "rgba(168, 85, 247, 0.1)";
-      case "spelling":
-        return "rgba(239, 68, 68, 0.1)";
-      default:
-        return "rgba(255, 107, 0, 0.1)";
-    }
-  };
-
   const analyze = useCallback(
     async (content) => {
       if (!content) return null;
@@ -406,4 +372,38 @@ Text: "${content}"`;
     getCategoryBg,
     addToDictionary,
   };
+};
+
+export const getCategoryColor = (type) => {
+  switch (type) {
+    case "grammar":
+      return "text-blue-500";
+    case "syntax":
+      return "text-emerald-500";
+    case "diction":
+      return "text-orange-500";
+    case "tone":
+      return "text-purple-500";
+    case "spelling":
+      return "text-red-500";
+    default:
+      return "text-accent";
+  }
+};
+
+export const getCategoryBg = (type) => {
+  switch (type) {
+    case "grammar":
+      return "rgba(59, 130, 246, 0.1)";
+    case "syntax":
+      return "rgba(16, 185, 129, 0.1)";
+    case "diction":
+      return "rgba(249, 115, 22, 0.1)";
+    case "tone":
+      return "rgba(168, 85, 247, 0.1)";
+    case "spelling":
+      return "rgba(239, 68, 68, 0.1)";
+    default:
+      return "rgba(255, 107, 0, 0.1)";
+  }
 };

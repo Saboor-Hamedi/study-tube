@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GraduationCap,
@@ -12,6 +12,8 @@ import {
   AlertCircle,
   ArrowRight,
   X,
+  RotateCcw,
+  RotateCw
 } from "lucide-react";
 import {
   useFloating,
@@ -50,8 +52,41 @@ export default function GrammarForensicView({
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 800);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
   const [selectedHl, setSelectedHl] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const containerRef = useRef(null);
   const closeTimeoutRef = useRef(null);
+
+  // Snapshot Helper
+  const takeSnapshot = useCallback((newText) => {
+    setHistory(prev => {
+      const sliced = prev.slice(0, historyIndex + 1);
+      const updated = [...sliced, newText];
+      // Keep last 50 edits
+      if (updated.length > 50) return updated.slice(1);
+      return updated;
+    });
+    setHistoryIndex(prev => {
+      const next = prev + 1;
+      return next > 49 ? 49 : next;
+    });
+  }, [historyIndex]);
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      const prevText = history[historyIndex - 1];
+      setHistoryIndex(historyIndex - 1);
+      setContent(prevText);
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextText = history[historyIndex + 1];
+      setHistoryIndex(historyIndex + 1);
+      setContent(nextText);
+    }
+  };
 
   // --- Floating UI Engine ---
   const { x, y, refs, strategy, placement } = useFloating({
@@ -81,7 +116,10 @@ export default function GrammarForensicView({
 
   useEffect(() => {
     if (initialData) {
-      setContent(initialData.definition || initialData.text || "");
+      const txt = initialData.definition || initialData.text || "";
+      setContent(txt);
+      setHistory([txt]);
+      setHistoryIndex(0);
       if (initialData.diagnostics) {
         setDiagnostics(initialData.diagnostics);
         setIsAnalyzing(true);
@@ -134,10 +172,49 @@ export default function GrammarForensicView({
 
   const handleApplySuggestion = async (suggestion) => {
     if (!selectedHl) return;
+    
+    takeSnapshot(content);
+
+    let start = selectedHl.start;
+    let end = selectedHl.end;
+
+    // Phrase-Aware Expansion (Surgical)
+    // Only expand if the suggestion is a full sentence fix (contains punctuation or is long)
+    const isNeuralFix = suggestion.split(/\s+/).length > 4 || /[.!?]$/.test(suggestion);
+    
+    if (isNeuralFix) {
+      // Look back for nearest boundary (max 150 chars for safety)
+      const textBefore = content.substring(Math.max(0, start - 150), start);
+      const lastBoundary = Math.max(
+        textBefore.lastIndexOf("."),
+        textBefore.lastIndexOf("!"),
+        textBefore.lastIndexOf("?"),
+        textBefore.lastIndexOf("\n")
+      );
+      if (lastBoundary !== -1) {
+        // Adjust start to be absolute
+        const absoluteBoundary = Math.max(0, start - 150) + lastBoundary + 1;
+        start = absoluteBoundary;
+      } else if (start < 150) {
+        start = 0;
+      }
+      
+      // Look forward for nearest boundary (max 150 chars for safety)
+      const textAfter = content.substring(end, Math.min(content.length, end + 150));
+      const nextBoundary = textAfter.search(/[.!?\n]/);
+      if (nextBoundary !== -1) {
+        end = end + nextBoundary + 1;
+      } else if (content.length - end < 150) {
+        end = content.length;
+      }
+    }
+
     const newContent =
-      content.substring(0, selectedHl.start) +
-      suggestion +
-      content.substring(selectedHl.end);
+      content.substring(0, start).replace(/[ \t]+$/, "") + 
+      (start > 0 && !/\n$/.test(content.substring(0, start)) ? " " : "") + 
+      suggestion.trim() + 
+      (end < content.length && !/^\n/.test(content.substring(end)) ? " " : "") + 
+      content.substring(end).replace(/^[ \t]+/, "");
 
     setContent(newContent);
     setSelectedHl(null);
@@ -147,7 +224,7 @@ export default function GrammarForensicView({
       setDiagnostics(results.diagnostics);
     }
 
-    if (showToast) showToast("Neural Correction Applied", "success");
+    if (showToast) showToast("Correction Applied", "success");
   };
 
   const handleAddToDictionary = async (word) => {
@@ -220,6 +297,38 @@ export default function GrammarForensicView({
     if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
   };
 
+  const scrollToHl = (index) => {
+    const el = document.getElementById(`hl-${index}`);
+    if (el && containerRef.current) {
+      // Calculate position relative to container
+      const topPos = el.offsetTop - (containerRef.current.offsetHeight / 2) + (el.offsetHeight / 2);
+      containerRef.current.scrollTo({ top: topPos, behavior: "smooth" });
+
+      // Brief pulse effect
+      el.style.transition = "all 0.3s ease";
+      el.style.backgroundColor = "rgba(255,107,0,0.3)";
+      setTimeout(() => {
+        el.style.backgroundColor = "";
+      }, 1000);
+    }
+  };
+
+  const scrollToAnomaly = (index) => {
+    const el = document.getElementById(`anomaly-${index}`);
+    const parent = el?.closest('.overflow-y-auto');
+    if (el && parent) {
+      const topPos = el.offsetTop - 20;
+      parent.scrollTo({ top: topPos, behavior: "smooth" });
+      
+      // Brief highlights effect
+      el.style.transition = "all 0.3s ease";
+      el.style.borderColor = "var(--accent)";
+      setTimeout(() => {
+        el.style.borderColor = "";
+      }, 1000);
+    }
+  };
+
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -261,6 +370,7 @@ export default function GrammarForensicView({
                         elements.push(
                           <motion.span
                             key={i}
+                            id={`hl-${i + 1}`}
                             initial={{
                               backgroundColor: "rgba(255, 107, 0, 0)",
                             }}
@@ -273,6 +383,7 @@ export default function GrammarForensicView({
                             onClick={(e) => {
                               e.stopPropagation();
                               showHl(hl, i, e);
+                              scrollToAnomaly(i + 1);
                             }}
                           >
                             <span className="relative">
@@ -296,6 +407,7 @@ export default function GrammarForensicView({
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
+                  onBlur={() => takeSnapshot(content)}
                   placeholder="Paste academic manuscript for neural forensic auditing..."
                   className="flex-1 h-full w-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
                 />
@@ -314,6 +426,7 @@ export default function GrammarForensicView({
               setIsAnalyzing={setIsAnalyzing}
               content={content}
               getCategoryColor={getCategoryColor}
+              scrollToHl={scrollToHl}
             />
           </div>
         )}
@@ -322,6 +435,25 @@ export default function GrammarForensicView({
       {/* Unified Industrial Footer (Responsive) */}
       <div className="h-[48px] md:h-[56px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
         <div className="flex items-center gap-3 md:gap-8">
+          <div className="flex items-center gap-2 mr-4 border-r border-border/10 pr-4">
+            <button
+              onClick={undo}
+              disabled={historyIndex <= 0}
+              className="p-1.5 rounded hover:bg-surface-3 text-muted disabled:opacity-20 transition-all"
+              title="Undo (Snapshot)"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-1.5 rounded hover:bg-surface-3 text-muted disabled:opacity-20 transition-all"
+              title="Redo (Snapshot)"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
           <div className="flex items-center gap-3 md:gap-6">
             {[
               {
