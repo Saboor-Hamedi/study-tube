@@ -18,6 +18,8 @@ export default function NeuralFeedbackHub({
   content,
   getCategoryColor,
   scrollToHl,
+  onApplySuggestion,
+  setGhostPreview,
 }) {
   return (
     <div className="w-full md:w-[300px] bg-surface flex flex-col border-l border-border min-h-0 h-full">
@@ -238,15 +240,28 @@ export default function NeuralFeedbackHub({
                         </div>
                       </div>
 
-                      <div className="flex flex-col justify-center space-y-1.5 bg-accent/5 p-3 rounded-lg border border-accent/10">
+                      <div className="flex flex-col justify-center space-y-1.5 bg-accent/5 p-3 rounded-lg border border-accent/10 relative group/action">
                         <span className="text-[7px] font-black text-accent/40 uppercase tracking-widest">
                           Neural Suggestion
                         </span>
-                        <div className="flex items-center gap-2">
-                          <ArrowRight className="h-3 w-3 text-accent" />
-                          <span className="text-[12px] font-black text-text tracking-tight">
-                            {hl.suggestion}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ArrowRight className="h-3 w-3 text-accent" />
+                            <span className="text-[12px] font-black text-text tracking-tight">
+                              {hl.suggestion}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onApplySuggestion(hl.suggestion, hl);
+                            }}
+                            onMouseEnter={() => setGhostPreview(hl)}
+                            onMouseLeave={() => setGhostPreview(null)}
+                            className="h-6 px-3 bg-accent hover:brightness-110 text-white rounded-[4px] text-[8px] font-black uppercase tracking-widest transition-all shadow-lg shadow-accent/20 active:scale-95 shrink-0"
+                          >
+                            Apply
+                          </button>
                         </div>
                       </div>
                     </div>

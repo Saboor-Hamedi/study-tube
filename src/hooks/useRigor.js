@@ -147,7 +147,59 @@ export const useRigor = () => {
         }
       });
 
-      // 2. NEURAL FUZZY LOOP (Similarity Scoring)
+      // 2. REDUNDANCY DETECTION (Robust Phrase/Word Duplicates)
+      const redundancyRules = [
+        {
+          regex: /\b(\w+)\s+\1\b/gi,
+          reason: "Duplicate Word",
+          exp: "Consecutive repetition detected.",
+        },
+        {
+          regex: /\b(\w+\s+\w+)\s+\1\b/gi,
+          reason: "Duplicate Phrase",
+          exp: "Repeating linguistic structure detected.",
+        },
+      ];
+
+      const legitimatePairs = new Set([
+        "had had",
+        "that that",
+        "can can",
+        "is is", // Sometimes used in specific emphasis
+        "it it",
+      ]);
+
+      const dictionarySet = new Set([...dbWhitelist]);
+
+      redundancyRules.forEach((rule) => {
+        let match;
+        const regex = new RegExp(rule.regex);
+        while ((match = regex.exec(text)) !== null) {
+          const matchText = match[0].toLowerCase();
+          
+          // Neural Clearance: Check common defaults OR user's personal dictionary
+          const isWhitelisted = 
+            legitimatePairs.has(matchText) || 
+            dictionarySet.has(matchText) ||
+            dictionarySet.has(match[1].toLowerCase());
+
+          if (!isWhitelisted) {
+            // Check if already highlighted
+            if (!highlights.find((h) => h.start === match.index)) {
+              highlights.push({
+                start: match.index,
+                end: match.index + match[0].length,
+                type: "syntax",
+                reason: rule.reason,
+                suggestion: match[1], // Only the first occurrence
+                explanation: rule.exp,
+              });
+            }
+          }
+        }
+      });
+
+      // 3. NEURAL FUZZY LOOP (Similarity Scoring)
       const words = text.split(/(\s+)/);
       let currentIndex = 0;
       words.forEach((word) => {
@@ -303,6 +355,7 @@ CRITICAL RULES:
 2. SURGICAL PRECISION: Target the smallest possible phrase (ideally 1-3 words). 
 3. NO ADDITIONS: Do not add words like "Recommendation:" or "Note:". 
 4. PRESERVE INTENT: Only suggest a change if the original word is informal, technically imprecise, or grammatically incorrect.
+5. REDUNDANCY AUDIT: Surgically flag consecutive duplicate words or phrases (e.g. "length is length is") as "syntax" anomalies and suggest the single version.
 
 Return ONLY a valid JSON array of objects:
 { "text": "the exact small phrase from text", "type": "grammar|syntax|diction|tone", "suggestion": "better 1-3 words", "explanation": "brief reason" }

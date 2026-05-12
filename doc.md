@@ -59,6 +59,15 @@ Every research entry is indexed in an **FTS5 Virtual Table**. This allows for:
 - Phrase ranking (the most relevant research surfaces first).
 - Near-instant global search across the entire archive.
 
+## Neural Forensic Suite (Linguistic Audit Layer)
+
+The manuscript interaction layer has been industrialized for surgical text replacement and analytical accuracy:
+
+- **Contextual Ghost Previews**: Enables users to visualize neural corrections in-place before committing changes through a transparent spatial anchor and absolute neural overlay.
+- **Zero-Shift Layout Engine**: Preserves document layout integrity during audits by preventing paragraph reflowing during the preview phase.
+- **Surgical Index Shifting**: An optimistic UI update pattern that recalculates forensic highlight positions in real-time, eliminating the need for full-document re-scans after corrections.
+- **Strictly Inline Logic**: All forensic spans are rendered using native inline flow to ensure perfect baseline alignment and 100% character coverage.
+
 ## IPC Bridge (Inter-Process Communication)
 
 The frontend communicates with the SQLite service through a hardened **IPC Bridge**:

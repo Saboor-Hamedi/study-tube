@@ -13,7 +13,7 @@ import {
   ArrowRight,
   X,
   RotateCcw,
-  RotateCw
+  RotateCw,
 } from "lucide-react";
 import {
   useFloating,
@@ -52,25 +52,29 @@ export default function GrammarForensicView({
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 800);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
   const [selectedHl, setSelectedHl] = useState(null);
+  const [ghostPreview, setGhostPreview] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const containerRef = useRef(null);
   const closeTimeoutRef = useRef(null);
 
   // Snapshot Helper
-  const takeSnapshot = useCallback((newText) => {
-    setHistory(prev => {
-      const sliced = prev.slice(0, historyIndex + 1);
-      const updated = [...sliced, newText];
-      // Keep last 50 edits
-      if (updated.length > 50) return updated.slice(1);
-      return updated;
-    });
-    setHistoryIndex(prev => {
-      const next = prev + 1;
-      return next > 49 ? 49 : next;
-    });
-  }, [historyIndex]);
+  const takeSnapshot = useCallback(
+    (newText) => {
+      setHistory((prev) => {
+        const sliced = prev.slice(0, historyIndex + 1);
+        const updated = [...sliced, newText];
+        // Keep last 50 edits
+        if (updated.length > 50) return updated.slice(1);
+        return updated;
+      });
+      setHistoryIndex((prev) => {
+        const next = prev + 1;
+        return next > 49 ? 49 : next;
+      });
+    },
+    [historyIndex],
+  );
 
   const undo = () => {
     if (historyIndex > 0) {
@@ -141,7 +145,6 @@ export default function GrammarForensicView({
 
     // Phase 2: Neural Deep Audit (Smart Suggestions)
     if (api) {
-      if (showToast) showToast("Initializing Neural Deep Audit...", "info");
       const aiAnomalies = await analyzeAI(content, api);
 
       if (aiAnomalies && aiAnomalies.length > 0) {
@@ -165,23 +168,24 @@ export default function GrammarForensicView({
             highlights: sorted,
           };
         });
-        if (showToast) showToast("Neural Deep Audit Complete", "success");
       }
     }
   };
 
-  const handleApplySuggestion = async (suggestion) => {
-    if (!selectedHl) return;
-    
+  const handleApplySuggestion = async (suggestion, specificHl = null) => {
+    const hl = specificHl || selectedHl;
+    if (!hl) return;
+
     takeSnapshot(content);
 
-    let start = selectedHl.start;
-    let end = selectedHl.end;
+    let start = hl.start;
+    let end = hl.end;
 
     // Phrase-Aware Expansion (Surgical)
     // Only expand if the suggestion is a full sentence fix (contains punctuation or is long)
-    const isNeuralFix = suggestion.split(/\s+/).length > 4 || /[.!?]$/.test(suggestion);
-    
+    const isNeuralFix =
+      suggestion.split(/\s+/).length > 4 || /[.!?]$/.test(suggestion);
+
     if (isNeuralFix) {
       // Look back for nearest boundary (max 150 chars for safety)
       const textBefore = content.substring(Math.max(0, start - 150), start);
@@ -189,7 +193,7 @@ export default function GrammarForensicView({
         textBefore.lastIndexOf("."),
         textBefore.lastIndexOf("!"),
         textBefore.lastIndexOf("?"),
-        textBefore.lastIndexOf("\n")
+        textBefore.lastIndexOf("\n"),
       );
       if (lastBoundary !== -1) {
         // Adjust start to be absolute
@@ -198,9 +202,12 @@ export default function GrammarForensicView({
       } else if (start < 150) {
         start = 0;
       }
-      
+
       // Look forward for nearest boundary (max 150 chars for safety)
-      const textAfter = content.substring(end, Math.min(content.length, end + 150));
+      const textAfter = content.substring(
+        end,
+        Math.min(content.length, end + 150),
+      );
       const nextBoundary = textAfter.search(/[.!?\n]/);
       if (nextBoundary !== -1) {
         end = end + nextBoundary + 1;
@@ -210,21 +217,35 @@ export default function GrammarForensicView({
     }
 
     const newContent =
-      content.substring(0, start).replace(/[ \t]+$/, "") + 
-      (start > 0 && !/\n$/.test(content.substring(0, start)) ? " " : "") + 
-      suggestion.trim() + 
-      (end < content.length && !/^\n/.test(content.substring(end)) ? " " : "") + 
+      content.substring(0, start).replace(/[ \t]+$/, "") +
+      (start > 0 && !/\n$/.test(content.substring(0, start)) ? " " : "") +
+      suggestion.trim() +
+      (end < content.length && !/^\n/.test(content.substring(end)) ? " " : "") +
       content.substring(end).replace(/^[ \t]+/, "");
+
+    // Surgical Index Shift: Calculate the length delta to avoid full re-analysis
+    const delta = suggestion.trim().length - (end - start);
+
+    // Update highlights optimistically by shifting indices
+    setDiagnostics((prev) => {
+      const existing = prev.highlights || [];
+      const updated = existing
+        .filter((h) => h.start !== hl.start) // Remove applied highlight
+        .map((h) => {
+          if (h.start >= end) {
+            return {
+              ...h,
+              start: h.start + delta,
+              end: h.end + delta,
+            };
+          }
+          return h;
+        });
+      return { ...prev, highlights: updated };
+    });
 
     setContent(newContent);
     setSelectedHl(null);
-
-    const results = await analyze(newContent);
-    if (results) {
-      setDiagnostics(results.diagnostics);
-    }
-
-    if (showToast) showToast("Correction Applied", "success");
   };
 
   const handleAddToDictionary = async (word) => {
@@ -290,6 +311,7 @@ export default function GrammarForensicView({
   const hideHl = () => {
     closeTimeoutRef.current = setTimeout(() => {
       setSelectedHl(null);
+      setGhostPreview(null);
     }, 400); // Slightly longer buffer for better UX
   };
 
@@ -301,7 +323,10 @@ export default function GrammarForensicView({
     const el = document.getElementById(`hl-${index}`);
     if (el && containerRef.current) {
       // Calculate position relative to container
-      const topPos = el.offsetTop - (containerRef.current.offsetHeight / 2) + (el.offsetHeight / 2);
+      const topPos =
+        el.offsetTop -
+        containerRef.current.offsetHeight / 2 +
+        el.offsetHeight / 2;
       containerRef.current.scrollTo({ top: topPos, behavior: "smooth" });
 
       // Brief pulse effect
@@ -315,11 +340,11 @@ export default function GrammarForensicView({
 
   const scrollToAnomaly = (index) => {
     const el = document.getElementById(`anomaly-${index}`);
-    const parent = el?.closest('.overflow-y-auto');
+    const parent = el?.closest(".overflow-y-auto");
     if (el && parent) {
       const topPos = el.offsetTop - 20;
       parent.scrollTo({ top: topPos, behavior: "smooth" });
-      
+
       // Brief highlights effect
       el.style.transition = "all 0.3s ease";
       el.style.borderColor = "var(--accent)";
@@ -377,8 +402,7 @@ export default function GrammarForensicView({
                             animate={{
                               backgroundColor: getCategoryBg(hl.type),
                             }}
-                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} px-0.5 rounded-sm transition-colors relative inline-flex items-center gap-0.5 leading-none group/hl`}
-                            onMouseEnter={(e) => showHl(hl, i, e)}
+                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} rounded-sm transition-all relative inline leading-none group/hl font-light tracking-wide px-[1px] -mx-[1px]`}
                             onMouseLeave={hideHl}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -386,8 +410,31 @@ export default function GrammarForensicView({
                               scrollToAnomaly(i + 1);
                             }}
                           >
-                            <span className="relative">
-                              {content.substring(hl.start, hl.end)}
+                            <span 
+                              className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline"
+                              style={{ display: "inline-grid" }}
+                            >
+                              {/* Spatial Anchor (Keeps the manuscript footprint stable) */}
+                              <span 
+                                className={`grid-area-1-1 ${ghostPreview?.start === hl.start ? "text-transparent" : ""} font-light tracking-wide`}
+                                style={{ gridArea: "1/1" }}
+                              >
+                                {content.substring(hl.start, hl.end)}
+                              </span>
+
+                              {/* Neural Ghost (Manifests exactly on top of anchor) */}
+                              {ghostPreview?.start === hl.start && (
+                                <span
+                                  className="grid-area-1-1 text-accent italic font-light tracking-wide whitespace-nowrap"
+                                  style={{ gridArea: "1/1" }}
+                                >
+                                  {ghostPreview.suggestion === "Omit" ? (
+                                    <span className="opacity-40 italic">[Delete]</span>
+                                  ) : (
+                                    ghostPreview.suggestion
+                                  )}
+                                </span>
+                              )}
                             </span>
                             <span
                               className={`absolute -top-1.5 -right-1 text-[7px] font-black opacity-80 px-0.5 rounded-[2px] leading-none ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
@@ -409,7 +456,7 @@ export default function GrammarForensicView({
                   onChange={(e) => setContent(e.target.value)}
                   onBlur={() => takeSnapshot(content)}
                   placeholder="Paste academic manuscript for neural forensic auditing..."
-                  className="flex-1 h-full w-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
+                  className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
                 />
               )}
             </div>
@@ -419,15 +466,17 @@ export default function GrammarForensicView({
         {/* Diagnostics Sidebar (Desktop Only) */}
         {!isMobile && isSidebarOpen && (
           <div className="shrink-0 z-[60] relative">
-            <NeuralFeedbackHub
-              diagnostics={diagnostics}
-              isNeuralScanning={isNeuralScanning}
-              isAnalyzing={isAnalyzing}
-              setIsAnalyzing={setIsAnalyzing}
-              content={content}
-              getCategoryColor={getCategoryColor}
-              scrollToHl={scrollToHl}
-            />
+          <NeuralFeedbackHub
+            diagnostics={diagnostics}
+            isNeuralScanning={isNeuralScanning}
+            isAnalyzing={isAnalyzing}
+            setIsAnalyzing={setIsAnalyzing}
+            content={content}
+            getCategoryColor={getCategoryColor}
+            scrollToHl={scrollToAnomaly}
+            onApplySuggestion={handleApplySuggestion}
+            setGhostPreview={setGhostPreview}
+          />
           </div>
         )}
       </div>
@@ -565,6 +614,7 @@ export default function GrammarForensicView({
               onClose={() => setSelectedHl(null)}
               onMouseEnter={cancelHide}
               onMouseLeave={hideHl}
+              setGhostPreview={setGhostPreview}
               getCategoryColor={getCategoryColor}
               getCategoryBg={getCategoryBg}
             />
@@ -582,6 +632,9 @@ export default function GrammarForensicView({
             setIsAnalyzing={setIsAnalyzing}
             content={content}
             getCategoryColor={getCategoryColor}
+            scrollToHl={scrollToAnomaly}
+            onApplySuggestion={handleApplySuggestion}
+            setGhostPreview={setGhostPreview}
           />
         </div>
       )}
