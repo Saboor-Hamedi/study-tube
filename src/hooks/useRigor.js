@@ -32,8 +32,11 @@ export const useRigor = () => {
 
   const addToDictionary = useCallback(async (word) => {
     if (!word) return;
-    const cleanWord = word.toLowerCase().replace(/[^a-z]/g, "");
-    
+    const cleanWord = word
+      .toLowerCase()
+      .replace(/’/g, "'")
+      .replace(/[^a-z']/g, "");
+
     // Attempt Electron Bridge first
     if (window.youtubeAPI?.addForensicWord) {
       try {
@@ -60,7 +63,10 @@ export const useRigor = () => {
       }
       return { success: false, message: "Cloud Bridge Connectivity Error" };
     } catch (err) {
-      return { success: false, message: "Cloud Bridge Offline (Verify Port 8000)" };
+      return {
+        success: false,
+        message: "Cloud Bridge Offline (Verify Port 8000)",
+      };
     }
   }, []);
 
@@ -193,7 +199,10 @@ export const useRigor = () => {
       const words = text.split(/(\s+)/);
       let currentIndex = 0;
       words.forEach((word) => {
-        const cleanWord = word.toLowerCase().replace(/[^a-z]/g, "");
+        const cleanWord = word
+          .toLowerCase()
+          .replace(/’/g, "'")
+          .replace(/[^a-z']/g, "");
         if (cleanWord.length >= 3 && !truthSet.has(cleanWord)) {
           // Only check if not already highlighted by forensic rules
           const isAlreadyFlagged = highlights.some(
@@ -281,34 +290,41 @@ export const useRigor = () => {
         currentIndex += word.length;
       });
 
-      const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
-      const penaltyMultiplier = wordCount < 20 ? 1.5 : 1;
-
+      const totalAnomalies = highlights.length;
       const gramCount = highlights.filter((h) => h.type === "grammar").length;
       const spellCount = highlights.filter((h) => h.type === "spelling").length;
       const syntaxCount = highlights.filter((h) => h.type === "syntax").length;
       const dictionCount = highlights.filter(
         (h) => h.type === "diction",
       ).length;
+      const toneCount = highlights.filter((h) => h.type === "tone").length;
 
-      const gramScore = Math.max(0, 100 - gramCount * 3 * penaltyMultiplier);
-      const spellScore = Math.max(0, 100 - spellCount * 3 * penaltyMultiplier);
+      // Neural Scoring Algorithm: Deduct for specific types + General Anomaly Penalty
+      // This ensures that even if an error is miscategorized, it still hurts the relevant score
+      const gramScore = Math.max(
+        0,
+        100 - gramCount * 8 - dictionCount * 1.5 - totalAnomalies * 0.5,
+      );
+      const spellScore = Math.max(
+        0,
+        100 - spellCount * 6 - totalAnomalies * 0.5,
+      );
       const syntaxScore = Math.max(
         0,
-        100 - syntaxCount * 3 * penaltyMultiplier,
+        100 - syntaxCount * 8 - toneCount * 2 - totalAnomalies * 0.5,
       );
-      const dictionScore = Math.max(
-        0,
-        100 - dictionCount * 2 * penaltyMultiplier,
-      );
+      const dictionScore = Math.max(0, 100 - dictionCount * 5 - spellCount * 1);
       const academicScore = Math.max(
         0,
-        90 - highlights.length * 1 * penaltyMultiplier,
+        100 - totalAnomalies * 2 - toneCount * 5,
       );
 
       const writingScore = Math.round(
-        (gramScore + spellScore + syntaxScore + dictionScore + academicScore) /
-          5,
+        gramScore * 0.3 +
+          spellScore * 0.1 +
+          syntaxScore * 0.25 +
+          dictionScore * 0.15 +
+          academicScore * 0.2,
       );
 
       setIsNeuralScanning(false);

@@ -1,6 +1,13 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { X, ArrowRight, AlertCircle, CheckCircle, PlusCircle, Trash2 } from "lucide-react";
+import {
+  X,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
 
 export default function ForensicDropdown({
   selectedHl,
@@ -23,52 +30,74 @@ export default function ForensicDropdown({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: selectedHl.preferUp ? -10 : 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       style={{
         position: "fixed",
-        top: selectedHl.top,
+        top: selectedHl.preferUp ? "auto" : selectedHl.top,
+        bottom: selectedHl.preferUp ? selectedHl.bottom : "auto",
         left: selectedHl.left,
         transform: "none",
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`z-[999] w-[220px] bg-[var(--surface-2)] border border-[var(--border)] ${getCategoryColor(selectedHl.type).replace("text-", "border-t-")} border-t-2 shadow-2xl rounded-lg overflow-hidden flex flex-col font-sans backdrop-blur-xl pointer-events-auto`}
+      className={`z-[9999] w-[220px] bg-[var(--surface-2)] border border-[var(--border)] ${getCategoryColor(selectedHl.type).replace("text-", "border-t-")} border-t-2 shadow-2xl rounded-lg overflow-hidden flex flex-col font-sans backdrop-blur-xl pointer-events-auto`}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="p-3 space-y-3">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <div className={`p-0.5 rounded ${getCategoryBg(selectedHl.type)}`}>
-              <AlertCircle className={`h-2.5 w-2.5 ${getCategoryColor(selectedHl.type)}`} />
+      {/* Industrial Title Bar */}
+      <div className="h-7 bg-surface-3 border-b border-border flex items-center justify-between pl-3 shrink-0">
+        <span className="text-[7px] font-black text-muted/40 capitalize tracking-[0.2em]">
+          Forensic Audit
+        </span>
+        <button
+          onClick={onClose}
+          className="h-full px-3 hover:bg-red-500/10 text-muted hover:text-red-500 transition-colors border-l border-border"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+
+      <div className="p-2 space-y-3">
+        {/* Analysis Header - Repositioned under Title Bar */}
+        <div className="flex items-stretch gap-2.5">
+          {/* Left Icon Rail */}
+          <div className="flex flex-col items-center shrink-0 py-0.5">
+            <div
+              className={`p-0.5 rounded ${getCategoryBg(selectedHl.type)} flex mb-auto`}
+            >
+              <AlertCircle
+                className={`h-3 w-3 ${getCategoryColor(selectedHl.type)}`}
+              />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className={`text-[11px] font-black tracking-tight text-text`}>
-                  {originalWord}
-                </span>
-                <span className={`text-[8px] font-black uppercase tracking-wider ${getCategoryColor(selectedHl.type)}`}>
-                  {selectedHl.reason || "Audit"}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 mt-0.5">
-                <X className="h-2 w-2 text-red-500/50" />
-                <span className="text-[6px] font-bold text-red-500/40 uppercase tracking-tighter">Forensic Flag (Unverified)</span>
-              </div>
-            </div>
+            <X className="h-3 w-3 text-red-500/40 mt-auto" />
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--surface-3)] rounded text-muted transition-colors">
-            <X className="h-3 w-3" />
-          </button>
+
+          {/* Right Text Content Rail */}
+          <div className="flex flex-col min-w-0 gap-1.5 flex-1">
+            <span className="text-[13px] font-black tracking-tight text-text truncate max-w-[160px] leading-tight">
+              {originalWord}
+            </span>
+            <div className="flex">
+              <span
+                className={`text-[8px] font-black capitalize tracking-wider ${getCategoryColor(selectedHl.type)} bg-current/5 px-1.5 py-0.5 rounded-sm`}
+              >
+                {selectedHl.reason || "Audit"}
+              </span>
+            </div>
+            <span className="text-[9px] font-bold text-red-500/40 capitalize tracking-tight italic leading-none py-0.5">
+              Linguistic Anomaly
+            </span>
+          </div>
         </div>
 
         {/* The Comparison HUD */}
         <div className="bg-[var(--surface-3)] border border-[var(--border)] rounded-md p-2 relative overflow-hidden group/card">
           <div className="flex flex-col gap-1.5 mb-2">
             <div className="flex items-center justify-between">
-              <span className="text-[7px] font-black text-red-500/40 uppercase tracking-widest">Flagged</span>
+              <span className="text-[7px] font-black text-red-500/40 capitalize tracking-widest">
+                Flagged
+              </span>
               <X className="h-2 w-2 text-red-500/40" />
             </div>
             <div className="flex items-center gap-2">
@@ -77,14 +106,16 @@ export default function ForensicDropdown({
               </span>
               <ArrowRight className="h-3 w-3 text-emerald-500/50" />
               <span className="text-[11px] text-emerald-500 font-black truncate">
-                {selectedHl.suggestion === "Omit" ? "Delete" : selectedHl.suggestion}
+                {selectedHl.suggestion === "Omit"
+                  ? "Delete"
+                  : selectedHl.suggestion}
               </span>
             </div>
           </div>
 
           <button
             onClick={() => onApplySuggestion(selectedHl.suggestion)}
-            className="w-full h-7 bg-emerald-500 hover:bg-emerald-400 text-white rounded font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/10 active:scale-[0.98]"
+            className="w-full h-7 bg-emerald-500 hover:bg-emerald-400 text-white rounded font-black text-[9px] capitalize tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/10 active:scale-[0.98]"
           >
             <CheckCircle className="h-3 w-3" />
             Apply
@@ -95,7 +126,9 @@ export default function ForensicDropdown({
         <div className="px-1 space-y-1.5">
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-[var(--border)]" />
-            <span className="text-[7px] font-black text-muted/30 uppercase tracking-[0.2em]">Logic</span>
+            <span className="text-[7px] font-black text-muted/30 capitalize tracking-[0.2em]">
+              Logic
+            </span>
             <div className="h-px flex-1 bg-[var(--border)]" />
           </div>
           <p className="text-[10px] text-text/80 leading-relaxed font-medium">
@@ -105,15 +138,15 @@ export default function ForensicDropdown({
 
         {/* Action Grid */}
         <div className="pt-2 flex items-center gap-1.5 border-t border-[var(--border)]">
-          <button 
-            className="flex-1 h-7 flex items-center justify-center gap-1 hover:bg-red-500/5 rounded text-[8px] font-bold text-muted hover:text-red-500 transition-all uppercase tracking-wider border border-transparent hover:border-red-500/10"
+          <button
+            className="flex-1 h-7 flex items-center justify-center gap-1 hover:bg-red-500/5 rounded text-[8px] font-bold text-muted hover:text-red-500 transition-all capitalize tracking-wider border border-transparent hover:border-red-500/10"
             onClick={onClose}
           >
             <Trash2 className="h-2.5 w-2.5" />
             Ignore
           </button>
-          <button 
-            className="flex-1 h-7 flex items-center justify-center gap-1 hover:bg-accent/5 rounded text-[8px] font-bold text-muted hover:text-accent transition-all uppercase tracking-wider border border-transparent hover:border-accent/10"
+          <button
+            className="flex-1 h-7 flex items-center justify-center gap-1 hover:bg-accent/5 rounded text-[8px] font-bold text-muted hover:text-accent transition-all capitalize tracking-wider border border-transparent hover:border-accent/10"
             onClick={() => onAddToDictionary(originalWord)}
           >
             <PlusCircle className="h-2.5 w-2.5" />

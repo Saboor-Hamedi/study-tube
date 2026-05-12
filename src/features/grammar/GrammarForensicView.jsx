@@ -131,13 +131,16 @@ export default function GrammarForensicView({
   const handleAddToDictionary = async (word) => {
     if (!word) return;
     const result = await addToDictionary(word);
-    
+
     if (result.success) {
-      if (showToast) showToast(`"${word}" added to forensic whitelist`, "success");
-      // Recalculate analysis to remove flags for this word
-      handleDeepAnalyze();
+      if (showToast) showToast(`"${word}" added to Dictionary`, "success");
+      // Instant Clearance: Force re-analysis to remove the flag immediately
+      setTimeout(() => {
+        handleDeepAnalyze();
+      }, 50); 
     } else {
-      if (showToast) showToast(`Failed to whitelist "${word}": ${result.message}`, "error");
+      if (showToast)
+        showToast(`Failed to whitelist "${word}": ${result.message}`, "error");
     }
   };
 
@@ -181,17 +184,14 @@ export default function GrammarForensicView({
     const spaceBelow = window.innerHeight - rect.bottom;
     const preferUp = spaceBelow < 400;
 
-    // Parallel Positioning: Open to the right/left of the word
-    const spaceRight = window.innerWidth - rect.right;
-    const openLeft = spaceRight < 250; // Not enough room on the right
-    
     setSelectedHl({
       ...hl,
       index: i + 1,
-      // Fixed coordinates for side-by-side audit
-      top: rect.top - 10, // Slight upward nudge for alignment
-      left: openLeft ? rect.left - 240 : rect.right + 20,
-      preferUp: false, // Not used in fixed side-mode
+      // Dual-Anchor Vertical Logic
+      top: rect.bottom + 8,
+      bottom: window.innerHeight - rect.top + 8,
+      left: Math.max(10, Math.min(rect.left, window.innerWidth - 230)),
+      preferUp,
     });
   };
 
