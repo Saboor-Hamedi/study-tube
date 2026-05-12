@@ -517,6 +517,23 @@ export default function GrammarForensicView({
             />
           </div>
         )}
+
+        {/* Diagnostics Sidebar (Mobile Fallback - Stacks underneath) */}
+        {isMobile && isAnalyzing && (
+          <div className="w-full h-[260px] shrink-0 border-t border-border bg-surface overflow-hidden z-[60]">
+            <NeuralFeedbackHub
+              diagnostics={diagnostics}
+              isNeuralScanning={isNeuralScanning}
+              isAnalyzing={isAnalyzing}
+              setIsAnalyzing={setIsAnalyzing}
+              content={content}
+              getCategoryColor={getCategoryColor}
+              scrollToHl={scrollToHl}
+              onApplySuggestion={handleApplySuggestion}
+              setGhostPreview={setGhostPreview}
+            />
+          </div>
+        )}
       </div>
 
       {/* Unified Industrial Footer (Responsive) */}
@@ -659,23 +676,6 @@ export default function GrammarForensicView({
           </div>
         )}
       </AnimatePresence>
-
-      {/* Mobile Diagnostics Fallback */}
-      {isMobile && isAnalyzing && (
-        <div className="w-full shrink-0 border-t border-border bg-surface overflow-hidden">
-          <NeuralFeedbackHub
-            diagnostics={diagnostics}
-            isNeuralScanning={isNeuralScanning}
-            isAnalyzing={isAnalyzing}
-            setIsAnalyzing={setIsAnalyzing}
-            content={content}
-            getCategoryColor={getCategoryColor}
-            scrollToHl={scrollToHl}
-            onApplySuggestion={handleApplySuggestion}
-            setGhostPreview={setGhostPreview}
-          />
-        </div>
-      )}
     </div>
   );
 }

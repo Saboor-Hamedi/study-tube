@@ -271,8 +271,7 @@ export const useRigor = () => {
                 type: "diction",
                 reason: "Specialized Term",
                 suggestion: null,
-                explanation:
-                  "This word is not recognized by the system.",
+                explanation: "This word is not recognized by the system.",
               });
             }
           }
@@ -358,7 +357,6 @@ CRITICAL RULES:
 5. REDUNDANCY AUDIT: Surgically flag consecutive duplicate words or phrases (e.g. "length is length is") as "syntax" anomalies.
 6. AVOID OVER-FORMALIZATION: Do not use awkward quoting or add redundant auxiliary verbs. If a phrase is standard English, do not flag it.
 7. CONCISE FLOW: Suggestions must be simpler or more precise than the original. Never add complex grammatical scaffolding.
-8. ACADEMIC INTEGRITY (IELTS): Never suggest contractions (e.g., "don't", "you're"). Always prefer formal full forms. Be aware if the text is discussing grammar examples and do not "correct" those examples.
 
 Return ONLY a valid JSON array of objects:
 { "text": "the exact small phrase from text", "type": "grammar|syntax|diction|tone", "suggestion": "better 1-3 words", "explanation": "brief reason" }

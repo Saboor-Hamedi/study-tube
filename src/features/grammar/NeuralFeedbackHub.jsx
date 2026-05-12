@@ -22,8 +22,8 @@ export default function NeuralFeedbackHub({
   setGhostPreview,
 }) {
   return (
-    <div className="w-full md:w-[300px] bg-surface flex flex-col border-l border-border min-h-0 h-full">
-      <div className="h-9 md:h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
+    <div className="w-full md:w-[300px] bg-surface flex flex-col border-l border-border min-h-0 h-full overflow-x-hidden">
+      <div className="h-7 md:h-12 px-3 md:px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
         <div className="flex items-center gap-3">
           <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-accent" />
           <h2 className="text-[10px] md:text-[12px] font-black tracking-tight uppercase">
@@ -40,10 +40,10 @@ export default function NeuralFeedbackHub({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scroll">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scroll">
         {/* High-Density Metrics Grid */}
         <div className="border-b border-border/5 bg-surface-2/10">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 p-1.5">
+          <div className="grid grid-cols-3 md:grid-cols-3 gap-0.5 md:gap-1 p-0.5 md:p-1">
             {[
               {
                 label: "Grammar",
@@ -88,7 +88,7 @@ export default function NeuralFeedbackHub({
             ].map((stat) => (
               <div
                 key={stat.label}
-                className={`p-2 rounded-[6px] border ${stat.bg} ${stat.border} flex flex-col items-center justify-center transition-all hover:border-accent/20 group`}
+                className={`p-1 md:p-2 rounded-[6px] border ${stat.bg} ${stat.border} flex flex-col items-center justify-center transition-all hover:border-accent/20 group`}
               >
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <stat.icon
@@ -157,7 +157,7 @@ export default function NeuralFeedbackHub({
         )}
 
         {/* Explainable Feedback Cards */}
-        <div className="p-4 space-y-4">
+        <div className="p-2 md:p-4 space-y-3 md:space-y-4">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-[8px] md:text-[9px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
               <Brain className="h-3 w-3 md:h-3.5 md:w-3.5 text-accent" />
@@ -239,7 +239,7 @@ export default function NeuralFeedbackHub({
                       </div>
 
                       {/* Comparison HUD */}
-                      <div className="bg-surface-3/80 border border-border rounded-md p-2 space-y-2">
+                      <div className="bg-surface-3/80 border border-border rounded-md p-1.5 md:p-2 space-y-1.5 md:space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-[7px] font-black text-red-500/40 uppercase tracking-[0.2em]">
                             Flagged
