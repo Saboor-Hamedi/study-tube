@@ -1,6 +1,6 @@
 import os
 
-file_path = r'b:\study-tube\src\hooks\rigor\commonWords.js'
+file_path = r'b:\study-tube\src\hooks\rigor\legitimateDoubles.js'
 
 with open(file_path, 'r', encoding='utf-8') as f:
     lines = f.readlines()
@@ -18,4 +18,4 @@ for i, line in enumerate(lines):
 with open(file_path, 'w', encoding='utf-8') as f:
     f.writelines(new_lines)
 
-print("Successfully added commas to commonWords.js")
+print("Successfully added commas to legitimateDoubles.js")

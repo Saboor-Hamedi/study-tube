@@ -1,32 +1,25 @@
-import sqlite3
 import psycopg2
+import re
 import os
 
-def migrate_whitelist():
-    sqlite_path = "studytube.db"
-    if not os.path.exists(sqlite_path):
-        print(f"[ERROR] Legacy database not found at {sqlite_path}")
+def migrate_from_js():
+    js_path = r'b:\study-tube\src\hooks\rigor\legitimateDoubles.js'
+    
+    if not os.path.exists(js_path):
+        print(f"[ERROR] Lexicon file not found at {js_path}")
         return
 
+    print("[MIGRATE] Extracting words from legitimateDoubles.js...")
+    
     try:
-        # 1. Connect to Legacy SQLite
-        sl_conn = sqlite3.connect(sqlite_path)
-        sl_cur = sl_conn.cursor()
+        with open(js_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            # Extract words from the "word", syntax
+            words = re.findall(r'"([^"]+)"', content)
         
-        # Check if table exists
-        sl_cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='forensic_whitelist';")
-        if not sl_cur.fetchone():
-            print("[INFO] No forensic_whitelist table in SQLite. Nothing to migrate.")
-            return
+        print(f"[MIGRATE] Found {len(words)} words in Lexicon.")
 
-        sl_cur.execute("SELECT word FROM forensic_whitelist")
-        words = [row[0] for row in sl_cur.fetchall()]
-        print(f"[MIGRATE] Found {len(words)} words in legacy SQLite.")
-
-        if not words:
-            return
-
-        # 2. Connect to Production PostgreSQL
+        # Connect to Production PostgreSQL
         pg_conn = psycopg2.connect(
             host="localhost",
             database="writella",
@@ -36,25 +29,33 @@ def migrate_whitelist():
         )
         pg_cur = pg_conn.cursor()
 
-        # 3. Industrial Batch Insert
-        inserted_count = 0
-        for word in words:
-            pg_cur.execute(
+        print("[MIGRATE] Synchronizing with PostgreSQL (Skipping Duplicates)...")
+
+        # Use batching for industrial speed
+        batch_size = 1000
+        for i in range(0, len(words), batch_size):
+            batch = words[i:i + batch_size]
+            # Strip and lower for consistency
+            clean_batch = [(w.strip().lower(),) for w in batch]
+            
+            # Execute batch insert
+            pg_cur.executemany(
                 "INSERT INTO forensic_whitelist (word) VALUES (%s) ON CONFLICT DO NOTHING",
-                (word.strip().lower(),)
+                clean_batch
             )
-            if pg_cur.rowcount > 0:
-                inserted_count += 1
+            
+            if i % 50000 == 0 and i > 0:
+                pg_conn.commit()
+                print(f"[PROGRESS] {i} words processed...")
 
         pg_conn.commit()
-        print(f"[SUCCESS] Migrated {inserted_count} new words to PostgreSQL.")
+        print(f"[SUCCESS] Migration complete! All {len(words)} words are now in PostgreSQL.")
 
         pg_cur.close()
         pg_conn.close()
-        sl_conn.close()
 
     except Exception as e:
         print(f"[CRITICAL] Migration Failed: {e}")
 
 if __name__ == "__main__":
-    migrate_whitelist()
+    migrate_from_js()
