@@ -24,22 +24,83 @@ export const useRigor = () => {
 
   // Load persistence layer on mount
   useEffect(() => {
-    const loadWhitelist = async () => {
+    const loadWhitelist = async (retries = 10) => {
       try {
+        if (!window.youtubeAPI && retries > 0) {
+          setTimeout(() => loadWhitelist(retries - 1), 300);
+          return;
+        }
+
         if (window.youtubeAPI?.getForensicWhitelist) {
           const list = await window.youtubeAPI.getForensicWhitelist();
-          if (Array.isArray(list)) setDbWhitelist(list);
+          if (Array.isArray(list)) {
+            setDbWhitelist(list);
+            console.log("[FORENSIC] Sync OK. Density:", list.length);
+          }
         } else {
-          // Web Fallback: Direct fetch to cloud bridge
           const res = await fetch("http://127.0.0.1:8000/forensic/whitelist");
-          const list = await res.json();
-          if (Array.isArray(list)) setDbWhitelist(list);
+          if (res.ok) {
+            const list = await res.json();
+            setDbWhitelist(list);
+          }
         }
       } catch (e) {
-        console.warn("[FORENSIC] Persistence Load Fail:", e.message);
+        console.error("[FORENSIC] Handshake Blocked:", e.message);
+        if (window.youtubeAPI) {
+          window.alert(`Forensic Handshake Failure: ${e.message}\n\nPlease verify PostgreSQL service status.`);
+        }
       }
     };
     loadWhitelist();
+  }, []);
+
+  // --- Smart Background Sync ---
+  // Periodically re-sync the whitelist to keep multiple tabs/windows consistent.
+  // Performance: Only polls when the window is active (visible).
+  useEffect(() => {
+    let syncInterval;
+
+    const performSync = async () => {
+      // Only sync if the tab is active to preserve CPU/Network
+      if (document.visibilityState !== "visible") return;
+
+      try {
+        let list = null;
+        if (window.youtubeAPI?.getForensicWhitelist) {
+          list = await window.youtubeAPI.getForensicWhitelist();
+        } else {
+          const res = await fetch("http://127.0.0.1:8000/forensic/whitelist");
+          if (res.ok) list = await res.json();
+        }
+
+        if (Array.isArray(list)) {
+          // Atomic Update: Only trigger a Trie rebuild if the data actually changed
+          const sortedList = [...list].sort();
+          setDbWhitelist((prev) => {
+            const sortedPrev = [...prev].sort();
+            if (sortedPrev.length === sortedList.length && JSON.stringify(sortedPrev) === JSON.stringify(sortedList)) {
+              return prev;
+            }
+            console.log("[FORENSIC] Background Sync: Whitelist Updated.");
+            return sortedList;
+          });
+        }
+      } catch (e) {
+        // Silent fail for background polling to prevent UI jitter
+        console.warn("[FORENSIC] Background Sync Paused (Connectivity):", e.message);
+      }
+    };
+
+    // Poll every 3 seconds for near-real-time synchronization
+    syncInterval = setInterval(performSync, 3000);
+
+    // Also sync immediately when the user returns to the tab
+    document.addEventListener("visibilitychange", performSync);
+
+    return () => {
+      clearInterval(syncInterval);
+      document.removeEventListener("visibilitychange", performSync);
+    };
   }, []);
 
   const addToDictionary = useCallback(async (word) => {
@@ -54,7 +115,12 @@ export const useRigor = () => {
       try {
         const result = await window.youtubeAPI.addForensicWord(cleanWord);
         if (result && (result.status === "success" || result.ok)) {
-          setDbWhitelist((prev) => [...new Set([...prev, cleanWord])]);
+          // Immediate Neural Re-Sync
+          const updatedList = await window.youtubeAPI.getForensicWhitelist();
+          if (Array.isArray(updatedList)) {
+            setDbWhitelist(updatedList);
+            console.log("[FORENSIC] Neural Sync Complete. New Whitelist Density:", updatedList.length);
+          }
           return { success: true };
         }
       } catch (err) {
@@ -125,12 +191,17 @@ export const useRigor = () => {
             let finalSuggestion = processedSuggestion;
             const isStartOfSentence =
               match.index === 0 ||
-              /[.!?]\s+$/.test(text.substring(0, match.index));
-            if (isStartOfSentence && finalSuggestion !== "Omit") {
+              /[.!?]\s*$/.test(text.substring(0, match.index));
+            
+            if (isStartOfSentence && finalSuggestion && finalSuggestion !== "Omit") {
               finalSuggestion =
                 finalSuggestion.charAt(0).toUpperCase() +
                 finalSuggestion.slice(1);
             }
+
+            // --- Neural Whitelist Check ---
+            const matchText = match[0].toLowerCase().replace(/[^a-z']/g, "");
+            if (truthTrie.has(matchText)) continue;
 
             highlights.push({
               start: match.index,
@@ -186,12 +257,25 @@ export const useRigor = () => {
           if (!isWhitelisted) {
             // Check if already highlighted
             if (!highlights.find((h) => h.start === match.index)) {
+              let finalSuggestion = match[1];
+              
+              // Smart Capitalization
+              const isStartOfSentence =
+                match.index === 0 ||
+                /[.!?]\s*$/.test(text.substring(0, match.index));
+              
+              if (isStartOfSentence && finalSuggestion) {
+                finalSuggestion =
+                  finalSuggestion.charAt(0).toUpperCase() +
+                  finalSuggestion.slice(1);
+              }
+
               highlights.push({
                 start: match.index,
                 end: match.index + match[0].length,
                 type: "syntax",
                 reason: rule.reason,
-                suggestion: match[1], // Only the first occurrence
+                suggestion: finalSuggestion,
                 explanation: rule.exp,
               });
             }
@@ -250,6 +334,19 @@ export const useRigor = () => {
               "she",
             ];
 
+            // --- Universal Sentence-Awareness Protocol ---
+            let finalSuggestion = bestMatch;
+            if (finalSuggestion) {
+              const isStartOfSentence =
+                currentIndex === 0 ||
+                /[.!?]\s*$/.test(text.substring(0, currentIndex).trimEnd() + " ");
+              
+              if (isStartOfSentence) {
+                finalSuggestion =
+                  finalSuggestion.charAt(0).toUpperCase() + finalSuggestion.slice(1);
+              }
+            }
+
             if (
               bestMatch &&
               minDistance <= 1 &&
@@ -260,7 +357,7 @@ export const useRigor = () => {
                 end: currentIndex + word.length,
                 type: "spelling",
                 reason: "Spelling Anomaly",
-                suggestion: bestMatch,
+                suggestion: finalSuggestion,
                 explanation: `Fuzzy logic detected a similarity to "${bestMatch}".`,
               });
             } else if (cleanWord.length > 3) {
@@ -339,92 +436,16 @@ export const useRigor = () => {
         },
       };
     },
-    [dbWhitelist],
+    [dbWhitelist, truthTrie]
   );
-
-  const analyzeAI = useCallback(async (content, api) => {
-    if (!content || !api) return [];
-
-    try {
-      const prompt = `You are a Surgical Technical Editor. 
-Your task is to identify specific word-level improvements in the text below.
-
-CRITICAL RULES:
-1. NO STRUCTURAL REWRITES: Do not merge sentences. Do not rewrite whole thoughts.
-2. SURGICAL PRECISION: Target the smallest possible phrase (ideally 1-3 words). 
-3. NO ADDITIONS: Do not add words like "Recommendation:" or "Note:". 
-4. PRESERVE INTENT: Only suggest a change if the original word is informal, technically imprecise, or grammatically incorrect.
-5. REDUNDANCY AUDIT: Surgically flag consecutive duplicate words or phrases (e.g. "length is length is") as "syntax" anomalies.
-6. AVOID OVER-FORMALIZATION: Do not use awkward quoting or add redundant auxiliary verbs. If a phrase is standard English, do not flag it.
-7. CONCISE FLOW: Suggestions must be simpler or more precise than the original. Never add complex grammatical scaffolding.
-
-Return ONLY a valid JSON array of objects:
-{ "text": "the exact small phrase from text", "type": "grammar|syntax|diction|tone", "suggestion": "better 1-3 words", "explanation": "brief reason" }
-
-Text: "${content}"`;
-
-      const response = await api.chatWithAI({
-        messages: [{ role: "user", content: prompt }],
-        context: "Surgical Academic Forensic Audit",
-      });
-
-      // Robust JSON extraction
-      const jsonMatch = response.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) return [];
-
-      const rawAnomalies = JSON.parse(jsonMatch[0]);
-      const aiHighlights = [];
-      let currentPos = 0;
-
-      rawAnomalies.forEach((anomaly) => {
-        // Search for the word starting from the last found position to handle multiple occurrences
-        const start = content
-          .toLowerCase()
-          .indexOf(anomaly.text.toLowerCase(), currentPos);
-
-        if (start !== -1) {
-          const end = start + anomaly.text.length;
-
-          // Deduplication: Ensure this AI highlight doesn't overlap with any existing highlight
-          const isOverlapping = aiHighlights.some(
-            (h) =>
-              (start >= h.start && start < h.end) ||
-              (end > h.start && end <= h.end) ||
-              (start <= h.start && end >= h.end),
-          );
-
-          if (!isOverlapping) {
-            aiHighlights.push({
-              start,
-              end,
-              type: anomaly.type || "grammar",
-              reason: `Neural ${anomaly.type?.charAt(0).toUpperCase() + anomaly.type?.slice(1) || "Audit"}`,
-              suggestion: anomaly.suggestion,
-              explanation: anomaly.explanation,
-              isAI: true,
-            });
-            // Advance currentPos slightly past the start of this word
-            // but not past the end, in case of overlapping suggestions
-            // (though we filtered overlaps above)
-            currentPos = end;
-          }
-        }
-      });
-
-      return aiHighlights.sort((a, b) => a.start - b.start);
-    } catch (err) {
-      console.error("Neural Deep Scan Failure:", err);
-      return [];
-    }
-  }, []);
 
   return {
     analyze,
-    analyzeAI,
     isNeuralScanning,
     getCategoryColor,
     getCategoryBg,
     addToDictionary,
+    dbWhitelist,
   };
 };
 

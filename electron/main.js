@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import {
   app,
   BrowserWindow,
@@ -44,6 +45,9 @@ import {
   saveAppSettings,
   getUnsyncedLibraryItems,
   markItemsAsSynced,
+  getForensicWhitelist,
+  addForensicWord,
+  removeForensicWord,
 } from "./database.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -256,8 +260,8 @@ function canonicalize(url) {
 function sendToRenderer(wc, channel, data) {
   if (!wc.isDestroyed()) wc.send(channel, data);
 }
-function resolveAiApiKey() {
-  const dbConfig = getAppSettings();
+async function resolveAiApiKey() {
+  const dbConfig = await getAppSettings();
   if (dbConfig.aiApiKey) return dbConfig.aiApiKey;
   return readAppState().aiApiKey || "";
 }
@@ -274,11 +278,11 @@ function buildQualityOptions(heights) {
 let isSyncing = false;
 async function performCloudSync() {
   if (isSyncing) return { success: false, message: "Sync already in progress" };
-  const dbSettings = getAppSettings();
+  const dbSettings = await getAppSettings();
   if (!dbSettings.cloudApiUrl)
     return { success: false, message: "Cloud API URL not configured" };
 
-  const items = getUnsyncedLibraryItems();
+  const items = await getUnsyncedLibraryItems();
   if (items.length === 0 && !dbSettings.aiApiKey)
     // Check if at least there is something to sync
     return { success: true, message: "Everything up to date" };
@@ -303,7 +307,7 @@ async function performCloudSync() {
 
     if (response.ok) {
       const ids = items.map((i) => i.id);
-      markItemsAsSynced(ids);
+      await markItemsAsSynced(ids);
       console.log(
         `[CLOUD SYNC] Successfully synchronized ${ids.length} items.`,
       );
@@ -613,11 +617,10 @@ function registerIpcHandlers() {
     }
   };
 
-  // --- Forensic Whitelist (PostgreSQL Powered via FastAPI) ---
+  // --- Forensic Whitelist (Direct PostgreSQL) ---
   safeHandle("forensic:get-whitelist", async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/forensic/whitelist");
-      return await res.json();
+      return await getForensicWhitelist();
     } catch (e) {
       console.error("[POSTGRES] Whitelist Fetch Fail:", e.message);
       return [];
@@ -625,37 +628,19 @@ function registerIpcHandlers() {
   });
 
   safeHandle("forensic:add-word", async (_e, word) => {
-    console.log(`[BRIDGE] >>> STAGE 1: IPC Received word="${word}"`);
     try {
-      const url = "http://127.0.0.1:8000/forensic/whitelist";
-      console.log(`[BRIDGE] >>> STAGE 2: Fetching ${url}`);
-      
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word }),
-      });
-      
-      console.log(`[BRIDGE] >>> STAGE 3: Response Status=${res.status} (${res.statusText})`);
-      
-      const data = await res.json();
-      console.log(`[BRIDGE] >>> STAGE 4: Data Payload=`, data);
-      return data;
+      await addForensicWord(word);
+      return { status: "success" };
     } catch (e) {
-      console.error("[BRIDGE] >>> FATAL ERROR:", e.message);
+      console.error("[POSTGRES] Add Word Fail:", e.message);
       return { status: "error", message: e.message };
     }
   });
 
   safeHandle("forensic:remove-word", async (_e, word) => {
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/forensic/whitelist/${encodeURIComponent(word)}`,
-        {
-          method: "DELETE",
-        },
-      );
-      return await res.json();
+      await removeForensicWord(word);
+      return { status: "success" };
     } catch (e) {
       console.error("[POSTGRES] Whitelist Remove Fail:", e.message);
       return { status: "error" };
@@ -781,19 +766,19 @@ function registerIpcHandlers() {
 
   safeHandle("search:get-log", async () => {
     console.log("[IPC] Fetching Search Log...");
-    return getSearchLog();
+    return await getSearchLog();
   });
   safeHandle("search:add-log", async (event, query) => {
     console.log(`[IPC] Received Query to Save: "${query}"`);
-    return addSearchLog(query);
+    return await addSearchLog(query);
   });
   safeHandle("search:delete-log", async (event, query) => {
     console.log(`[IPC] Requested Deletion of: "${query}"`);
-    return deleteSearchLog(query);
+    return await deleteSearchLog(query);
   });
   safeHandle("search:clear-log", async () => {
     console.log("[IPC] Purging All Search Logs...");
-    return clearSearchLog();
+    return await clearSearchLog();
   });
 
   safeHandle("library:search-fts", async (event, query) => {
@@ -1114,8 +1099,7 @@ function registerIpcHandlers() {
 
   safeHandle("vocab:get-stats", async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/library/stats");
-      return await res.json();
+      return await getCollectionStats();
     } catch (e) {
       console.error("[POSTGRES] Stats Fetch Fail", e.message);
       return { all: 0, trash: 0, collections: [] };
@@ -1124,9 +1108,7 @@ function registerIpcHandlers() {
 
   safeHandle("vocab:load-page", async (_e, criteria) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/library");
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      return await getLibraryPage(criteria);
     } catch (e) {
       return [];
     }
@@ -1134,12 +1116,8 @@ function registerIpcHandlers() {
 
   safeHandle("vocab:save", async (_e, list) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: list }),
-      });
-      return res.ok;
+      await saveLibrary(list);
+      return true;
     } catch (e) {
       return false;
     }
@@ -1147,12 +1125,8 @@ function registerIpcHandlers() {
 
   safeHandle("vocab:save-item", async (_e, item) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [item] }),
-      });
-      return res.ok;
+      await saveVocabItem(item);
+      return true;
     } catch (e) {
       console.error("[POSTGRES] Save Item Fail", e.message);
       return false;
@@ -1161,10 +1135,8 @@ function registerIpcHandlers() {
 
   safeHandle("vocab:delete-item", async (_e, id) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/library/${id}`, {
-        method: "DELETE",
-      });
-      return res.ok;
+      await deleteVocabItem(id);
+      return true;
     } catch (e) {
       console.error("[POSTGRES] Delete Item Fail", e.message);
       return false;
@@ -1173,10 +1145,8 @@ function registerIpcHandlers() {
 
   safeHandle("vocab:archive-item", async (_e, id) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/library/${id}/archive`, {
-        method: "POST",
-      });
-      return res.ok;
+      await archiveVocabItem(id);
+      return true;
     } catch (e) {
       console.error("[POSTGRES] Archive Item Fail", e.message);
       return false;
@@ -1185,10 +1155,8 @@ function registerIpcHandlers() {
 
   safeHandle("vocab:restore-item", async (_e, id) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/library/${id}/restore`, {
-        method: "POST",
-      });
-      return res.ok;
+      await restoreVocabItem(id);
+      return true;
     } catch (e) {
       console.error("[POSTGRES] Restore Item Fail", e.message);
       return false;
@@ -1197,8 +1165,7 @@ function registerIpcHandlers() {
 
   safeHandle("collections:load", async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/collections");
-      return await res.json();
+      return await getCollections();
     } catch (e) {
       console.error("[POSTGRES] Load Collections Fail", e.message);
       return [];
@@ -1207,12 +1174,8 @@ function registerIpcHandlers() {
 
   safeHandle("collections:save", async (_e, list) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/collections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names: list.map((c) => c.name || c) }),
-      });
-      return res.ok;
+      await saveCollections(list);
+      return true;
     } catch (e) {
       return false;
     }
@@ -1220,8 +1183,7 @@ function registerIpcHandlers() {
 
   safeHandle("notes:load", async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/notes");
-      return await res.json();
+      return await getNotes();
     } catch (e) {
       console.error("[POSTGRES] Load Notes Fail", e.message);
       return { blocks: [] };
@@ -1230,12 +1192,8 @@ function registerIpcHandlers() {
 
   safeHandle("notes:save", async (_e, data) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data }),
-      });
-      return res.ok;
+      await saveNotes(data);
+      return true;
     } catch (e) {
       console.error("[POSTGRES] Save Notes Fail", e.message);
       return false;
@@ -1245,8 +1203,7 @@ function registerIpcHandlers() {
   // --- Settings Handlers ---
   safeHandle("settings:get", async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/settings");
-      return await res.json();
+      return await getAppSettings();
     } catch (e) {
       return {};
     }
@@ -1254,12 +1211,7 @@ function registerIpcHandlers() {
 
   safeHandle("settings:save", async (_e, config) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config }),
-      });
-      return res.ok;
+      return await saveAppSettings(config);
     } catch (e) {
       return false;
     }
@@ -1267,8 +1219,7 @@ function registerIpcHandlers() {
 
   safeHandle("settings:getAiKey", async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/settings");
-      const settings = await res.json();
+      const settings = await getAppSettings();
       return settings.aiApiKey || "";
     } catch (e) {
       return "";
@@ -1277,15 +1228,9 @@ function registerIpcHandlers() {
 
   safeHandle("settings:setAiKey", async (_e, key) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/settings");
-      const current = await res.json();
+      const current = await getAppSettings();
       const updated = { ...current, aiApiKey: key };
-      const saveRes = await fetch("http://127.0.0.1:8000/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config: updated }),
-      });
-      return saveRes.ok;
+      return await saveAppSettings(updated);
     } catch (e) {
       return false;
     }
@@ -1530,7 +1475,7 @@ app.on("web-contents-created", (event, contents) => {
   });
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   try {
     console.log("[SYSTEM] >>> MASTER STARTUP INITIATED <<<");
     
@@ -1539,12 +1484,21 @@ app.whenReady().then(() => {
     registerIpcHandlers();
     
     // PRIORITY 2: Initialize Databases
-    console.log("[SYSTEM] Initializing Neural Database (SQLite3 + FTS5)...");
-    initDatabase();
+    console.log("[SYSTEM] Initializing Neural Database (PostgreSQL)...");
+    try {
+      await initDatabase();
+      console.log("[SYSTEM] PostgreSQL Neural Bridge Active.");
+    } catch (e) {
+      console.error("[CRITICAL] PostgreSQL Init Failure:", e.message);
+      dialog.showErrorBox(
+        "PostgreSQL Connection Failure",
+        `Electron failed to connect to the Forensic Database.\n\nError: ${e.message}\n\nVerify that PostgreSQL is running on port 5432 and the credentials are correct.`
+      );
+    }
     
     // Perform Archive Audit
     try {
-      const stats = getCollectionStats();
+      const stats = await getCollectionStats();
       console.log("[ARCHIVE AUDIT] Initial Density:", JSON.stringify(stats));
     } catch (e) {
       console.error("[ARCHIVE AUDIT] Initial Audit Failed", e);
