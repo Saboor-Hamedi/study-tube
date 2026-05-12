@@ -33,13 +33,6 @@ export default function ForensicDropdown({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      style={{
-        position: "fixed",
-        top: selectedHl.preferUp ? "auto" : selectedHl.top,
-        bottom: selectedHl.preferUp ? selectedHl.bottom : "auto",
-        left: selectedHl.left,
-        transform: "none",
-      }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={`z-[9999] w-[220px] bg-[var(--surface-2)] border border-[var(--border)] ${getCategoryColor(selectedHl.type).replace("text-", "border-t-")} border-t-2 shadow-2xl rounded-lg overflow-hidden flex flex-col font-sans backdrop-blur-xl pointer-events-auto`}

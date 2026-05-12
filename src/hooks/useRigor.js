@@ -1,14 +1,26 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   commonMistakes,
   academicLexicon,
   forensicRules,
   commonWords,
+  legitimateDoubles,
 } from "./rigor";
+import { Trie } from "./rigor/Trie";
 
 export const useRigor = () => {
   const [isNeuralScanning, setIsNeuralScanning] = useState(false);
   const [dbWhitelist, setDbWhitelist] = useState([]);
+
+  // --- Neural Forensic Trie (Memoized for O(L) Lookups) ---
+  const truthTrie = useMemo(() => {
+    return new Trie([
+      ...academicLexicon,
+      ...commonWords,
+      ...legitimateDoubles,
+      ...dbWhitelist,
+    ]);
+  }, [dbWhitelist]);
 
   // Load persistence layer on mount
   useEffect(() => {
@@ -104,26 +116,6 @@ export const useRigor = () => {
     }
   };
 
-  // --- Neural Similarity Algorithm (Levenshtein Distance) ---
-  const getLevenshteinDistance = (a, b) => {
-    const matrix = [];
-    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-    for (let i = 1; i <= b.length; i++) {
-      for (let j = 1; j <= a.length; j++) {
-        if (b.charAt(i - 1) === a.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1,
-          );
-        }
-      }
-    }
-    return matrix[b.length][a.length];
-  };
 
   const analyze = useCallback(
     async (content) => {
@@ -191,11 +183,6 @@ export const useRigor = () => {
       });
 
       // 2. NEURAL FUZZY LOOP (Similarity Scoring)
-      const truthSet = new Set([
-        ...academicLexicon,
-        ...commonWords,
-        ...dbWhitelist,
-      ]);
       const words = text.split(/(\s+)/);
       let currentIndex = 0;
       words.forEach((word) => {
@@ -203,30 +190,17 @@ export const useRigor = () => {
           .toLowerCase()
           .replace(/’/g, "'")
           .replace(/[^a-z']/g, "");
-        if (cleanWord.length >= 3 && !truthSet.has(cleanWord)) {
+
+        if (cleanWord.length >= 3 && !truthTrie.has(cleanWord)) {
           // Only check if not already highlighted by forensic rules
           const isAlreadyFlagged = highlights.some(
             (h) => currentIndex >= h.start && currentIndex < h.end,
           );
 
           if (!isAlreadyFlagged) {
-            // Find the BEST legitimate match (Minimum Distance)
-            const isLegit = truthSet.has(cleanWord);
-
-            if (!isLegit) {
-              let bestMatch = null;
-              let minDistance = 99;
-
-              for (const target of truthSet) {
-                if (Math.abs(target.length - cleanWord.length) <= 1) {
-                  const distance = getLevenshteinDistance(cleanWord, target);
-                  if (distance < minDistance) {
-                    minDistance = distance;
-                    bestMatch = target;
-                  }
-                  if (minDistance === 1) break;
-                }
-              }
+            // Find the BEST legitimate match using Trie Fuzzy Logic (O(L) vs O(N))
+            const bestMatch = truthTrie.findFuzzy(cleanWord, 1);
+            const minDistance = bestMatch ? 1 : 99; // Currently optimized for distance 1
 
               // Only flag if it's a very close match AND it's not a common short word
               const commonShorts = [
@@ -283,7 +257,6 @@ export const useRigor = () => {
                   explanation:
                     "This term is not in the primary academic dataset; verify specialized context.",
                 });
-              }
             }
           }
         }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GraduationCap,
@@ -13,6 +13,14 @@ import {
   ArrowRight,
   X,
 } from "lucide-react";
+import { 
+  useFloating, 
+  offset, 
+  flip, 
+  shift, 
+  inline, 
+  autoUpdate 
+} from "@floating-ui/react";
 import { useRigor } from "../../hooks/useRigor";
 import NeuralFeedbackHub from "./NeuralFeedbackHub";
 import ForensicDropdown from "./ForensicDropdown";
@@ -44,6 +52,20 @@ export default function GrammarForensicView({
   const [selectedHl, setSelectedHl] = useState(null);
   const containerRef = useRef(null);
   const closeTimeoutRef = useRef(null);
+
+  // --- Floating UI Engine ---
+  const { x, y, refs, strategy, placement } = useFloating({
+    open: !!selectedHl,
+    onOpenChange: (open) => !open && setSelectedHl(null),
+    placement: "bottom-start",
+    strategy: "fixed",
+    middleware: [
+      offset(12), 
+      flip({ fallbackAxisSideDirection: "start" }), 
+      shift({ padding: 10 })
+    ],
+    whileElementsMounted: autoUpdate,
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -178,20 +200,13 @@ export default function GrammarForensicView({
 
   const showHl = (hl, i, e) => {
     if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
-    const rect = e.currentTarget.getBoundingClientRect();
-
-    // Aggressive Smart Positioning: Check space below for 400px card clearance
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const preferUp = spaceBelow < 400;
-
+    
+    // Set the reference element directly for robust positioning
+    refs.setReference(e.currentTarget);
+    
     setSelectedHl({
       ...hl,
       index: i + 1,
-      // Dual-Anchor Vertical Logic
-      top: rect.bottom + 8,
-      bottom: window.innerHeight - rect.top + 8,
-      left: Math.max(10, Math.min(rect.left, window.innerWidth - 230)),
-      preferUp,
     });
   };
 
@@ -224,7 +239,6 @@ export default function GrammarForensicView({
           <div
             className="flex-1 min-w-0 overflow-y-auto custom-scroll relative"
             ref={containerRef}
-            onScroll={() => selectedHl && setSelectedHl(null)}
           >
             {/* Added PB-96 (384px) safe zone for bottom-of-page highlights */}
             <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
@@ -398,23 +412,30 @@ export default function GrammarForensicView({
         </div>
       </div>
 
-      {/* Robust Anomaly Dropdown - GLOBAL LAYER */}
+      {/* Robust Anomaly Dropdown - NEURAL LAYER (Floating UI) */}
       <AnimatePresence>
         {selectedHl && (
-          <div className="fixed inset-0 z-[9999] pointer-events-none">
-            <div className="relative w-full h-full">
-              <ForensicDropdown
-                selectedHl={selectedHl}
-                content={content}
-                onApplySuggestion={handleApplySuggestion}
-                onAddToDictionary={handleAddToDictionary}
-                onClose={() => setSelectedHl(null)}
-                onMouseEnter={cancelHide}
-                onMouseLeave={hideHl}
-                getCategoryColor={getCategoryColor}
-                getCategoryBg={getCategoryBg}
-              />
-            </div>
+          <div 
+            ref={refs.setFloating}
+            style={{
+              position: strategy,
+              top: y ?? 0,
+              left: x ?? 0,
+              width: "max-content",
+            }}
+            className="z-[9999] pointer-events-auto"
+          >
+            <ForensicDropdown
+              selectedHl={selectedHl}
+              content={content}
+              onApplySuggestion={handleApplySuggestion}
+              onAddToDictionary={handleAddToDictionary}
+              onClose={() => setSelectedHl(null)}
+              onMouseEnter={cancelHide}
+              onMouseLeave={hideHl}
+              getCategoryColor={getCategoryColor}
+              getCategoryBg={getCategoryBg}
+            />
           </div>
         )}
       </AnimatePresence>
