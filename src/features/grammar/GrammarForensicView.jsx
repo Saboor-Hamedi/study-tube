@@ -229,9 +229,22 @@ export default function GrammarForensicView({
     // Update highlights optimistically by shifting indices
     setDiagnostics((prev) => {
       const existing = prev.highlights || [];
+
+      // Atomic Overlap Purge: Remove any highlight that touches or is inside the modified range
       const updated = existing
-        .filter((h) => h.start !== hl.start) // Remove applied highlight
+        .filter((h) => {
+          // If this is the active highlight, remove it
+          if (h === hl || h.start === hl.start) return false;
+
+          // If this highlight overlaps with the replacement zone [start, end], remove it
+          const isOverlapping =
+            (h.start >= start && h.start < end) ||
+            (h.end > start && h.end <= end) ||
+            (h.start <= start && h.end >= end);
+          return !isOverlapping;
+        })
         .map((h) => {
+          // Precise Recalibration: Only shift highlights that are STRICTLY after the replaced zone
           if (h.start >= end) {
             return {
               ...h,
@@ -241,11 +254,13 @@ export default function GrammarForensicView({
           }
           return h;
         });
+
       return { ...prev, highlights: updated };
     });
 
     setContent(newContent);
     setSelectedHl(null);
+    setGhostPreview(null);
   };
 
   const handleAddToDictionary = async (word) => {
@@ -254,10 +269,19 @@ export default function GrammarForensicView({
 
     if (result.success) {
       if (showToast) showToast(`"${word}" added to Dictionary`, "success");
-      // Instant Clearance: Force re-analysis to remove the flag immediately
-      setTimeout(() => {
-        handleDeepAnalyze();
-      }, 50);
+
+      // Optimistic Clearance: Remove all flags for this word instantly
+      setDiagnostics((prev) => {
+        const existing = prev.highlights || [];
+        const cleanWord = word.toLowerCase();
+        const updated = existing.filter((hl) => {
+          const hlText = content.substring(hl.start, hl.end).toLowerCase();
+          return hlText !== cleanWord;
+        });
+        return { ...prev, highlights: updated };
+      });
+
+      setSelectedHl(null);
     } else {
       if (showToast)
         showToast(`Failed to whitelist "${word}": ${result.message}`, "error");
@@ -400,9 +424,14 @@ export default function GrammarForensicView({
                               backgroundColor: "rgba(255, 107, 0, 0)",
                             }}
                             animate={{
-                              backgroundColor: getCategoryBg(hl.type),
+                              backgroundColor:
+                                hl.type === "spelling" ||
+                                hl.type === "grammar" ||
+                                hl.type === "syntax"
+                                  ? getCategoryBg(hl.type)
+                                  : "rgba(202, 17, 17, 0)",
                             }}
-                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} rounded-sm transition-all relative inline leading-none group/hl font-light tracking-wide px-[1px] -mx-[1px]`}
+                            className={`cursor-help rounded-sm transition-all relative inline leading-none group/hl font-light tracking-wide px-[1px] -mx-[1px]`}
                             onMouseLeave={hideHl}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -410,12 +439,19 @@ export default function GrammarForensicView({
                               scrollToAnomaly(i + 1);
                             }}
                           >
-                            <span 
+                            <span
                               className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline"
-                              style={{ display: "inline-grid" }}
+                              style={{
+                                display: "inline-grid",
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3' viewBox='0 0 6 3'%3E%3Cpath d='M0 2.5 C 0.5 2.5, 1.0 0.5, 1.5 0.5 C 2.0 0.5, 2.5 2.5, 3.0 2.5 C 3.5 2.5, 4.0 0.5, 4.5 0.5 C 5.0 0.5, 5.5 2.5, 6.0 2.5' fill='none' stroke='${getCategoryColor(hl.type).includes("blue") ? "%233b82f6" : getCategoryColor(hl.type).includes("emerald") ? "%2310b981" : getCategoryColor(hl.type).includes("orange") ? "%23f97316" : getCategoryColor(hl.type).includes("purple") ? "%23a855f7" : "%23ef4444"}' stroke-width='0.7'/%3E%3C/svg%3E")`,
+                                backgroundRepeat: "repeat-x",
+                                backgroundPosition: "bottom",
+                                backgroundSize: "6px 3px",
+                                paddingBottom: "2px",
+                              }}
                             >
                               {/* Spatial Anchor (Keeps the manuscript footprint stable) */}
-                              <span 
+                              <span
                                 className={`grid-area-1-1 ${ghostPreview?.start === hl.start ? "text-transparent" : ""} font-light tracking-wide`}
                                 style={{ gridArea: "1/1" }}
                               >
@@ -429,7 +465,9 @@ export default function GrammarForensicView({
                                   style={{ gridArea: "1/1" }}
                                 >
                                   {ghostPreview.suggestion === "Omit" ? (
-                                    <span className="opacity-40 italic">[Delete]</span>
+                                    <span className="opacity-40 italic">
+                                      [Delete]
+                                    </span>
                                   ) : (
                                     ghostPreview.suggestion
                                   )}
@@ -466,17 +504,17 @@ export default function GrammarForensicView({
         {/* Diagnostics Sidebar (Desktop Only) */}
         {!isMobile && isSidebarOpen && (
           <div className="shrink-0 z-[60] relative">
-          <NeuralFeedbackHub
-            diagnostics={diagnostics}
-            isNeuralScanning={isNeuralScanning}
-            isAnalyzing={isAnalyzing}
-            setIsAnalyzing={setIsAnalyzing}
-            content={content}
-            getCategoryColor={getCategoryColor}
-            scrollToHl={scrollToAnomaly}
-            onApplySuggestion={handleApplySuggestion}
-            setGhostPreview={setGhostPreview}
-          />
+            <NeuralFeedbackHub
+              diagnostics={diagnostics}
+              isNeuralScanning={isNeuralScanning}
+              isAnalyzing={isAnalyzing}
+              setIsAnalyzing={setIsAnalyzing}
+              content={content}
+              getCategoryColor={getCategoryColor}
+              scrollToHl={scrollToHl}
+              onApplySuggestion={handleApplySuggestion}
+              setGhostPreview={setGhostPreview}
+            />
           </div>
         )}
       </div>
@@ -632,7 +670,7 @@ export default function GrammarForensicView({
             setIsAnalyzing={setIsAnalyzing}
             content={content}
             getCategoryColor={getCategoryColor}
-            scrollToHl={scrollToAnomaly}
+            scrollToHl={scrollToHl}
             onApplySuggestion={handleApplySuggestion}
             setGhostPreview={setGhostPreview}
           />

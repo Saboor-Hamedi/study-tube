@@ -218,8 +218,9 @@ export default function NeuralFeedbackHub({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="flex flex-col gap-3">
                       <div className="space-y-2">
+                        {/* Contextual Fragment */}
                         <div className="p-2.5 bg-surface rounded-lg border border-border/5 text-[10px] leading-relaxed italic text-text/50">
                           ...
                           {sentence
@@ -230,39 +231,47 @@ export default function NeuralFeedbackHub({
                             )}
                           ...
                         </div>
-                        <div className="flex items-start gap-2">
-                          <span className="text-[8px] font-black text-muted uppercase mt-0.5">
-                            Logic:
+                        
+                        {/* Explanation Text */}
+                        <p className="text-[10px] font-medium text-text/80 leading-snug px-1">
+                          {hl.explanation}
+                        </p>
+                      </div>
+
+                      {/* Comparison HUD */}
+                      <div className="bg-surface-3/80 border border-border rounded-md p-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[7px] font-black text-red-500/40 uppercase tracking-[0.2em]">
+                            Flagged
                           </span>
-                          <p className="text-[10px] font-medium text-text/80 leading-snug">
-                            {hl.explanation}
-                          </p>
+                          <span className="text-[10px] text-red-500/60 line-through font-bold truncate max-w-[150px]">
+                            {content.substring(hl.start, hl.end)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex flex-col gap-1 pt-1 border-t border-border/50">
+                          <span className="text-[7px] font-black text-emerald-500/40 uppercase tracking-[0.2em]">
+                            Neural Suggestion
+                          </span>
+                          <span className="text-[11px] text-emerald-500 font-black">
+                            {hl.suggestion === "Omit" ? "Delete" : hl.suggestion}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col justify-center space-y-1.5 bg-accent/5 p-3 rounded-lg border border-accent/10 relative group/action">
-                        <span className="text-[7px] font-black text-accent/40 uppercase tracking-widest">
-                          Neural Suggestion
-                        </span>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <ArrowRight className="h-3 w-3 text-accent" />
-                            <span className="text-[12px] font-black text-text tracking-tight">
-                              {hl.suggestion}
-                            </span>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onApplySuggestion(hl.suggestion, hl);
-                            }}
-                            onMouseEnter={() => setGhostPreview(hl)}
-                            onMouseLeave={() => setGhostPreview(null)}
-                            className="h-6 px-3 bg-accent hover:brightness-110 text-white rounded-[4px] text-[8px] font-black uppercase tracking-widest transition-all shadow-lg shadow-accent/20 active:scale-95 shrink-0"
-                          >
-                            Apply
-                          </button>
-                        </div>
+                      {/* Action Footer */}
+                      <div className="flex justify-end pt-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onApplySuggestion(hl.suggestion, hl);
+                          }}
+                          onMouseEnter={() => setGhostPreview(hl)}
+                          onMouseLeave={() => setGhostPreview(null)}
+                          className="h-6 px-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded text-[8px] font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-1 shadow-lg shadow-emerald-500/10 active:scale-95"
+                        >
+                          Apply
+                        </button>
                       </div>
                     </div>
                   </div>

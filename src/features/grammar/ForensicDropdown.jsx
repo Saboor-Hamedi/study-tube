@@ -52,6 +52,24 @@ const ForensicDropdown = ({
           <X className="h-3 w-3" />
         </button>
       </div>
+      
+      {/* Secondary Utility Bar */}
+      <div className="flex items-center gap-px bg-border/20 border-b border-border shrink-0">
+        <button
+          className="flex-1 h-7 flex items-center justify-center gap-1.5 hover:bg-red-500/5 bg-surface-2 text-[8px] font-bold text-muted hover:text-red-500 transition-all capitalize tracking-wider"
+          onClick={onClose}
+        >
+          <Trash2 className="h-2.5 w-2.5" />
+          Ignore
+        </button>
+        <button
+          className="flex-1 h-7 flex items-center justify-center gap-1.5 hover:bg-accent/5 bg-surface-2 text-[8px] font-bold text-muted hover:text-accent transition-all capitalize tracking-wider"
+          onClick={() => onAddToDictionary(originalWord)}
+        >
+          <PlusCircle className="h-2.5 w-2.5" />
+          Dictionary
+        </button>
+      </div>
 
       <div className="p-2 space-y-3">
         {/* Analysis Header - Repositioned under Title Bar */}
@@ -80,8 +98,10 @@ const ForensicDropdown = ({
                 {selectedHl.reason || "Audit"}
               </span>
             </div>
-            <span className="text-[9px] font-bold text-red-500/40 capitalize tracking-tight italic leading-none py-0.5">
-              Linguistic Anomaly
+            <span className="text-[9px] font-bold text-red-500/60 capitalize tracking-tight italic leading-none py-0.5">
+              {selectedHl.explanation === "This word is not recognized by the system." 
+                ? "Not Recognized by System" 
+                : "Linguistic Anomaly"}
             </span>
           </div>
         </div>
@@ -122,39 +142,21 @@ const ForensicDropdown = ({
             {selectedHl.explanation}
           </p>
         </div>
+      </div>
 
-        {/* Action Grid */}
-        <div className="pt-2 flex flex-col gap-1.5 border-t border-[var(--border)]">
-          <button
-            onClick={() => {
-              setGhostPreview(null);
-              onApplySuggestion(selectedHl.suggestion);
-            }}
-            onMouseEnter={() => setGhostPreview(selectedHl)}
-            onMouseLeave={() => setGhostPreview(null)}
-            className="w-full h-8 bg-emerald-500 hover:bg-emerald-400 text-white rounded font-black text-[9px] capitalize tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/10 active:scale-[0.98]"
-          >
-            <CheckCircle className="h-3 w-3" />
-            Apply
-          </button>
-          
-          <div className="flex items-center gap-1.5">
-            <button
-              className="flex-1 h-7 flex items-center justify-center gap-1 hover:bg-red-500/5 rounded text-[8px] font-bold text-muted hover:text-red-500 transition-all capitalize tracking-wider border border-transparent hover:border-red-500/10"
-              onClick={onClose}
-            >
-              <Trash2 className="h-2.5 w-2.5" />
-              Ignore
-            </button>
-            <button
-              className="flex-1 h-7 flex items-center justify-center gap-1 hover:bg-accent/5 rounded text-[8px] font-bold text-muted hover:text-accent transition-all capitalize tracking-wider border border-transparent hover:border-accent/10"
-              onClick={() => onAddToDictionary(originalWord)}
-            >
-              <PlusCircle className="h-2.5 w-2.5" />
-              Dictionary
-            </button>
-          </div>
-        </div>
+      {/* Footer Action Rail */}
+      <div className="p-2 bg-surface-3 border-t border-border flex justify-end">
+        <button
+          onClick={() => {
+            setGhostPreview(null);
+            onApplySuggestion(selectedHl.suggestion);
+          }}
+          onMouseEnter={() => setGhostPreview(selectedHl)}
+          onMouseLeave={() => setGhostPreview(null)}
+          className="h-6 px-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded text-[8px] font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-1 shadow-lg shadow-emerald-500/10 active:scale-95 shrink-0"
+        >
+          Apply
+        </button>
       </div>
     </motion.div>
   );

@@ -176,10 +176,10 @@ export const useRigor = () => {
         const regex = new RegExp(rule.regex);
         while ((match = regex.exec(text)) !== null) {
           const matchText = match[0].toLowerCase();
-          
+
           // Neural Clearance: Check common defaults OR user's personal dictionary
-          const isWhitelisted = 
-            legitimatePairs.has(matchText) || 
+          const isWhitelisted =
+            legitimatePairs.has(matchText) ||
             dictionarySet.has(matchText) ||
             dictionarySet.has(match[1].toLowerCase());
 
@@ -272,7 +272,7 @@ export const useRigor = () => {
                 reason: "Specialized Term",
                 suggestion: null,
                 explanation:
-                  "This term is not in the primary academic dataset; verify specialized context.",
+                  "This word is not recognized by the system.",
               });
             }
           }
@@ -355,7 +355,10 @@ CRITICAL RULES:
 2. SURGICAL PRECISION: Target the smallest possible phrase (ideally 1-3 words). 
 3. NO ADDITIONS: Do not add words like "Recommendation:" or "Note:". 
 4. PRESERVE INTENT: Only suggest a change if the original word is informal, technically imprecise, or grammatically incorrect.
-5. REDUNDANCY AUDIT: Surgically flag consecutive duplicate words or phrases (e.g. "length is length is") as "syntax" anomalies and suggest the single version.
+5. REDUNDANCY AUDIT: Surgically flag consecutive duplicate words or phrases (e.g. "length is length is") as "syntax" anomalies.
+6. AVOID OVER-FORMALIZATION: Do not use awkward quoting or add redundant auxiliary verbs. If a phrase is standard English, do not flag it.
+7. CONCISE FLOW: Suggestions must be simpler or more precise than the original. Never add complex grammatical scaffolding.
+8. ACADEMIC INTEGRITY (IELTS): Never suggest contractions (e.g., "don't", "you're"). Always prefer formal full forms. Be aware if the text is discussing grammar examples and do not "correct" those examples.
 
 Return ONLY a valid JSON array of objects:
 { "text": "the exact small phrase from text", "type": "grammar|syntax|diction|tone", "suggestion": "better 1-3 words", "explanation": "brief reason" }
