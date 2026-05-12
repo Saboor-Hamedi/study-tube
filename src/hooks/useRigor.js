@@ -116,7 +116,6 @@ export const useRigor = () => {
     }
   };
 
-
   const analyze = useCallback(
     async (content) => {
       if (!content) return null;
@@ -124,7 +123,7 @@ export const useRigor = () => {
       setIsNeuralScanning(true);
       await new Promise((r) => setTimeout(r, 1200));
 
-      const text = content;
+      const text = content.replace(/’/g, "'");
       const highlights = [];
 
       // 1. COMPREHENSIVE FORENSIC DATABASE
@@ -202,61 +201,61 @@ export const useRigor = () => {
             const bestMatch = truthTrie.findFuzzy(cleanWord, 1);
             const minDistance = bestMatch ? 1 : 99; // Currently optimized for distance 1
 
-              // Only flag if it's a very close match AND it's not a common short word
-              const commonShorts = [
-                "is",
-                "the",
-                "a",
-                "an",
-                "at",
-                "by",
-                "for",
-                "in",
-                "of",
-                "on",
-                "to",
-                "up",
-                "and",
-                "but",
-                "or",
-                "so",
-                "as",
-                "if",
-                "not",
-                "it",
-                "be",
-                "do",
-                "we",
-                "my",
-                "me",
-                "he",
-                "she",
-              ];
+            // Only flag if it's a very close match AND it's not a common short word
+            const commonShorts = [
+              "is",
+              "the",
+              "a",
+              "an",
+              "at",
+              "by",
+              "for",
+              "in",
+              "of",
+              "on",
+              "to",
+              "up",
+              "and",
+              "but",
+              "or",
+              "so",
+              "as",
+              "if",
+              "not",
+              "it",
+              "be",
+              "do",
+              "we",
+              "my",
+              "me",
+              "he",
+              "she",
+            ];
 
-              if (
-                bestMatch &&
-                minDistance <= 1 &&
-                !commonShorts.includes(cleanWord)
-              ) {
-                highlights.push({
-                  start: currentIndex,
-                  end: currentIndex + word.length,
-                  type: "spelling",
-                  reason: "Spelling Anomaly",
-                  suggestion: bestMatch,
-                  explanation: `Fuzzy logic detected a similarity to "${bestMatch}".`,
-                });
-              } else if (cleanWord.length > 3) {
-                // NEURAL OUTLIER DETECTION: Only flag long unknown words as outliers
-                highlights.push({
-                  start: currentIndex,
-                  end: currentIndex + word.length,
-                  type: "diction",
-                  reason: "Specialized Term",
-                  suggestion: null,
-                  explanation:
-                    "This term is not in the primary academic dataset; verify specialized context.",
-                });
+            if (
+              bestMatch &&
+              minDistance <= 1 &&
+              !commonShorts.includes(cleanWord)
+            ) {
+              highlights.push({
+                start: currentIndex,
+                end: currentIndex + word.length,
+                type: "spelling",
+                reason: "Spelling Anomaly",
+                suggestion: bestMatch,
+                explanation: `Fuzzy logic detected a similarity to "${bestMatch}".`,
+              });
+            } else if (cleanWord.length > 3) {
+              // NEURAL OUTLIER DETECTION: Only flag long unknown words as outliers
+              highlights.push({
+                start: currentIndex,
+                end: currentIndex + word.length,
+                type: "diction",
+                reason: "Specialized Term",
+                suggestion: null,
+                explanation:
+                  "This term is not in the primary academic dataset; verify specialized context.",
+              });
             }
           }
         }

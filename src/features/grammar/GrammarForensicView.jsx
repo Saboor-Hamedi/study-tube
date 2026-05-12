@@ -13,13 +13,13 @@ import {
   ArrowRight,
   X,
 } from "lucide-react";
-import { 
-  useFloating, 
-  offset, 
-  flip, 
-  shift, 
-  inline, 
-  autoUpdate 
+import {
+  useFloating,
+  offset,
+  flip,
+  shift,
+  inline,
+  autoUpdate,
 } from "@floating-ui/react";
 import { useRigor } from "../../hooks/useRigor";
 import NeuralFeedbackHub from "./NeuralFeedbackHub";
@@ -60,9 +60,9 @@ export default function GrammarForensicView({
     placement: "bottom-start",
     strategy: "fixed",
     middleware: [
-      offset(12), 
-      flip({ fallbackAxisSideDirection: "start" }), 
-      shift({ padding: 10 })
+      offset(12),
+      flip({ fallbackAxisSideDirection: "start" }),
+      shift({ padding: 10 }),
     ],
     whileElementsMounted: autoUpdate,
   });
@@ -159,7 +159,7 @@ export default function GrammarForensicView({
       // Instant Clearance: Force re-analysis to remove the flag immediately
       setTimeout(() => {
         handleDeepAnalyze();
-      }, 50); 
+      }, 50);
     } else {
       if (showToast)
         showToast(`Failed to whitelist "${word}": ${result.message}`, "error");
@@ -200,10 +200,10 @@ export default function GrammarForensicView({
 
   const showHl = (hl, i, e) => {
     if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
-    
+
     // Set the reference element directly for robust positioning
     refs.setReference(e.currentTarget);
-    
+
     setSelectedHl({
       ...hl,
       index: i + 1,
@@ -415,7 +415,7 @@ export default function GrammarForensicView({
       {/* Robust Anomaly Dropdown - NEURAL LAYER (Floating UI) */}
       <AnimatePresence>
         {selectedHl && (
-          <div 
+          <div
             ref={refs.setFloating}
             style={{
               position: strategy,

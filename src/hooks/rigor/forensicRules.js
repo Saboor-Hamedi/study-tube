@@ -550,4 +550,96 @@ export const forensicRules = [
     suggestion: "instead of their",
     exp: "Homophone confusion.",
   },
+
+  // Academic Rigor: Formal Contraction Expansion (TONE)
+  {
+    regex: /\b(don['’]t)\b/gi,
+    type: "tone",
+    suggestion: "do not",
+    exp: "Academic manuscripts require formal word expansion.",
+  },
+  {
+    regex: /\b(doesn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "does not",
+    exp: "Use expanded formal phrasing in academic context.",
+  },
+  {
+    regex: /\b(can['’]t)\b/gi,
+    type: "tone",
+    suggestion: "cannot",
+    exp: "Formal expansion required for scholarly rigor.",
+  },
+  {
+    regex: /\b(won['’]t)\b/gi,
+    type: "tone",
+    suggestion: "will not",
+    exp: "Avoid contractions in formal research documentation.",
+  },
+  {
+    regex: /\b(it['’]s)\b/gi,
+    type: "tone",
+    suggestion: "it is",
+    exp: "Differentiate between possessive 'its' and formal 'it is'.",
+  },
+  {
+    regex: /\b(you['’]re)\b/gi,
+    type: "tone",
+    suggestion: "you are",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(they['’]re)\b/gi,
+    type: "tone",
+    suggestion: "they are",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(we['’]re)\b/gi,
+    type: "tone",
+    suggestion: "we are",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(shouldn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "should not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(couldn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "could not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(wouldn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "would not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(aren['’]t)\b/gi,
+    type: "tone",
+    suggestion: "are not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(isn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "is not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(haven['’]t)\b/gi,
+    type: "tone",
+    suggestion: "have not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(hasn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "has not",
+    exp: "Formal expansion required.",
+  },
 ];
