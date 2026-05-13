@@ -1,29 +1,37 @@
-# StudyTube Research Studio: V2.0 Roadmap 🚀
+# Neural Feedback Hub: Industrial Roadmap (Phase 2)
 
-This document outlines the strategic evolution of StudyTube from a capture tool into a high-fidelity Neural Intelligence Engine.
+This document outlines the generation of academic forensic and synthesis features implemented for the **Neural Feedback Hub**. The focus has been on **Industrial Accuracy, Interaction Fluidity, and Seamless Performance**.
 
-## Phase 1: Neural Memory & Semantic Linking 🧠
-*   **Intelligent Recall**: Implement background querying so the AI Copilot can reference your existing local database. 
-    *   *User Story*: "When I capture a word about 'Quantum Physics', StudyTube notifies me that I have 5 related insights in my 'Science' collection."
-*   **FTS5 Global Search**: A unified, high-performance search interface leveraging the SQLite virtual table to search through titles, definitions, and markdown notes simultaneously.
+---
 
-## Phase 2: Knowledge Graph Visualization 📊
-*   **The Neural Web**: Generate an interactive 2D/3D graph visualization of all research nodes.
-*   **Clustering**: Automatically group insights based on AI-detected semantic similarity, allowing users to discover "hidden" connections between their YouTube studies.
+> [!IMPORTANT]
+> **CRITICAL RULE**: DO NOT change the UI, styling, or layout of any forensic component unless explicitly requested. All future updates must focus on logic and performance optimization only.
 
-## Phase 3: Multi-Source Ingestion 📂
-*   **Universal Archive**: Expand beyond YouTube to support:
-    *   PDF Ingestion (with text extraction)
-    *   Web Article Scraping
-    *   Markdown File Import
-*   **Unified Schema**: Use the high-performance SQLite backend to manage all research formats in a single industrial repository.
+---
 
-## Phase 4: Ecosystem Integration & Mobility 🔌
-*   **One-Click Sync**: Direct export plugins for:
-    *   **Anki**: Automatic flashcard generation.
-    *   **Obsidian/Notion**: High-fidelity markdown export with metadata.
-*   **Cloud Harmony**: Optional end-to-end encrypted sync for multi-device research sessions.
+## ✅ 1. Forensic Engine Industrialization (COMPLETED)
+The analytical layer has been evolved from basic regex into a surgical diagnostic suite.
 
-## Phase 5: Production UX & Theming 🎨
-*   **Industrial Environments**: Launch 'Laboratory Light' and 'Monospace Minimalist' high-contrast themes.
-*   **Focus Mode**: A distraction-free research interface that maximizes the vertical real estate for the Editor and Video Player.
+- **Objective**: Standardize professional-grade linguistic auditing.
+- **Implemented Enhancements**:
+  - **Neural Ghost Previews**: Real-time "linguistic hallucinations" allow users to visualize neural corrections in-place before committing changes.
+  - **Zero-Shift Layout Engine**: Prevents paragraph reflow during audit phases by using spatial anchoring and opacity transitions.
+  - **Bit-Perfect Highlighting**: Transitioned to strictly inline rendering with horizontal buffers (`px-[1px]`) to ensure 100% character coverage without layout drift.
+  - **Surgical Index Shifting**: High-performance "Optimistic UI" that updates forensic flags instantly without requiring a full-document re-scan.
+  - **Silent Audit Flow**: Removed redundant notifications to ensure a non-distracting, industrial editing environment.
+
+## 🧠 2. Contextual Synthesis & Versioning (IN PROGRESS)
+Moving toward sophisticated research archival and document evolution.
+
+- **Target Enhancements**:
+  - **Multi-Variant Toggling**: Allow users to cycle between multiple neural rephrasing styles (Concise / Academic / Impactful) within the surgical HUD.
+  - **History-Aware Audits**: Integrate the snapshots system to allow "Undo" operations directly within the forensic view.
+  - **Cloud-Sync Dictionary**: Permanent persistence for specialized academic terminology across all user environments.
+
+---
+
+## 🛠️ Tech Stack & Optimization
+- **Core**: React 18 + Framer Motion (Kinetic Transitions)
+- **Engine**: useRigor Hook (Fuzzy Trie + Regex Forensic Database)
+- **Persistence**: PostgreSQL (Cloud Bridge via FastAPI / Port 8000)
+- **Performance**: Standardized on `React.memo` for the Surgical HUD and surgical index math for zero-latency manuscript updates.

@@ -1,10 +1,10 @@
-# StudyTube: AI English Learning Studio
+# Writella: AI English Learning Studio
 
-**StudyTube** is a high-fidelity desktop application designed to transform YouTube into a professional language learning environment. By leveraging the power of AI (DeepSeek), it provides a context-aware tutoring experience built directly into your video workflow.
+**Writella** is a high-fidelity desktop application designed to transform YouTube into a professional language learning environment. By leveraging the power of AI (DeepSeek), it provides a context-aware tutoring experience built directly into your video workflow.
 
 ## Key Features
 
-- ** YouTube-Style Interface**: A familiar, premium "StudyTube" UI with a persistent search header and sleek navigation.
+- ** YouTube-Style Interface**: A familiar, premium "Writella" UI with a persistent search header and sleek navigation.
 - ** AI English Tutor**: A context-aware chatbot that reads the video transcript and helps you understand idioms, grammar, and complex topics in real-time.
 - ** Interactive Transcripts**: Click-to-play timestamps that jump the video to the exact moment a word is spoken.
 - ** Vocabulary Studio**: Save words and phrases directly from the transcript to your personal vocabulary vault for long-term study.

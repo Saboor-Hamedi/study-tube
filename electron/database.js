@@ -1,337 +1,360 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
-import { app } from 'electron';
+import pg from 'pg';
+const { Pool } = pg;
+import dotenv from 'dotenv';
+dotenv.config();
 
-const dbPath = path.join(app.getPath('userData'), 'studytube.db');
-const db = new Database(dbPath);
+// Industrial PostgreSQL Connection Pool
+const pool = new Pool({
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_NAME || "writella",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASS || "jan",
+  port: parseInt(process.env.DB_PORT || "5432"),
+  max: 20, // Connection safety limit
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 
-// Enable WAL mode for performance
-db.pragma('journal_mode = WAL');
+// Helper for industrial error handling
+const query = async (text, params) => {
+  const start = Date.now();
+  try {
+    const res = await pool.query(text, params);
+    const duration = Date.now() - start;
+    // console.log('[POSTGRES] Executed query', { text, duration, rows: res.rowCount });
+    return res;
+  } catch (err) {
+    console.error('[POSTGRES] Query Error:', err.message);
+    throw err;
+  }
+};
 
 /**
- * Initialize Tables and FTS5
+ * Initialize Tables (Mirror Cloud Schema)
  */
-export function initDatabase() {
-  // 1. Notes Table
-  db.prepare(`
-    CREATE TABLE IF NOT EXISTS notes (
-      id INTEGER PRIMARY KEY CHECK (id = 1), -- Hardcoded ID to ensure singleton
-      data TEXT,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
-
-  // 2. Library Table (Vocabulary/Captures)
-  db.prepare(`
-    CREATE TABLE IF NOT EXISTS library (
-      id TEXT PRIMARY KEY, 
-      text TEXT,
-      definition TEXT,
-      summary TEXT,
-      videoTitle TEXT,
-      timestamp REAL,
-      date TEXT,
-      archived INTEGER DEFAULT 0,
-      collection TEXT,
-      type TEXT,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
-
-  // 2a. Industrial Migration: Ensure 'summary' column exists for legacy databases
+export async function initDatabase() {
+  // console.log("[POSTGRES] Initializing Industrial Schema...");
   try {
-    db.prepare('ALTER TABLE library ADD COLUMN summary TEXT').run();
-    console.log('[SQLITE] Database Migrated: Added summary column');
-  } catch (e) {
-    // Column already exists, ignore error
-  }
+    // 1. Extensions
+    await query('CREATE EXTENSION IF NOT EXISTS "pg_trgm"');
 
-  // 2b. High-Performance B-Tree Indexes
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_library_collection ON library(collection);
-    CREATE INDEX IF NOT EXISTS idx_library_date ON library(date);
-    CREATE INDEX IF NOT EXISTS idx_library_archived ON library(archived);
-  `);
-
-  // 3. Collections Table
-  db.prepare(`
-    CREATE TABLE IF NOT EXISTS collections (
-      name TEXT PRIMARY KEY
-    )
-  `).run();
-
-  // 4. FTS5 Virtual Table for Library Search
-  try {
-    // Industrial Search: Library FTS5 Index with Porter Stemming
-    db.exec(`
-      DROP TABLE IF EXISTS library_fts;
-      CREATE VIRTUAL TABLE library_fts USING fts5(
-        text, 
-        definition, 
-        videoTitle, 
-        collection,
-        content='library',
-        content_rowid='rowid',
-        tokenize="porter unicode61 remove_diacritics 1"
-      );
-      
-      -- Initial Indexing Migration
-      INSERT INTO library_fts(rowid, text, definition, videoTitle, collection)
-      SELECT rowid, text, definition, videoTitle, collection FROM library;
-
-      -- Sync Triggers (Recreated with table)
-      DROP TRIGGER IF EXISTS library_ai;
-      DROP TRIGGER IF EXISTS library_ad;
-      DROP TRIGGER IF EXISTS library_au;
-
-      CREATE TRIGGER library_ai AFTER INSERT ON library BEGIN
-        INSERT INTO library_fts(rowid, text, definition, videoTitle, collection) 
-        VALUES (new.rowid, new.text, new.definition, new.videoTitle, new.collection);
-      END;
-
-      CREATE TRIGGER library_ad AFTER DELETE ON library BEGIN
-        INSERT INTO library_fts(library_fts, rowid, text, definition, videoTitle, collection) 
-        VALUES('delete', old.rowid, old.text, old.definition, old.videoTitle, old.collection);
-      END;
-
-      CREATE TRIGGER library_au AFTER UPDATE ON library BEGIN
-        INSERT INTO library_fts(library_fts, rowid, text, definition, videoTitle, collection) 
-        VALUES('delete', old.rowid, old.text, old.definition, old.videoTitle, old.collection);
-        INSERT INTO library_fts(rowid, text, definition, videoTitle, collection) 
-        VALUES (new.rowid, new.text, new.definition, new.videoTitle, new.collection);
-      END;
+    // 2. Library Table
+    await query(`
+      CREATE TABLE IF NOT EXISTS library (
+        id TEXT PRIMARY KEY,
+        text TEXT NOT NULL,
+        definition TEXT,
+        video_title TEXT,
+        timestamp DOUBLE PRECISION,
+        date TEXT,
+        archived BOOLEAN DEFAULT FALSE,
+        collection TEXT,
+        type TEXT,
+        metadata TEXT,
+        synced BOOLEAN DEFAULT TRUE,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
     `);
-  } catch (e) {
-    console.warn('FTS5 Initialization Anomaly:', e.message);
+
+    // 3. Notes Table
+    await query(`
+      CREATE TABLE IF NOT EXISTS notes (
+        user_id TEXT PRIMARY KEY,
+        data JSONB,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 4. Collections Table
+    await query(`
+      CREATE TABLE IF NOT EXISTS collections (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 5. Search Log Table
+    await query(`
+      CREATE TABLE IF NOT EXISTS search_log (
+        query TEXT PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 6. Global Settings Table
+    await query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        user_id TEXT PRIMARY KEY,
+        config JSONB,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 7. Forensic Whitelist
+    await query(`
+      CREATE TABLE IF NOT EXISTS forensic_whitelist (
+        word TEXT PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // console.log("[POSTGRES] Industrial Synchronization Successful.");
+  } catch (err) {
+    console.error("[POSTGRES] Schema Init Failure:", err.message);
   }
-
-  // 5. Search Log Table (Persistent History)
-  db.prepare(`
-    CREATE TABLE IF NOT EXISTS search_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      query TEXT UNIQUE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
 }
-
 
 /**
  * Notes API
  */
-export function getNotes() {
-  const row = db.prepare('SELECT data FROM notes WHERE id = 1').get();
-  return row ? JSON.parse(row.data) : { blocks: [] };
+const SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
+
+export async function getNotes() {
+  const res = await query("SELECT data FROM notes WHERE user_id = $1", [SINGLETON_ID]);
+  return res.rows[0] ? res.rows[0].data : { blocks: [] };
 }
 
-export function saveNotes(data) {
-  const raw = typeof data === 'string' ? data : JSON.stringify(data);
-  db.prepare('INSERT OR REPLACE INTO notes (id, data, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)').run(raw);
+export async function saveNotes(data) {
+  await query(
+    `INSERT INTO notes (user_id, data, updated_at) 
+     VALUES ($1, $2, CURRENT_TIMESTAMP)
+     ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
+    [SINGLETON_ID, JSON.stringify(data)]
+  );
 }
 
 /**
- * Library API - Industrial Scale Optimized
+ * Library API
  */
-export function getLibraryPage({ collection = 'all', sortBy = 'newest', limit = 12, offset = 0 }) {
-  let query = 'SELECT * FROM library';
+export async function getLibrary(includeArchived = false) {
+  const sql = includeArchived
+    ? "SELECT * FROM library ORDER BY date DESC"
+    : "SELECT * FROM library WHERE archived = FALSE ORDER BY date DESC";
+  const res = await query(sql);
+  
+  // Map snake_case to camelCase for UI compatibility
+  return res.rows.map(r => ({
+    ...r,
+    videoTitle: r.video_title,
+    archived: r.archived ? 1 : 0,
+    synced: r.synced ? 1 : 0
+  }));
+}
+
+export async function getLibraryPage({ collection, sortBy, limit }) {
+  let sql = "SELECT * FROM library";
   const params = [];
+  let paramCount = 1;
 
-  // Filter Logic
-  if (collection === 'all') {
-    query += ' WHERE IFNULL(archived, 0) = 0';
-  } else if (collection === 'trash') {
-    query += ' WHERE IFNULL(archived, 0) = 1';
-  } else {
-    query += ' WHERE IFNULL(archived, 0) = 0 AND collection = ?';
+  if (collection === "trash") {
+    sql += " WHERE archived = TRUE";
+  } else if (collection === "unorganized") {
+    sql += ' WHERE (collection IS NULL OR collection = \'\') AND archived = FALSE';
+  } else if (collection && collection !== "all") {
+    sql += ` WHERE collection = $${paramCount++} AND archived = FALSE`;
     params.push(collection);
-  }
-
-  // Sorting Logic
-  if (sortBy === 'alpha') {
-    query += ' ORDER BY text ASC';
   } else {
-    query += ' ORDER BY date DESC';
+    sql += " WHERE archived = FALSE";
   }
 
-  // Pagination
-  query += ' LIMIT ? OFFSET ?';
-  params.push(limit, offset);
+  if (sortBy === "alpha") sql += " ORDER BY text ASC";
+  else sql += " ORDER BY date DESC";
 
-  const rows = db.prepare(query).all(...params);
-  return rows.map(r => ({ ...r, archived: !!r.archived }));
+  if (limit) {
+    sql += ` LIMIT $${paramCount++}`;
+    params.push(limit);
+  }
+
+  const res = await query(sql, params);
+  return res.rows.map(r => ({
+    ...r,
+    videoTitle: r.video_title,
+    archived: r.archived ? 1 : 0,
+    synced: r.synced ? 1 : 0
+  }));
 }
 
-export function getCollectionStats() {
-  try {
-    // Industrial Counting: Treat NULL as 0 (Unarchived)
-    const all = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 0').get().count;
-    const trash = db.prepare('SELECT COUNT(*) as count FROM library WHERE IFNULL(archived, 0) = 1').get().count;
-    
-    const collections = db.prepare(`
-      SELECT collection as name, COUNT(*) as count 
-      FROM library 
-      WHERE IFNULL(archived, 0) = 0 AND collection IS NOT NULL AND collection != ''
-      GROUP BY collection
-    `).all();
+export async function getCollectionStats() {
+  const allCount = (await query("SELECT COUNT(*) FROM library WHERE archived = FALSE")).rows[0].count;
+  const trashCount = (await query("SELECT COUNT(*) FROM library WHERE archived = TRUE")).rows[0].count;
+  const collections = (await query(`
+    SELECT collection as name, COUNT(*) 
+    FROM library 
+    WHERE archived = FALSE AND collection IS NOT NULL AND collection != ''
+    GROUP BY collection
+  `)).rows;
 
-    return { all, trash, collections };
-  } catch (err) {
-    console.error('[SQLITE STATS ERROR]', err.message);
-    return { all: 0, trash: 0, collections: [] };
+  return { 
+    all: parseInt(allCount), 
+    trash: parseInt(trashCount), 
+    collections: collections.map(c => ({ name: c.name, count: parseInt(c.count) })) 
+  };
+}
+
+export async function saveLibrary(items) {
+  for (const item of items) {
+    await saveVocabItem(item);
   }
 }
 
-export function saveVocabItem(item) {
-  const stmt = db.prepare(`
-    INSERT INTO library (id, text, definition, summary, videoTitle, timestamp, date, archived, collection, type)
-    VALUES (@id, @text, @definition, @summary, @videoTitle, @timestamp, @date, @archived, @collection, @type)
-    ON CONFLICT(id) DO UPDATE SET
-      text = excluded.text,
-      definition = excluded.definition,
-      summary = excluded.summary,
-      videoTitle = excluded.videoTitle,
-      archived = excluded.archived,
-      collection = excluded.collection,
-      type = excluded.type,
+export async function saveVocabItem(item) {
+  const metaStr = typeof item.metadata === "object" ? JSON.stringify(item.metadata) : item.metadata || "{}";
+  
+  await query(`
+    INSERT INTO library (id, text, definition, video_title, timestamp, date, archived, collection, metadata, synced) 
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
+    ON CONFLICT (id) DO UPDATE SET
+      text = EXCLUDED.text,
+      definition = EXCLUDED.definition,
+      video_title = EXCLUDED.video_title,
+      timestamp = EXCLUDED.timestamp,
+      date = EXCLUDED.date,
+      archived = EXCLUDED.archived,
+      collection = EXCLUDED.collection,
+      metadata = EXCLUDED.metadata,
+      synced = TRUE,
       updated_at = CURRENT_TIMESTAMP
-  `);
-
-  stmt.run({
-    id: item.date || item.id || new Date().toISOString(),
-    text: item.text || '',
-    definition: item.definition || '',
-    summary: item.summary || null,
-    videoTitle: item.videoTitle || 'Universal Knowledge',
-    timestamp: item.timestamp || 0,
-    date: item.date || new Date().toISOString(),
-    archived: item.archived ? 1 : 0,
-    collection: item.collection || null,
-    type: item.type || ''
-  });
+  `, [
+    item.id, 
+    item.text, 
+    item.definition || "", 
+    item.videoTitle || item.video_title || "", 
+    item.timestamp || 0,
+    item.date || new Date().toISOString(),
+    item.archived === 1 || item.archived === true,
+    item.collection || null,
+    metaStr
+  ]);
 }
 
-export function migrateCollection(oldName, newName) {
-  db.prepare('UPDATE library SET collection = ? WHERE collection = ?').run(newName, oldName);
-  db.prepare('UPDATE collections SET name = ? WHERE name = ?').run(newName, oldName);
+export async function deleteVocabItem(id) {
+  await query("DELETE FROM library WHERE id = $1", [id]);
 }
 
-export function disbandCollection(name) {
-  db.prepare('UPDATE library SET collection = NULL WHERE collection = ?').run(name);
-  db.prepare('DELETE FROM collections WHERE name = ?').run(name);
+export async function archiveVocabItem(id) {
+  await query("UPDATE library SET archived = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $1", [id]);
 }
 
-export function getLibrary() {
-  const rows = db.prepare('SELECT * FROM library ORDER BY date DESC').all();
-  return rows.map(r => ({ ...r, archived: !!r.archived }));
+export async function restoreVocabItem(id) {
+  await query("UPDATE library SET archived = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1", [id]);
 }
 
-export function deleteVocabItem(id) {
-  db.prepare('DELETE FROM library WHERE id = ?').run(id);
+// --- Forensic Whitelist System ---
+
+export async function getForensicWhitelist() {
+  // console.log("[POSTGRES] >>> FETCHING FORENSIC WHITELIST <<<");
+  const res = await query("SELECT word FROM forensic_whitelist");
+  // console.log(`[POSTGRES] >>> SYNC SUCCESSFUL: ${res.rowCount} WORDS RETRIEVED <<<`);
+  return res.rows.map(r => r.word);
 }
 
-// Legacy support for smaller migrations, but we should move away from this
-export function saveLibrary(items) {
-  db.transaction(() => {
-    db.prepare('DELETE FROM library').run();
-    const insert = db.prepare(`
-      INSERT INTO library (id, text, definition, videoTitle, timestamp, date, archived, collection, type)
-      VALUES (@date, @text, @definition, @videoTitle, @timestamp, @date, @archived, @collection, @type)
-    `);
-    for (const item of items) {
-      insert.run({
-        text: item.text || '',
-        videoTitle: item.videoTitle || 'Universal Source',
-        timestamp: item.timestamp || 0,
-        date: item.date || new Date().toISOString(),
-        archived: item.archived ? 1 : 0,
-        collection: item.collection || null,
-        type: item.type || '',
-        definition: item.definition || ''
-      });
-    }
-  })();
+export async function addForensicWord(word) {
+  // console.log(`[POSTGRES] >>> ATTEMPTING TO WHITELIST WORD: "${word}" <<<`);
+  await query("INSERT INTO forensic_whitelist (word) VALUES ($1) ON CONFLICT DO NOTHING", [word]);
+  // console.log(`[POSTGRES] >>> WORD PERMANENTLY WHITELISTED: "${word}" <<<`);
+}
+
+export async function removeForensicWord(word) {
+  await query("DELETE FROM forensic_whitelist WHERE word = $1", [word]);
+}
+
+export async function getForensicWhitelistMetadata() {
+  const res = await query("SELECT COUNT(*) as count, MAX(created_at) as last_updated FROM forensic_whitelist");
+  return {
+    count: parseInt(res.rows[0].count),
+    lastUpdated: res.rows[0].last_updated ? new Date(res.rows[0].last_updated).getTime() : 0
+  };
 }
 
 /**
  * Collections API
  */
-export function getCollections() {
-  const rows = db.prepare('SELECT name FROM collections').all();
-  return rows.map(r => r.name);
+export async function getCollections() {
+  const res = await query("SELECT name FROM collections ORDER BY name ASC");
+  return res.rows;
 }
 
-export function saveCollections(names) {
-  db.transaction(() => {
-    db.prepare('DELETE FROM collections').run();
-    const insert = db.prepare('INSERT INTO collections (name) VALUES (?)');
-    for (const name of names) insert.run(name);
-  })();
+export async function saveCollections(list) {
+  await query("DELETE FROM collections");
+  for (const name of list) {
+    await query("INSERT INTO collections (name) VALUES ($1)", [name]);
+  }
+}
+
+export async function migrateCollection(oldName, newName) {
+  await query("UPDATE library SET collection = $1 WHERE collection = $2", [newName, oldName]);
+}
+
+export async function disbandCollection(name) {
+  await query("UPDATE library SET collection = NULL WHERE collection = $1", [name]);
 }
 
 /**
- * Search Log API
+ * Search History / Logs
  */
-export function getSearchLog() {
-  try {
-    const rows = db.prepare('SELECT query FROM search_log ORDER BY created_at DESC LIMIT 10').all();
-    console.log(`[SQLITE] Fetched ${rows.length} search logs`);
-    return rows.map(r => r.query);
-  } catch (err) {
-    console.error('[SQLITE ERROR] Fetch Log Failure:', err.message);
-    return [];
-  }
+export async function getSearchLog() {
+  const res = await query("SELECT query FROM search_log ORDER BY created_at DESC LIMIT 10");
+  return res.rows.map(r => r.query);
 }
 
-export function addSearchLog(query) {
-  try {
-    console.log(`[SQLITE] Committing Query: "${query}"`);
-    // Insert or update timestamp if exists
-    db.prepare(`
-      INSERT INTO search_log (query, created_at) 
-      VALUES (?, CURRENT_TIMESTAMP)
-      ON CONFLICT(query) DO UPDATE SET created_at = CURRENT_TIMESTAMP
-    `).run(query);
-    console.log(`[SQLITE] Query Saved Successfully`);
-  } catch (err) {
-    console.error('[SYSTEM] Search Log Persistence Failure:', err.message);
-  }
+export async function addSearchLog(queryText) {
+  await query(`
+    INSERT INTO search_log (query, created_at) 
+    VALUES ($1, CURRENT_TIMESTAMP)
+    ON CONFLICT (query) DO UPDATE SET created_at = CURRENT_TIMESTAMP
+  `, [queryText]);
 }
 
-export function deleteSearchLog(query) {
-  db.prepare('DELETE FROM search_log WHERE query = ?').run(query);
+export async function deleteSearchLog(queryText) {
+  await query("DELETE FROM search_log WHERE query = $1", [queryText]);
 }
 
-export function clearSearchLog() {
-  db.prepare('DELETE FROM search_log').run();
+export async function clearSearchLog() {
+  await query("DELETE FROM search_log");
 }
 
 /**
- * Neural FTS Search: Returns matches with highlights
+ * Neural FTS Search: Utilizing PostgreSQL pg_trgm for fuzzy search
  */
-export function searchLibraryFTS(query) {
-  if (!query || query.trim().length === 0) return [];
-  try {
-    // Search across word, definition, and title using FTS5
-    // We use snippet() to get the highlighted context
-    const rows = db.prepare(`
-      SELECT 
-        l.id, 
-        l.text, 
-        l.videoTitle,
-        snippet(library_fts, 1, '<mark>', '</mark>', '...', 20) as definitionSnippet
-      FROM library l
-      JOIN library_fts ON l.rowid = library_fts.rowid
-      WHERE library_fts MATCH '"' || ? || '"*'
-      ORDER BY rank
-      LIMIT 6
-    `).all(query);
-
-    return rows;
-  } catch (err) {
-    console.error('[SQLITE FTS ERROR]:', err.message);
-    return [];
-  }
+export async function searchLibraryFTS(q) {
+  if (!q || q.trim().length === 0) return [];
+  const res = await query(`
+    SELECT *, 
+           similarity(text, $1) as rank
+    FROM library 
+    WHERE text ILIKE $2 OR video_title ILIKE $2
+    ORDER BY rank DESC
+    LIMIT 10
+  `, [q, `%${q}%`]);
+  
+  return res.rows.map(r => ({
+    ...r,
+    videoTitle: r.video_title,
+    archived: r.archived ? 1 : 0,
+    synced: r.synced ? 1 : 0
+  }));
 }
 
-export default db;
+/**
+ * Settings API
+ */
+export async function getAppSettings() {
+  const res = await query("SELECT config FROM settings WHERE user_id = $1", [SINGLETON_ID]);
+  return res.rows[0] ? res.rows[0].config : {};
+}
+
+export async function saveAppSettings(config) {
+  await query(`
+    INSERT INTO settings (user_id, config, updated_at) 
+    VALUES ($1, $2, CURRENT_TIMESTAMP)
+    ON CONFLICT (user_id) DO UPDATE SET config = EXCLUDED.config, updated_at = CURRENT_TIMESTAMP
+  `, [SINGLETON_ID, JSON.stringify(config)]);
+  return true;
+}
+
+// ─── Sync Compatibility (Placeholder for Legacy Code) ──────────────────────
+export async function getUnsyncedLibraryItems() { return []; }
+export async function markItemsAsSynced() { return; }
+
+export default pool;
