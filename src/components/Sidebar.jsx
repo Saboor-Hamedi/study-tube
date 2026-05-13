@@ -83,12 +83,15 @@ export default function Sidebar({
   const navItems = [
     { id: "home", name: "Home", icon: LayoutGrid },
     { id: "search", name: "Video Intel", icon: Search },
+    { id: "class", name: "My Class", icon: GraduationCap },
     { id: "vocab", name: "Research Vault", icon: Library },
     { id: "editor", name: "Analytical Writing", icon: FileText },
+    { id: "assignment", name: "Writing Assignment", icon: Pencil },
+    { id: "review", name: "Review Assignment", icon: Check },
     { id: "grammar", name: "Grammar Lab", icon: GraduationCap },
     { id: "ai-detection", name: "AI Detection", icon: Cpu },
     { id: "plagiarism", name: "Plagiarism", icon: Hash },
-    { id: "report", name: "System Report", icon: BarChart2 },
+    { id: "report", name: "Report", icon: BarChart2 },
   ];
 
   return (
@@ -141,63 +144,6 @@ export default function Sidebar({
             })}
           </div>
 
-          {/* Collections Section */}
-          <div className="space-y-3">
-            {!isCollapsed && (
-              <div className="flex items-center justify-between px-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">Collections</p>
-                <button 
-                  onClick={() => setIsCreatingCollection(true)}
-                  className="p-1 h-5 w-5 flex items-center justify-center bg-surface-3 hover:bg-accent hover:text-white text-muted transition-all duration-300 rounded-sm"
-                >
-                  <Plus className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-
-            <div className="space-y-1">
-              {collections.map((c) => (
-                <DroppableFolder 
-                  key={c}
-                  id={c}
-                  isCollapsed={isCollapsed}
-                  active={selectedCollection === c}
-                  onClick={() => {
-                    setSelectedCollection?.(c);
-                    if (view !== 'vocab') setView?.('vocab');
-                  }}
-                  count={getCount(c)}
-                />
-              ))}
-            </div>
-
-            {isCreatingCollection && !isCollapsed && (
-              <div className="mx-1 mt-2 p-2 border border-accent/20 bg-accent/[0.02] rounded-sm">
-                <input 
-                  autoFocus
-                  value={newCollectionName}
-                  onChange={e => setNewCollectionName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleCreateCollection(newCollectionName)}
-                  placeholder="New collection..."
-                  className="w-full bg-background border border-border px-2 py-1.5 text-[10px] text-text outline-none focus:border-accent/30 transition-all"
-                />
-                <div className="flex gap-1 mt-2">
-                  <button 
-                    onClick={() => handleCreateCollection(newCollectionName)} 
-                    className="flex-1 py-1 bg-accent text-white text-[9px] font-black uppercase tracking-widest hover:brightness-110 transition-all rounded-sm"
-                  >
-                    Add
-                  </button>
-                  <button 
-                    onClick={() => setIsCreatingCollection(false)} 
-                    className="px-3 py-1 bg-surface-3 text-muted text-[9px] font-black uppercase tracking-widest hover:text-text transition-all border border-border rounded-sm"
-                  >
-                    X
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         <SidebarFooter isCollapsed={isCollapsed} setView={setView} />

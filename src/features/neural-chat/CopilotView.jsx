@@ -97,13 +97,14 @@ export default memo(function CopilotView({
     setInput("");
     setIsTyping(true);
     isTypingRef.current = true;
+    const context = contextItem || (useStore.getState().view === 'editor' ? useStore.getState().activeEditorContent : null);
 
-    const systemPrompt = contextItem
+    const systemPrompt = context
       ? `You are the Writella Neural Research Assistant & Linguistic Expert.
 
 PRIMARY RESEARCH CONTEXT:
-- Node Title: "${contextItem.text}"
-- Source Content: "${contextItem.definition}"
+- Node Title: "${context.text}"
+- Source Content: "${context.definition}"
 
 MANDATE:
 Examine the PRIMARY RESEARCH CONTEXT provided above. Your primary goal is to fulfill the USER INSTRUCTION below with surgical precision. 
@@ -111,14 +112,20 @@ Examine the PRIMARY RESEARCH CONTEXT provided above. Your primary goal is to ful
 USER INSTRUCTION: "${input}"
 
 GUIDELINES:
-1. TERMINOLOGY: When the user says "the document", "the script", "the file", or "the English script", they are referring EXCLUSIVELY to the PRIMARY RESEARCH CONTEXT provided below.
-2. If the user asks for analysis or scoring, provide a "🧠 NEURAL AUDIT" (Band score, Summary, Corrections, Vocabulary).
-3. If the user asks for extraction (e.g., "give me 3 words"), DO NOT provide an audit; simply perform the extraction accurately.
-4. Use the industrial formatting rules: 
-   - Use '🔍 SECTION TITLE' for headers.
+1. TERMINOLOGY: When the user says "what do you see?","tell me about the doc", "the document", "the script", "the file", "the English script", or "this text", they are referring EXCLUSIVELY to the PRIMARY RESEARCH CONTEXT provided below (e.g. the Editor Draft or Research Node).
+2. If the context title is "Editor Draft", treat it as the user's active manuscript.
+3. If the user asks for analysis or scoring, provide a "### NEURAL AUDIT" section.
+4. SCORING RUBRIC (STRICT IELTS STANDARD):
+   - Band 9.0: Native-like, sophisticated vocabulary, near-perfect grammar.
+   - Band 7.0-8.0: High academic level, precise vocabulary, minor rare errors.
+   - Band 5.0-6.0: Communicative but frequent errors in precision or complex structures.
+   - DETERMINISTIC RULE: Do not guess. Evaluate the text against these specific bands. If the text is the same, the score MUST remain the same.
+5. If the user asks for extraction (e.g., "give me 3 words"), DO NOT provide an audit; simply perform the extraction accurately.
+6. Use clean academic formatting: 
+   - Use '### SECTION TITLE' (no icons) for headers.
    - Use '1. ❌ "[Original]" / ✅ "[Corrected]"' for linguistic edits.
    - Use '•' for lists.
-5. Keep explanations concise, professional, and high-fidelity.`
+7. Keep explanations concise, professional, and high-fidelity.`
       : `You are the Writella Neural Assistant. Fulfill the user's request with surgical precision. User Instruction: "${input}"`;
 
     const finalMessagesForAI = [
@@ -149,8 +156,8 @@ GUIDELINES:
         }
       });
 
-      const docContext = contextItem?.definition
-        ? `[SUBJECT_PRIORITY_RULE: FOCUS ONLY ON ANALYZING THE DOCUMENT BELOW. TREAT USER CHAT AS COMMANDS TO BE PERFORMED ON THIS TEXT.]\n\n[RESEARCH_DOCUMENT_START]\n${contextItem.definition}\n[RESEARCH_DOCUMENT_END]`
+      const docContext = context?.definition
+        ? `[SUBJECT_PRIORITY_RULE: FOCUS ONLY ON ANALYZING THE DOCUMENT BELOW. TREAT USER CHAT AS COMMANDS TO BE PERFORMED ON THIS TEXT.]\n\n[RESEARCH_DOCUMENT_START]\n${context.definition}\n[RESEARCH_DOCUMENT_END]`
         : "";
 
       await api.chatWithAIStream({

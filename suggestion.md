@@ -35,3 +35,11 @@ Moving toward sophisticated research archival and document evolution.
 - **Engine**: useRigor Hook (Fuzzy Trie + Regex Forensic Database)
 - **Persistence**: PostgreSQL (Cloud Bridge via FastAPI / Port 8000)
 - **Performance**: Standardized on `React.memo` for the Surgical HUD and surgical index math for zero-latency manuscript updates.
+
+---
+
+## 🔄 Component Re-activation (HIDDEN)
+To restore the **"Create Collection"** functionality in the Sidebar:
+1. Re-insert the `Plus` button into the `Collections` header within `Sidebar.jsx`.
+2. Re-enable the `isCreatingCollection` conditional block for the input field.
+3. Ensure the `handleCreateCollection` callback is properly passed from `App.jsx`.

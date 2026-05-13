@@ -34,6 +34,7 @@ export default function EditorView({ showToast, onOpenCopilot }) {
 
   const syncToCopilot = useCallback(
     async (blocks) => {
+      const { setCopilotContext, setActiveEditorContent } = useStore.getState();
       if (!setCopilotContext) return;
       try {
         const textContent = blocks
@@ -46,18 +47,21 @@ export default function EditorView({ showToast, onOpenCopilot }) {
           })
           .join("\n\n");
 
-        setCopilotContext({
+        const context = {
           id: "editor-current",
           text: "Editor Draft",
           definition: textContent,
           blocks: blocks,
           type: "editor",
-        });
+        };
+        
+        setCopilotContext(context);
+        if (setActiveEditorContent) setActiveEditorContent(context);
       } catch (e) {
         console.warn("Context sync failed", e);
       }
     },
-    [setCopilotContext],
+    [],
   );
 
   useEffect(() => {
@@ -102,6 +106,10 @@ export default function EditorView({ showToast, onOpenCopilot }) {
         onReady: () => {
           setIsInitializing(false);
           editorInstance.current = editor;
+          // Immediate Neural Sync
+          if (savedData && Array.isArray(savedData.blocks)) {
+            syncToCopilot(savedData.blocks);
+          }
         },
         onChange: () => {
           if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
@@ -113,7 +121,7 @@ export default function EditorView({ showToast, onOpenCopilot }) {
               try {
                 const data = await editorInstance.current.save();
                 await api.saveNotes(data);
-                if (isCopilotOpenRef.current) syncToCopilot(data.blocks);
+                syncToCopilot(data.blocks);
               } catch (e) {
                 console.warn(e);
               }

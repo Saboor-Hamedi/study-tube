@@ -24,6 +24,7 @@ export const useStore = create((set, get) => ({
   isSidebarCollapsed: false,
   isCaptureOpen: false,
   copilotContext: null,
+  activeEditorContent: null,
   toast: null,
   theme: 'dark',
 
@@ -71,6 +72,7 @@ export const useStore = create((set, get) => ({
     localStorage.setItem('study-theme', theme)
     return { theme }
   }),
+  setActiveEditorContent: (val) => set((s) => ({ activeEditorContent: typeof val === 'function' ? val(s.activeEditorContent) : val })),
 
   // Video State Setters
   setVideoQuery: (val) => set((s) => ({ videoQuery: typeof val === 'function' ? val(s.videoQuery) : val })),
@@ -90,10 +92,10 @@ export const useStore = create((set, get) => ({
 
   // Composite Triggers
   toggleCopilot: (context = null) => {
-    const { isCopilotOpen } = get()
+    const { isCopilotOpen, copilotContext } = get()
     set({ 
       isCopilotOpen: !isCopilotOpen,
-      copilotContext: context || null 
+      copilotContext: context || copilotContext 
     })
   },
 
