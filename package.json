@@ -10,7 +10,7 @@
     "dev": "npm run dev:electron",
     "dev:web": "concurrently -k \"vite --port 5173 --strictPort\" \"npm:dev:cloud\" \"npm:python:dev\"",
     "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\"",
-    "dev:cloud": "uvicorn server.main:app --reload --port 8000 --no-access-log",
+    "dev:cloud": "python -m uvicorn server.main:app --reload --port 8000 --no-access-log",
     "python:dev": "python electron/services/ai_detection.py",
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",

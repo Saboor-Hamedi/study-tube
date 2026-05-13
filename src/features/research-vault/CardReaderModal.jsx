@@ -174,7 +174,6 @@ const CardReaderModal = ({ isOpen, item, onClose, showToast, api, onUpdate, coll
     setIsEditing(false);
     showToast('Archive Permanently Updated');
   }
-  }
   
   /**
    * Synthesis Abstract: Generates an AI-powered summary of the research content.

@@ -819,20 +819,8 @@ export default function App() {
               </DragOverlay>
             </DndContext>
           </div>
-        )}
-      {/* open editor */}
-        {view === 'editor' && (
-          <div className="absolute inset-0">
-            <EditorView api={api} showToast={showToast} />
-          </div>
-        )}
-      {/* open setting  */}
-        {view === 'settings' && (
-          <div className="absolute inset-0">
-            <SettingsView api={api} />
-          </div>
-        )}
-      </main>
+        </div>
+      </div>
 
       <Notification toast={toast} onClose={() => setToast(null)} />
     </div>
