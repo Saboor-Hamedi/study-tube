@@ -271,7 +271,7 @@ const Profile = ({
                               .map((item) => (
                                 <div
                                   key={item.id}
-                                  className="p-3 sm:p-4 bg-surface border border-border rounded-[12px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-accent/40 transition-all cursor-pointer shadow-sm"
+                                  className="p-3 lg:p-4 bg-surface border border-border rounded-[12px] flex flex-col lg:flex-row lg:items-center justify-between gap-4 group hover:border-accent/40 transition-all cursor-pointer shadow-sm"
                                   onClick={() => handleLoadDraft(item)}
                                 >
                                   <div className="flex items-center gap-4">
@@ -305,7 +305,7 @@ const Profile = ({
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2 sm:justify-end shrink-0">
+                                  <div className="flex items-center gap-2 lg:justify-end shrink-0">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();

@@ -1,52 +1,43 @@
-import { useState, useMemo } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldAlert,
   Search,
   Activity,
-  AlertCircle,
-  CheckCircle2,
-  Globe,
-  Copy,
   Zap,
-  ExternalLink,
-  FileText,
+  Plus,
+  Copy,
+  Pencil,
 } from "lucide-react";
 import { api } from "../../utils/api-bridge";
+import PlagiarismDiagnosticHub from "./PlagiarismDiagnosticHub";
+import PulseLoader from "../research-vault/PulseLoader";
 
-export default function PlagiarismView() {
+export default function PlagiarismView({ showToast, onOpenCapture }) {
   const [content, setContent] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const containerRef = useRef(null);
 
   const handleScan = () => {
     if (!content.trim()) return;
     setResults(null);
     setIsScanning(true);
 
-    // Forensic Artifact Heuristic for copy-paste detection
+    // Forensic Artifact Heuristic
     const artifacts = {
       doubleSpaces: (content.match(/  /g) || []).length,
       citationMarkers: (content.match(/\[\d+\]/g) || []).length,
       brokenNewlines: (content.match(/[a-z]\n[a-z]/gi) || []).length,
-      weirdCharacters: (content.match(/[^\x00-\x7F]/g) || []).length,
     };
 
     let baseSim = 10;
-    const totalArtifacts =
-      artifacts.doubleSpaces +
-      artifacts.citationMarkers +
-      artifacts.brokenNewlines;
-
+    const totalArtifacts = artifacts.doubleSpaces + artifacts.citationMarkers + artifacts.brokenNewlines;
     if (totalArtifacts > 5) baseSim = 75;
     else if (totalArtifacts > 2) baseSim = 45;
-    else if (content.length > 500 && totalArtifacts === 0) baseSim = 8;
 
-    // Add variance and clamp
-    const simScore = Math.max(
-      3,
-      Math.min(96, baseSim + (Math.floor(Math.random() * 15) - 7)),
-    );
+    const simScore = Math.max(3, Math.min(96, baseSim + (Math.floor(Math.random() * 15) - 7)));
 
     setTimeout(() => {
       setResults({
@@ -54,333 +45,94 @@ export default function PlagiarismView() {
         originality: 100 - simScore,
         matches: [
           {
-            source:
-              totalArtifacts > 3
-                ? "Direct Web Extraction"
-                : "Journal of Academic Integrity",
-            url:
-              totalArtifacts > 3
-                ? "https://cached-archive.net/raw-content"
-                : "https://integrity.org/reports",
+            source: totalArtifacts > 3 ? "Direct Web Extraction" : "Journal of Academic Integrity",
+            url: totalArtifacts > 3 ? "https://cached-archive.net/raw-content" : "https://integrity.org/reports",
             similarity: Math.floor(simScore * 0.7),
             snippet: content.slice(0, 100).replace(/\n/g, " ") + "...",
-            matchedText:
-              totalArtifacts > 3
-                ? "Unfiltered copy-paste artifacts identified"
-                : "Syntactic structure match",
           },
-          {
-            source: "Global Research Index",
-            url: "https://gri.edu/archive",
-            similarity: Math.floor(simScore * 0.2),
-            snippet: "Identified overlapping sequences in primary metadata...",
-            matchedText: "Reference overlap",
-          },
+          { source: "Global Research Index", url: "https://gri.edu/archive", similarity: Math.floor(simScore * 0.2), snippet: "Identified overlapping sequences in primary metadata..." },
         ],
-        indexedPages: "14.2 Billion",
-        databaseSync: "Live",
-        wordCount: content.split(/\s+/).length,
+        wordCount: content.split(/\s+/).filter(Boolean).length,
         auditId: `AUD-${Math.floor(Math.random() * 900) + 100}-XR`,
       });
       setIsScanning(false);
+      setIsAnalyzing(true);
     }, 2500);
   };
 
   return (
-    <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans select-text">
-      {/* Header */}
-      <div className="h-12 px-6 border-b border-border bg-surface flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Zap className="h-4 w-4 text-red-400" />
-          <h2 className="text-[12px] font-black tracking-tight">
-            Plagiarism checker
-          </h2>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-2 py-1 bg-red-500/5 rounded-[4px] border border-red-500/10">
-            <Globe className="h-3 w-3 text-red-400" />
-            <span className="text-[9px] font-black text-red-400">
-              Global index sync: Active
-            </span>
+    <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
+        
+        {/* Source Analysis Window */}
+        <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative z-[70]">
+          <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative" ref={containerRef}>
+            <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
+              <AnimatePresence>
+                {isScanning && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px]"
+                  >
+                    <PulseLoader message="Auditing Global Originality Database..." />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {isAnalyzing && results ? (
+                <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
+                  {content}
+                </div>
+              ) : (
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Paste research content for cross-database originality audit..."
+                  className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
+                />
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* Diagnostic Sidebar */}
+        <div className="shrink-0 z-[60] relative border-l border-border">
+          <PlagiarismDiagnosticHub results={results} isScanning={isScanning} content={content} api={api} />
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Input Laboratory */}
-        <div className="flex-1 flex flex-col border-r border-border bg-surface-2/30 overflow-hidden">
-          <div className="flex-1 p-2 flex flex-col space-y-2">
-            <div className="flex-1 relative group">
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Paste research content here for originality audit..."
-                className="w-full h-full bg-surface border border-border p-4 text-[13px] leading-relaxed text-text outline-none transition-all rounded-[6px] resize-none font-outfit select-text relative z-10"
-                spellCheck={false}
-              />
+      {/* Unified Industrial Footer */}
+      <div className="h-[48px] md:h-[56px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
+        <div className="flex items-center gap-3 md:gap-8">
+          <div className="flex items-center gap-3 md:gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] font-black text-muted uppercase tracking-widest text-red-500">Security:</span>
+              <span className="text-[10px] font-black uppercase text-red-500">Global Sync Active</span>
             </div>
-
-            <div className="flex items-center justify-between gap-6 px-1 py-1">
-              <div className="flex flex-col">
-                <span className="text-[9px] font-black text-muted/20 tracking-widest mb-1">
-                  Density monitor
-                </span>
-                <div className="text-[11px] font-black tabular-nums text-muted/60 bg-surface-3/50 px-3 py-1.5 rounded-[4px] border border-border/50">
-                  {content.length.toLocaleString()}{" "}
-                  <span className="text-[8px] opacity-40 tracking-widest">chars</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleScan}
-                disabled={isScanning || !content.trim()}
-                className={`flex-1 h-12 rounded-[10px] flex items-center justify-center gap-2 transition-all font-black text-[11px] tracking-tight shadow-xl ${
-                  isScanning
-                    ? "bg-red-500/20 text-red-400 animate-pulse cursor-wait"
-                    : "bg-red-500 text-white hover:brightness-110 shadow-red-500/20 active:scale-[0.99]"
-                }`}
-              >
-                {isScanning ? (
-                  <>
-                    <Activity className="h-4 w-4 animate-spin" />
-                    Auditing global database...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4" /> Initialize originality audit
-                  </>
-                )}
-              </button>
+            <div className="h-4 w-px bg-border/10" />
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] font-black text-muted uppercase tracking-widest">Chars:</span>
+              <span className="text-[10px] font-black tabular-nums">{content.length}</span>
             </div>
           </div>
         </div>
 
-        {/* Diagnostics Panel */}
-        <div className="w-[400px] shrink-0 bg-surface flex flex-col overflow-hidden">
-          <div className="h-12 px-5 border-b border-border flex items-center gap-3 bg-surface-3/30">
-            <Copy className="h-4 w-4 text-red-400" />
-            <span className="text-[11px] font-black tracking-tight">
-              Similarity reports
-            </span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto custom-scroll p-6 space-y-6">
-            {!results ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-30">
-                <div className="p-5 bg-surface-2 rounded-full border border-border">
-                  <Globe className="h-10 w-10 text-red-500/30" />
-                </div>
-                <div className="max-w-[200px]">
-                  <p className="text-[11px] font-black text-text tracking-tight mb-1">
-                    Auditor on standby
-                  </p>
-                  <p className="text-[9px] text-muted leading-relaxed">
-                    Awaiting research input for cross-database comparison.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                {/* Writing integrity score - GPTZero Style */}
-                <div className="bg-surface-2/50 border border-border p-6 rounded-[16px] space-y-5 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <ShieldAlert className="h-20 w-20 text-red-400 rotate-12" />
-                  </div>
-
-                  <div className="flex items-center justify-between relative z-10">
-                    <div className="space-y-1">
-                      <h4 className="text-[14px] font-black tracking-tight text-text">
-                        Originality report
-                      </h4>
-                      <p className="text-[9px] text-muted font-medium">
-                        Measures how much of this text is your own unique
-                        writing.
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span
-                        className={`text-[32px] font-black tabular-nums tracking-tighter ${results.originality > 80 ? "text-emerald-400" : "text-red-400"}`}
-                      >
-                        {results.originality}%
-                      </span>
-                      <span
-                        className={`text-[8px] font-black tracking-widest ${results.originality > 80 ? "text-emerald-400/60" : "text-red-400/60"}`}
-                      >
-                        {results.originality > 85
-                          ? "Authentic"
-                          : results.originality > 60
-                            ? "Minor overlap"
-                            : "Critical overlap"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="h-4 w-full bg-surface-3 rounded-full overflow-hidden flex shadow-inner p-0.5">
-                    <div
-                      className="h-full bg-emerald-400 rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${results.originality}%` }}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 pt-2">
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-muted/40 tracking-widest">
-                        Your writing
-                      </p>
-                      <p className="text-[12px] font-black text-emerald-400">
-                        {results.originality}%
-                      </p>
-                    </div>
-                    <div className="space-y-1 border-x border-border/10 px-4 text-center">
-                      <p className="text-[8px] font-black text-muted/40 tracking-widest">
-                        Copied content
-                      </p>
-                      <p className="text-[12px] font-black text-red-400">
-                        {results.similarity}%
-                      </p>
-                    </div>
-                    <div className="space-y-1 text-end">
-                      <p className="text-[8px] font-black text-muted/40 tracking-widest">
-                        Search accuracy
-                      </p>
-                      <p className="text-[12px] font-black text-blue-400">
-                        99.8%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Highlighted audit view - NEW */}
-                <div className="bg-surface-2 p-5 rounded-[12px] border border-border space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-3.5 w-3.5 text-red-400" />
-                      <span className="text-[10px] font-black text-text tracking-tight">
-                        Highlighted audit view
-                      </span>
-                    </div>
-                    <span className="text-[8px] font-black text-muted/40 tracking-widest">
-                      Source mapping
-                    </span>
-                  </div>
-                  <div className="p-4 bg-surface rounded-[8px] border border-border/50 text-[11px] leading-relaxed font-outfit text-text/80 h-32 overflow-y-auto custom-scroll">
-                    The development of neural networks has led to{" "}
-                    <span className="bg-red-400/20 text-red-300 rounded-[2px] px-0.5 border-b border-red-400/30">
-                      significant breakthroughs in artificial intelligence
-                    </span>
-                    . However, we must consider the{" "}
-                    <span className="bg-blue-400/20 text-blue-300 rounded-[2px] px-0.5 border-b border-blue-400/30">
-                      ethical implications of these technologies
-                    </span>{" "}
-                    in modern research.
-                  </div>
-                  <p className="text-[9px] text-muted italic">
-                    Click highlights in the text above to jump to the specific
-                    source match.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-black text-muted tracking-tight">
-                      Database matches found
-                    </span>
-                    <Globe className="h-3.5 w-3.5 text-muted/20" />
-                  </div>
-                  <div className="space-y-3">
-                    {results.matches.map((match, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() =>
-                          api.openExternal(match.url)
-                        }
-                        className="p-4 bg-surface-2 border border-border rounded-[10px] space-y-3 group/source hover:border-red-400/20 transition-all cursor-pointer shadow-sm hover:shadow-lg"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? "bg-red-400" : "bg-blue-400"}`}
-                            />
-                            <div>
-                              <p className="text-[11px] font-black text-text leading-none mb-1">
-                                {match.source}
-                              </p>
-                              <p className="text-[8px] text-muted font-bold truncate max-w-[180px]">
-                                {match.url}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black tabular-nums text-red-400">
-                              {match.similarity}% match
-                            </span>
-                            <ExternalLink className="h-3 w-3 text-muted/20 group-hover/source:text-red-400 transition-colors" />
-                          </div>
-                        </div>
-                        <div className="relative">
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-400/20 rounded-full" />
-                          <p className="text-[10px] leading-relaxed italic text-text/60 pl-4 py-1">
-                            "...{match.snippet}..."
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3 pt-2 border-t border-border/5">
-                          <span className="text-[8px] font-black text-muted/40 tracking-widest">
-                            Identified sequence:
-                          </span>
-                          <span className="text-[9px] font-black text-text/40 font-mono truncate">
-                            {match.matchedText}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Session Metadata - NEW */}
-                <div className="grid grid-cols-2 gap-3 pb-4">
-                  <div className="bg-surface-3/50 p-3 rounded-[8px] border border-border/10 flex items-center gap-3">
-                    <FileText className="h-4 w-4 text-muted/40" />
-                    <div>
-                      <p className="text-[10px] font-black text-text/70 leading-none">
-                        428 words
-                      </p>
-                      <p className="text-[8px] text-muted font-bold tracking-widest">
-                        Scanned
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-surface-3/50 p-3 rounded-[8px] border border-border/10 flex items-center gap-3">
-                    <Activity className="h-4 w-4 text-muted/40" />
-                    <div>
-                      <p className="text-[10px] font-black text-text/70 leading-none">
-                        AUD-928-XR
-                      </p>
-                      <p className="text-[8px] text-muted font-bold tracking-widest">
-                        Audit ID
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          {/* Footer Metadata */}
-          <div className="h-14 px-5 border-t border-border bg-surface-2/50 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[9px] font-black text-muted tracking-tight">
-                Plagiarism Checker
-              </span>
-            </div>
-            <button className="p-2 hover:bg-surface-3 rounded-[5px] text-muted transition-all">
-              <CheckCircle2 className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="flex items-center gap-1.5 md:gap-3">
+          <button
+            onClick={() => isAnalyzing ? setIsAnalyzing(false) : handleScan()}
+            disabled={isScanning || (!content.trim() && !isAnalyzing)}
+            className={`h-8 md:h-10 px-3 md:px-6 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest ${
+              isScanning ? "bg-red-500/20 text-red-500 animate-pulse" : 
+              isAnalyzing ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4" : 
+              "bg-red-500 text-white hover:brightness-110 shadow-lg shadow-red-500/20"
+            }`}
+          >
+            {isScanning ? <Activity className="h-3 w-3 animate-spin" /> : isAnalyzing ? <><Pencil className="h-3 w-3" /> Edit</> : <><Search className="h-3 w-3" /> Run Audit</>}
+          </button>
+          
+          <div className="h-6 w-px bg-border/10 mx-1" />
+          <button onClick={onOpenCapture} className="h-10 w-10 bg-red-500 hover:brightness-110 text-white rounded-[4px] flex items-center justify-center transition-all shadow-lg shadow-red-500/20"><Plus className="h-4 w-4" /></button>
         </div>
       </div>
     </div>
