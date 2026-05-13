@@ -6,10 +6,25 @@ from dotenv import load_dotenv
 from youtube_transcript_api import YouTubeTranscriptApi
 from psycopg2.extras import RealDictCursor
 from fastapi.middleware.cors import CORSMiddleware
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from forensic_logic import analyze_linguistics
 
 load_dotenv()
 
 app = FastAPI(title="Writella Cloud API")
+
+@app.on_event("startup")
+async def startup_event():
+    from forensic_logic import nlp as forensic_nlp
+    if forensic_nlp:
+        print("\n" + "="*50)
+        print("[FORENSIC] Deep Linguistic Engine: READY (Model Loaded)")
+        print("="*50 + "\n")
+    else:
+        print("\n" + "!"*50)
+        print("[FORENSIC] Deep Linguistic Engine: BLIND (Model Missing)")
+        print("!"*50 + "\n")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,6 +33,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"[FASTAPI] Incoming: {request.method} {request.url.path}")
+    response = await call_next(request)
+    return response
 
 def get_db_connection():
     try:
@@ -207,6 +228,15 @@ async def sync_settings(payload: SettingsPayload):
 def read_root():
     return {"message": "Writella Cloud Engine Online"}
 
+@app.get("/health")
+def health_check():
+    from forensic_logic import nlp
+    return {
+        "status": "online",
+        "engine": "ready" if nlp else "blind",
+        "model": "en_core_web_sm"
+    }
+
 @app.get("/library")
 def get_cloud_library():
     conn = get_db_connection()
@@ -384,6 +414,22 @@ def proxy_youtube_transcript(videoId: str):
     except Exception as e:
         print(f"Transcript Error: {e}")
         return []
+
+class ForensicPayload(BaseModel):
+    text: str
+
+@app.post("/forensic/audit")
+async def forensic_audit(payload: ForensicPayload):
+    """
+    Industrial Forensic Audit: Combines linguistic parsing with rule-based heuristics.
+    """
+    try:
+        highlights = analyze_linguistics(payload.text)
+        return {"status": "success", "highlights": highlights}
+    except Exception as e:
+        print(f"[FORENSIC ERROR] {e}")
+        return {"status": "error", "message": str(e), "highlights": []}
+
 @app.get("/forensic/whitelist")
 def get_forensic_whitelist():
     conn = get_db_connection()

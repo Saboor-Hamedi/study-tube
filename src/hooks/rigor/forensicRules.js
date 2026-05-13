@@ -239,6 +239,54 @@ export const forensicRules = [
     suggestion: "apples are",
     exp: "Plural agreement error.",
   },
+  {
+    regex: /\bI\s+turns\b/gi,
+    type: "grammar",
+    suggestion: "I turn",
+    exp: "First-person subject requires base verb 'turn'.",
+  },
+  {
+    regex: /\bI\s+goes\b/gi,
+    type: "grammar",
+    suggestion: "I go",
+    exp: "First-person subject requires base verb 'go'.",
+  },
+  {
+    regex: /\bI\s+sees\b/gi,
+    type: "grammar",
+    suggestion: "I see",
+    exp: "First-person subject requires base verb 'see'.",
+  },
+  {
+    regex: /\b(He|She|It)\s+(?:turn|see|go|want|think|know|remember|learn|make)\b/gi,
+    type: "grammar",
+    suggestion: "$1 [verb-s]",
+    exp: "Third-person singular subject requires verb with -s suffix.",
+  },
+  {
+    regex: /\bHim\s+was\b/gi,
+    type: "grammar",
+    suggestion: "He was",
+    exp: "Subject-case pronoun required.",
+  },
+  {
+    regex: /\b(Him|Her|Us|Them)\s+(?:is|was|are|were|went|sat|saw|learned|learned|did|has|had)\b/gi,
+    type: "grammar",
+    suggestion: "Subject pronoun required",
+    exp: "Objective pronoun used incorrectly as the subject of a verb.",
+  },
+  {
+    regex: /\bit\s+make\s+me\b/gi,
+    type: "grammar",
+    suggestion: "it makes me",
+    exp: "Subject-verb agreement error.",
+  },
+  {
+    regex: /\bhelp\s+peoples\b/gi,
+    type: "grammar",
+    suggestion: "help people",
+    exp: "Irregular plural 'people' already implies plurality.",
+  },
 
   // Syntax: Tense & Verb Forms (GREEN)
   {
@@ -282,6 +330,12 @@ export const forensicRules = [
     type: "syntax",
     suggestion: "said",
     exp: "Irregular verb past form error.",
+  },
+  {
+    regex: /\bhurted\b/gi,
+    type: "syntax",
+    suggestion: "hurt",
+    exp: "Irregular verb past form error ('hurt' is its own past tense).",
   },
   {
     regex: /\bcryed\b/gi,
@@ -453,6 +507,18 @@ export const forensicRules = [
     type: "grammar",
     suggestion: "people are",
     exp: "Plural subject requires plural verb 'are'.",
+  },
+  {
+    regex: /\bpeoples\b/gi,
+    type: "grammar",
+    suggestion: "people",
+    exp: "The word 'people' is already the plural form of 'person'.",
+  },
+  {
+    regex: /\b(we|they)\s+(turns|goes|sees|wants|needs|shares)\b/gi,
+    type: "grammar",
+    suggestion: "$1 [base verb]",
+    exp: "Plural subjects require base verb form.",
   },
   {
     regex: /\bthey\s+has\b/gi,

@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS forensic_whitelist (
 
 select * from forensic_whitelist;
 
-select word from forensic_whitelist where word = 'accomplishment';
+select word from forensic_whitelist where word = 'client-side';
 INSERT INTO forensic_whitelist (word) values('directory');
 SELECT * FROM forensic_whitelist fw LIMIT 500;
 select count(word) from forensic_whitelist fw ;

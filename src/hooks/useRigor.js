@@ -176,7 +176,7 @@ export const useRigor = () => {
       await new Promise((r) => setTimeout(r, 1200));
 
       const text = content.replace(/’/g, "'");
-      const highlights = [];
+      let highlights = [];
 
       // 1. COMPREHENSIVE FORENSIC DATABASE
       const activeRules = [...forensicRules];
@@ -302,6 +302,60 @@ export const useRigor = () => {
           }
         }
       });
+
+      // 2.5 LINGUISTIC LOGIC AUDIT (spaCy Sidecar)
+      // We hit the port 8000 engine to get deterministic structural insights (Subject-Verb, Pronoun Case)
+      try {
+        console.log("[FORENSIC] Dispatching Linguistic Audit to Sidecar (Port 8000)...");
+        const forensicResponse = await fetch("http://127.0.0.1:8000/forensic/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+
+        if (forensicResponse.ok) {
+          const forensicData = await forensicResponse.json();
+          if (Array.isArray(forensicData.highlights)) {
+            console.log(`[FORENSIC] Sidecar returned ${forensicData.highlights.length} structural anomalies.`);
+            forensicData.highlights.forEach((highlight) => {
+              // AUTHORITY OVERRIDE: Sidecar highlights replace any overlapping Regex/Local highlights
+              const originalLength = highlights.length;
+              highlights = highlights.filter(h => 
+                !((highlight.start >= h.start && highlight.start < h.end) ||
+                  (h.start >= highlight.start && h.start < highlight.end))
+              );
+              
+              if (highlights.length < originalLength) {
+                console.log(`[FORENSIC] Expert Logic overrode ${originalLength - highlights.length} local heuristic(s).`);
+              }
+
+              // Smart Capitalization for Sidecar Suggestions
+              let finalSuggestion = highlight.suggestion;
+              const isStartOfSentence =
+                highlight.start === 0 ||
+                /[.!?]\n?\s*$/.test(text.substring(0, highlight.start));
+              
+              if (isStartOfSentence && finalSuggestion && finalSuggestion !== "Active Voice" && finalSuggestion !== "Omit") {
+                finalSuggestion =
+                  finalSuggestion.charAt(0).toUpperCase() +
+                  finalSuggestion.slice(1);
+              }
+
+              highlights.push({
+                start: highlight.start,
+                end: highlight.end,
+                type: highlight.type || "grammar",
+                reason: highlight.reason || "Linguistic Anomaly",
+                suggestion: finalSuggestion,
+                explanation: highlight.explanation || "Deterministic NLP analysis detected a structural grammatical error.",
+              });
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("[FORENSIC] Linguistic Sidecar Connection FAILURE:", e.message);
+        console.log("[FORENSIC] Falling back to local heuristics.");
+      }
 
       // 3. NEURAL FUZZY LOOP (Similarity Scoring)
       const words = text.split(/(\s+)/);
@@ -435,6 +489,26 @@ export const useRigor = () => {
 
       setIsNeuralScanning(false);
 
+      // --- Industrial Complexity Guard ---
+      const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+      const wordsArray = text.split(/\s+/).filter((w) => w.trim().length > 0);
+      const avgLen = wordsArray.length / Math.max(1, sentences.length);
+      
+      const academicMatches = wordsArray.filter(w => 
+        academicLexicon.includes(w.toLowerCase().replace(/[^a-z]/g, ""))
+      ).length;
+
+      // Deductive Score (Errors)
+      const errorDeduction = highlights.length * 0.25;
+      
+      // Complexity Reward/Penalty
+      // If text is too simple (short sentences + basic vocab), it caps at Band 6.5-7.0
+      let baseBand = 9.0;
+      if (avgLen < 10) baseBand -= 1.0; 
+      if (academicMatches < 2 && wordsArray.length > 20) baseBand -= 1.5;
+
+      const ieltsFinal = Math.max(1.0, baseBand - errorDeduction);
+
       return {
         diagnostics: {
           grammar: Math.round(gramScore),
@@ -443,7 +517,7 @@ export const useRigor = () => {
           diction: Math.round(dictionScore),
           academic: Math.round(academicScore),
           writing: Math.max(0, Math.round(writingScore)),
-          ielts: Math.max(1.0, 9 - highlights.length * 0.15).toFixed(1),
+          ielts: ieltsFinal.toFixed(1),
           ieltsLabel:
             highlights.length < 5
               ? "Expert"
