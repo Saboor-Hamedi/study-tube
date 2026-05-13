@@ -9,6 +9,7 @@ import {
   Activity, 
   CheckCircle, 
   Archive,
+  Loader2,
   ArrowRight,
   Brain,
   MessageSquare,
@@ -294,15 +295,15 @@ const InsightDetailView = ({
       </div>
 
       {/* Unified Industrial Footer (Responsive) */}
-      <div className="h-[48px] md:h-[56px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
-        <div className="flex items-center gap-3 md:gap-8">
-          <div className="flex items-center gap-3 md:gap-6">
+      <div className="h-[40px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
             {[
               { label: "Words", value: editVal.trim().split(/\s+/).filter(Boolean).length },
               { label: "Anomalies", value: diagnostics?.highlights?.length || 0 },
             ].map((m) => (
               <div key={m.label} className="flex items-center gap-1.5 md:gap-2">
-                <span className="text-[7px] md:text-[8px] font-black text-muted uppercase tracking-widest">{m.label}:</span>
+                <span className="text-[7px] md:text-[8px] font-bold text-muted/40 uppercase tracking-widest">{m.label}</span>
                 <span className="text-[9px] md:text-[10px] font-black text-text tabular-nums">{m.value}</span>
               </div>
             ))}
@@ -314,42 +315,67 @@ const InsightDetailView = ({
               <div className="flex items-center gap-4 shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="h-1 w-1 md:h-1.5 md:w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[7px] md:text-[8px] font-black text-text/40 uppercase tracking-[0.2em]">Neural Synced</span>
+                  <span className="text-[7px] md:text-[8px] font-bold text-muted/40 uppercase tracking-[0.2em]">Neural Synced</span>
                 </div>
               </div>
             </>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 md:gap-3">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => isEditing ? handleSaveEdit() : setIsEditing(true)}
-            className={`h-8 md:h-10 px-3 md:px-6 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest ${
-              isEditing ? "bg-accent text-white shadow-lg shadow-accent/20" : "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
+            onClick={() => (isEditing ? handleSaveEdit() : setIsEditing(true))}
+            className={`h-8 px-4 md:px-8 rounded-[4px] flex items-center justify-center transition-all font-semibold text-[10px] md:text-[11px] ${
+              isEditing
+                ? "bg-accent text-white shadow-lg shadow-accent/20 border border-white/10"
+                : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 border border-white/10"
             }`}
           >
-            {isEditing ? <><Save className="h-3 w-3" /> Save</> : <><Pencil className="h-3 w-3" /> Edit</>}
+            {isEditing ? "Save" : "Edit"}
           </button>
 
           <button
-            onClick={() => isAnalyzing ? setIsAnalyzing(false) : handleDeepAnalyze()}
+            onClick={() =>
+              isAnalyzing ? setIsAnalyzing(false) : handleDeepAnalyze()
+            }
             disabled={isNeuralScanning}
-            className={`h-8 md:h-10 px-3 md:px-6 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest ${
-              isNeuralScanning 
-                ? "bg-accent/20 text-accent animate-pulse" 
-                : isAnalyzing 
-                  ? "bg-surface-3 text-text border border-border/10" 
-                  : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20"
+            className={`h-8 px-4 md:px-8 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-semibold text-[10px] md:text-[11px] ${
+              isNeuralScanning
+                ? "bg-accent/20 text-accent animate-pulse"
+                : isAnalyzing
+                  ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
+                  : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 border border-white/10"
             }`}
           >
-            {isNeuralScanning ? <Activity className="h-3 w-3 animate-spin" /> : isAnalyzing ? "Reset" : "Scan"}
+            {isNeuralScanning ? (
+              <div className="flex items-center gap-2">
+                <div className="relative flex items-center justify-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="relative z-10 flex items-center justify-center"
+                  >
+                    <Loader2 className="h-3 w-3" />
+                  </motion.div>
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0, 0.5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 bg-white rounded-full blur-[2px]"
+                  />
+                </div>
+                <span>Scanning...</span>
+              </div>
+            ) : isAnalyzing ? (
+              "Reset"
+            ) : (
+              "Scan"
+            )}
           </button>
 
-          <div className="h-6 w-px bg-border/10 mx-1" />
-          
           <button
             onClick={onClose}
-            className="h-8 md:h-10 w-8 md:w-10 flex items-center justify-center text-muted/40 hover:text-red-500 hover:bg-red-500/10 rounded-[4px] transition-all border border-transparent hover:border-red-500/20"
+            className="h-8 w-8 md:w-10 flex items-center justify-center text-muted/40 hover:text-red-500 hover:bg-red-500/10 rounded-[4px] transition-all border border-transparent hover:border-red-500/20"
           >
             <X className="h-4 w-4" />
           </button>

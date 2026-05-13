@@ -52,7 +52,7 @@ const AnalyticalSidebar = ({
       )}
 
       <div
-        className={`flex-1 overflow-y-auto scrollbar-thin space-y-8 ${isModal ? "p-6 pt-8" : "px-5"}`}
+        className={`flex-1 overflow-y-auto scrollbar-thin space-y-6 ${isModal ? "p-4 pt-6" : "px-5"}`}
       >
         {children}
 

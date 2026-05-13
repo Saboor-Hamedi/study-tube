@@ -14,6 +14,7 @@ import {
   X,
   RotateCcw,
   RotateCw,
+  Loader2,
 } from "lucide-react";
 import {
   useFloating,
@@ -513,9 +514,9 @@ export default function GrammarForensicView({
       </div>
 
       {/* Unified Industrial Footer (Responsive) */}
-      <div className="h-[48px] md:h-[56px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
-        <div className="flex items-center gap-3 md:gap-8">
-          <div className="flex items-center gap-2 mr-4 border-r border-border/10 pr-4">
+      <div className="h-[40px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-2 border-r border-border/10 pr-4">
             <button
               onClick={undo}
               disabled={historyIndex <= 0}
@@ -534,7 +535,7 @@ export default function GrammarForensicView({
             </button>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-6">
+          <div className="flex items-center gap-4">
             {[
               {
                 label: "Words",
@@ -545,9 +546,9 @@ export default function GrammarForensicView({
                 value: diagnostics?.highlights?.length || 0,
               },
             ].map((m) => (
-              <div key={m.label} className="flex items-center gap-1.5 md:gap-2">
-                <span className="text-[7px] md:text-[8px] font-black text-muted uppercase tracking-widest">
-                  {m.label}:
+              <div key={m.label} className="flex items-center gap-1.5">
+                <span className="text-[7px] md:text-[8px] font-bold text-muted/40 uppercase tracking-widest">
+                  {m.label}
                 </span>
                 <span className="text-[9px] md:text-[10px] font-black text-text tabular-nums">
                   {m.value}
@@ -562,7 +563,7 @@ export default function GrammarForensicView({
               <div className="flex items-center gap-4 shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="h-1 w-1 md:h-1.5 md:w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[7px] md:text-[8px] font-black text-text/40 uppercase tracking-[0.2em]">
+                  <span className="text-[7px] md:text-[8px] font-bold text-muted/40 uppercase tracking-[0.2em]">
                     Neural
                   </span>
                 </div>
@@ -571,55 +572,70 @@ export default function GrammarForensicView({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 md:gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => {
               if (isAnalyzing) setIsAnalyzing(false);
               else handleDeepAnalyze();
             }}
             disabled={isNeuralScanning || (!content.trim() && !isAnalyzing)}
-            className={`h-8 md:h-10 px-3 md:px-6 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest ${
+            className={`h-8 px-4 md:px-8 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-medium text-[11px] ${
               isNeuralScanning
                 ? "bg-accent/20 text-accent animate-pulse"
                 : isAnalyzing
                   ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
-                  : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20"
+                  : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 border border-white/10"
             }`}
           >
             {isNeuralScanning ? (
-              <Activity className="h-3 w-3 animate-spin" />
+              <div className="flex items-center gap-2">
+                <div className="relative flex items-center justify-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                    className="relative z-10 flex items-center justify-center"
+                  >
+                    <Loader2 className="h-3 w-3" />
+                  </motion.div>
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0, 0.5, 0] }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                    className="absolute inset-0 bg-white rounded-full blur-[2px]"
+                  />
+                </div>
+                <span className="hidden xs:inline">Scanning...</span>
+              </div>
             ) : isAnalyzing ? (
-              <>
-                <Pencil className="h-3 w-3" />{" "}
-                <span className="hidden xs:inline">Reset</span>
-              </>
+              "Reset"
             ) : (
-              <>
-                <CheckCircle className="h-3 w-3" />{" "}
-                <span className="hidden xs:inline">Scan</span>
-              </>
+              "Scan"
             )}
           </button>
 
           <button
             onClick={handleArchive}
             disabled={!content.trim()}
-            className="h-8 md:h-10 px-3 md:px-6 rounded-[4px] border border-border text-muted hover:text-text hover:bg-surface-3 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5"
+            className="h-8 px-4 md:px-8 rounded-[4px] bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 transition-all font-medium text-[11px] flex items-center justify-center border border-white/10"
           >
-            <Archive className="h-3 w-3" />{" "}
-            <span className="hidden xs:inline">Archive</span>
+            Archive
           </button>
 
           {!isMobile && (
-            <>
-              <div className="h-6 w-px bg-border/10 mx-1" />
-              <button
-                onClick={onOpenCapture}
-                className="h-10 w-10 bg-accent hover:brightness-110 text-white rounded-[4px] flex items-center justify-center transition-all shadow-lg shadow-accent/20 border border-white/10"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </>
+            <button
+              onClick={onOpenCapture}
+              className="h-8 w-8 bg-accent hover:brightness-110 text-white rounded-[4px] flex items-center justify-center transition-all shadow-lg shadow-accent/20 border border-white/10"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
           )}
         </div>
       </div>

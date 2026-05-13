@@ -125,11 +125,11 @@ const InsightCaptureModal = ({ isOpen, onClose, onInsert, showToast, api }) => {
             onMaximize={() => setIsMaximized(!isMaximized)}
           >
             {/* Command Footer (Capture Specific) */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-border bg-surface-2">
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-surface-2">
               <button
                 onClick={handleSave}
                 disabled={isSaving || !title.trim()}
-                className="w-full h-14 bg-accent text-white rounded-[5px] flex items-center justify-center hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-full h-10 bg-accent text-white rounded-[5px] flex items-center justify-center hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-accent/20 border border-blue-400/20 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Loader2
                   className={`h-4 w-4 animate-spin ${isSaving ? "opacity-100" : "opacity-0"}`}

@@ -823,6 +823,14 @@ export default function App() {
       </div>
 
       <Notification toast={toast} onClose={() => setToast(null)} />
+
+      <InsightCaptureModal
+        isOpen={isCaptureOpen}
+        onClose={() => setIsCaptureOpen(false)}
+        onInsert={addVocab}
+        showToast={showToast}
+        api={api}
+      />
     </div>
   );
 }
