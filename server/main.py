@@ -400,7 +400,7 @@ class WhitelistPayload(BaseModel):
 
 @app.post("/forensic/whitelist")
 async def add_to_whitelist(payload: WhitelistPayload):
-    print(f"[FASTAPI] Whitelisting Word: {payload.word}")
+    # print(f"[FASTAPI] Whitelisting Word: {payload.word}")
     conn = get_db_connection()
     if not conn: 
         print("[FASTAPI] DB Connection Failure")
@@ -409,7 +409,7 @@ async def add_to_whitelist(payload: WhitelistPayload):
         with conn.cursor() as cur:
             cur.execute("INSERT INTO forensic_whitelist (word) VALUES (%s) ON CONFLICT DO NOTHING", (payload.word,))
             conn.commit()
-            print(f"[FASTAPI] Word Persisted Successfully: {payload.word}")
+            # print(f"[FASTAPI] Word Persisted Successfully: {payload.word}")
             return {"status": "success"}
     except Exception as e:
         print(f"[FASTAPI] Persistence Error: {e}")
@@ -430,6 +430,7 @@ async def remove_from_whitelist(word: str):
     finally:
         conn.close()
 
-@app.on_event("startup")
-async def startup_event():
-    bootstrap_db()
+if __name__ == "__main__":
+    import uvicorn
+    # Industrial Launch: Binding to localhost for internal bridge security
+    uvicorn.run(app, host="127.0.0.1", port=8000, access_log=False)

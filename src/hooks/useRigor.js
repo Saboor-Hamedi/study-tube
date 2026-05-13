@@ -8,18 +8,39 @@ import {
 } from "./rigor";
 import { Trie } from "./rigor/Trie";
 
+// INDUSTRIAL OPTIMIZATION: Cache the static base trie outside the hook
+// This prevents rebuilding the 450k+ word trie on every render or sync.
+let cachedStaticTrie = null;
+
 export const useRigor = () => {
   const [isNeuralScanning, setIsNeuralScanning] = useState(false);
   const [dbWhitelist, setDbWhitelist] = useState([]);
+  const [whitelistMeta, setWhitelistMeta] = useState({ count: 0, lastUpdated: 0 });
 
   // --- Neural Forensic Trie (Memoized for O(L) Lookups) ---
   const truthTrie = useMemo(() => {
-    return new Trie([
-      ...academicLexicon,
-      ...commonWords,
-      ...legitimateDoubles,
-      ...dbWhitelist,
-    ]);
+    // 1. Build or Retrieve the Static Base (450k+ words)
+    if (!cachedStaticTrie) {
+      console.log("[FORENSIC] Initializing Master Base Trie (450k+ words)...");
+      cachedStaticTrie = new Trie([
+        ...academicLexicon,
+        ...commonWords,
+        ...legitimateDoubles,
+      ]);
+      console.log("[FORENSIC] Master Base Ready.");
+    }
+
+    // 2. Create a surgical layer for the Dynamic Whitelist
+    // We shallow-copy the root children to inherit the 450k words instantly (O(1))
+    const trie = new Trie();
+    trie.root.children = { ...cachedStaticTrie.root.children };
+    
+    // 3. Batch insert the user's specific database words
+    if (dbWhitelist.length > 0) {
+      trie.batchInsert(dbWhitelist);
+    }
+
+    return trie;
   }, [dbWhitelist]);
 
   // Load persistence layer on mount
@@ -61,33 +82,32 @@ export const useRigor = () => {
     let syncInterval;
 
     const performSync = async () => {
-      // Only sync if the tab is active to preserve CPU/Network
       if (document.visibilityState !== "visible") return;
 
       try {
-        let list = null;
-        if (window.youtubeAPI?.getForensicWhitelist) {
-          list = await window.youtubeAPI.getForensicWhitelist();
-        } else {
-          const res = await fetch("http://127.0.0.1:8000/forensic/whitelist");
-          if (res.ok) list = await res.json();
-        }
-
-        if (Array.isArray(list)) {
-          // Atomic Update: Only trigger a Trie rebuild if the data actually changed
-          const sortedList = [...list].sort();
-          setDbWhitelist((prev) => {
-            const sortedPrev = [...prev].sort();
-            if (sortedPrev.length === sortedList.length && JSON.stringify(sortedPrev) === JSON.stringify(sortedList)) {
-              return prev;
+        if (window.youtubeAPI?.getForensicWhitelistMetadata) {
+          // OPTIMIZATION: Check metadata first to avoid downloading huge datasets (50k+ words)
+          const meta = await window.youtubeAPI.getForensicWhitelistMetadata();
+          
+          if (meta && (meta.count !== whitelistMeta.count || meta.lastUpdated !== whitelistMeta.lastUpdated)) {
+            console.log("[FORENSIC] Industrial Dataset Change Detected.");
+            const list = await window.youtubeAPI.getForensicWhitelist();
+            if (Array.isArray(list)) {
+              setDbWhitelist(list);
+              setWhitelistMeta({ count: meta.count, lastUpdated: meta.lastUpdated });
+              console.log("[FORENSIC] Industrial Sync Complete. New Count:", list.length);
             }
-            console.log("[FORENSIC] Background Sync: Whitelist Updated.");
-            return sortedList;
-          });
+          }
+        } else {
+          // Legacy/Fallback Sync (Direct Fetch)
+          const res = await fetch("http://127.0.0.1:8000/forensic/whitelist");
+          if (res.ok) {
+            const list = await res.json();
+            setDbWhitelist(list);
+          }
         }
       } catch (e) {
-        // Silent fail for background polling to prevent UI jitter
-        console.warn("[FORENSIC] Background Sync Paused (Connectivity):", e.message);
+        console.warn("[FORENSIC] Sync Paused:", e.message);
       }
     };
 
@@ -108,7 +128,7 @@ export const useRigor = () => {
     const cleanWord = word
       .toLowerCase()
       .replace(/’/g, "'")
-      .replace(/[^a-z']/g, "");
+      .replace(/[^a-z'-]/g, "");
 
     // Attempt Electron Bridge first
     if (window.youtubeAPI?.addForensicWord) {
@@ -290,7 +310,7 @@ export const useRigor = () => {
         const cleanWord = word
           .toLowerCase()
           .replace(/’/g, "'")
-          .replace(/[^a-z']/g, "");
+          .replace(/[^a-z'-]/g, ""); // Industrial: Allow hyphens and apostrophes
 
         if (cleanWord.length >= 3 && !truthTrie.has(cleanWord)) {
           // Only check if not already highlighted by forensic rules

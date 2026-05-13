@@ -67,7 +67,10 @@ export class Trie {
       for (let i = 1; i < columns; i++) {
         const insertCost = currentRow[i - 1] + 1;
         const deleteCost = previousRow[i] + 1;
-        const replaceCost = char === lowerWord[i - 1] ? previousRow[i - 1] : previousRow[i - 1] + 1;
+        const replaceCost =
+          char === lowerWord[i - 1]
+            ? previousRow[i - 1]
+            : previousRow[i - 1] + 1;
 
         currentRow.push(Math.min(insertCost, deleteCost, replaceCost));
       }

@@ -145,17 +145,8 @@ export default function GrammarForensicView({
     // We stay in analyzing (read) mode after completion
   };
 
-  // Reactive Neural Loop: Automatically re-analyze when the dictionary (whitelist) updates
-  useEffect(() => {
-    if (isAnalyzing && content.trim()) {
-      console.log("[FORENSIC] Dictionary Update Detected. Re-Analyzing...");
-      analyze(content).then((res) => {
-        if (res && res.diagnostics) {
-          setDiagnostics(res.diagnostics);
-        }
-      });
-    }
-  }, [dbWhitelist, analyze, content, isAnalyzing, setDiagnostics]);
+  // Dictionary re-analysis is now handled via Optimistic Clearance in handleAddToDictionary
+  // to prevent infinite scanning loops.
 
   const handleApplySuggestion = async (suggestion, specificHl = null) => {
     const hl = specificHl || selectedHl;

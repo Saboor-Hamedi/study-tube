@@ -48,6 +48,7 @@ import {
   getForensicWhitelist,
   addForensicWord,
   removeForensicWord,
+  getForensicWhitelistMetadata,
 } from "./database.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -157,26 +158,40 @@ const startCloudBackend = () => {
   if (cloudProcess) return;
 
   // Industrial Path Resolution: Handle ASAR vs Unpacked states
+  // Industrial Path Resolution: Handle ASAR vs Unpacked states
   let serverPath = path.join(__dirname, "..", "server", "main.py");
+  let binaryPath = path.join(__dirname, "..", "server", "dist", "main.exe");
+  
   if (app.isPackaged) {
     serverPath = serverPath.replace("app.asar", "app.asar.unpacked");
+    binaryPath = binaryPath.replace("app.asar", "app.asar.unpacked");
   }
 
-  const pythonCmd = process.platform === "win32" ? "python" : "python3";
-
-  console.log(
-    `[SYSTEM] Launching Cloud Bridge: ${pythonCmd} -m uvicorn server.main:app`,
-  );
-
-  cloudProcess = spawn(
-    pythonCmd,
-    ["-m", "uvicorn", "server.main:app", "--port", "8000"],
-    {
-      cwd: path.join(__dirname, ".."),
+  const isProduction = app.isPackaged;
+  
+  // If we have a compiled binary in production, run it directly
+  if (isProduction && fs.existsSync(binaryPath)) {
+    console.log(`[SYSTEM] Launching Compiled Cloud Binary: ${binaryPath}`);
+    cloudProcess = spawn(binaryPath, ["--port", "8000"], {
+      cwd: path.dirname(binaryPath),
       windowsHide: true,
       env: { ...process.env, PYTHONUNBUFFERED: "1" },
-    },
-  );
+    });
+  } else {
+    // Development or Fallback: Use Python
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    console.log(`[SYSTEM] Launching Cloud Bridge (Python): ${pythonCmd} -m uvicorn server.main:app`);
+    
+    cloudProcess = spawn(
+      pythonCmd,
+      ["-m", "uvicorn", "server.main:app", "--port", "8000"],
+      {
+        cwd: path.join(__dirname, ".."),
+        windowsHide: true,
+        env: { ...process.env, PYTHONUNBUFFERED: "1" },
+      }
+    );
+  }
 
   cloudProcess.stdout.on("data", (data) =>
     console.log(`[CLOUD BACKEND] ${data}`),
@@ -624,6 +639,15 @@ function registerIpcHandlers() {
     } catch (e) {
       console.error("[POSTGRES] Whitelist Fetch Fail:", e.message);
       return [];
+    }
+  });
+
+  safeHandle("forensic:get-metadata", async () => {
+    try {
+      return await getForensicWhitelistMetadata();
+    } catch (e) {
+      console.error("[POSTGRES] Metadata Fetch Fail:", e.message);
+      return { count: 0, lastUpdated: 0 };
     }
   });
 

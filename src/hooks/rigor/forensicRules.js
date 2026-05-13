@@ -340,12 +340,6 @@ export const forensicRules = [
     exp: "Passive voice weakens scholarly authority.",
   },
   {
-    regex: /\bThe\s+\w+(tion|ment|ity|ance|ence)\s+of\b/gi,
-    type: "diction",
-    suggestion: "Simplify structure",
-    exp: "Nominalization can make academic writing 'sticky'.",
-  },
-  {
     regex:
       /\b(seems\s+to|appears\s+to|could\s+possibly|may\s+be|might\s+be)\b/gi,
     type: "tone",

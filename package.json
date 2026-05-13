@@ -1,6 +1,6 @@
 {
   "name": "writella",
-  "version": "1.0.11",
+  "version": "1.0.14",
   "private": true,
   "type": "module",
   "description": "Premium AI-powered writing assistant.",
@@ -10,15 +10,16 @@
     "dev": "npm run dev:electron",
     "dev:web": "concurrently -k \"vite --port 5173 --strictPort\" \"npm:dev:cloud\" \"npm:python:dev\"",
     "dev:electron": "concurrently -k \"npm:dev:web\" \"npm:electron:dev\"",
-    "dev:cloud": "uvicorn server.main:app --reload --port 8000",
+    "dev:cloud": "uvicorn server.main:app --reload --port 8000 --no-access-log",
     "python:dev": "python electron/services/ai_detection.py",
     "electron:dev": "wait-on tcp:5173 && electron .",
     "electron": "electron .",
     "build": "vite build",
+    "build:python": "pip install pyinstaller && pyinstaller --onefile --noconsole --distpath server/dist --workpath server/build --specpath server server/main.py",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
-    "build:win": "npm run rebuild && npm run build && electron-builder --win",
-    "publish:win": "npm run rebuild && npm run build && npx dotenv-cli -- electron-builder --win --publish always",
-    "publish:linux": "npm run rebuild && npm run build && npx dotenv-cli -- electron-builder --linux --publish always",
+    "build:win": "npm run rebuild && npm run build && npm run build:python && electron-builder --win",
+    "publish:win": "npm run rebuild && npm run build && npm run build:python && npx dotenv-cli -- electron-builder --win --publish always",
+    "publish:linux": "npm run rebuild && npm run build && npm run build:python && npx dotenv-cli -- electron-builder --linux --publish always",
     "preview": "vite preview"
   },
   "build": {
@@ -29,7 +30,8 @@
     },
     "asarUnpack": [
       "electron/services/**",
-      "server/**"
+      "server/**",
+      ".env"
     ],
     "files": [
       "dist/**/*",
@@ -38,7 +40,8 @@
       "electron/grammars/**/*",
       "node_modules/**/*",
       "package.json",
-      "data/**/*"
+      "data/**/*",
+      ".env"
     ],
     "win": {
       "icon": "electron/assets/icon.png",

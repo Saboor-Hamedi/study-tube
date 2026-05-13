@@ -33,9 +33,6 @@ export default function NeuralFeedbackHub({
         {isNeuralScanning && (
           <div className="flex items-center gap-1.5">
             <Zap className="h-3 w-3 text-accent animate-pulse" />
-            <span className="text-[9px] font-black text-accent tracking-tight">
-              SCANNING
-            </span>
           </div>
         )}
       </div>

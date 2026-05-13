@@ -21,7 +21,7 @@ const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('[POSTGRES] Executed query', { text, duration, rows: res.rowCount });
+    // console.log('[POSTGRES] Executed query', { text, duration, rows: res.rowCount });
     return res;
   } catch (err) {
     console.error('[POSTGRES] Query Error:', err.message);
@@ -33,7 +33,7 @@ const query = async (text, params) => {
  * Initialize Tables (Mirror Cloud Schema)
  */
 export async function initDatabase() {
-  console.log("[POSTGRES] Initializing Industrial Schema...");
+  // console.log("[POSTGRES] Initializing Industrial Schema...");
   try {
     // 1. Extensions
     await query('CREATE EXTENSION IF NOT EXISTS "pg_trgm"');
@@ -59,7 +59,7 @@ export async function initDatabase() {
     // 3. Notes Table
     await query(`
       CREATE TABLE IF NOT EXISTS notes (
-        id TEXT PRIMARY KEY,
+        user_id TEXT PRIMARY KEY,
         data JSONB,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -85,7 +85,7 @@ export async function initDatabase() {
     // 6. Global Settings Table
     await query(`
       CREATE TABLE IF NOT EXISTS settings (
-        id TEXT PRIMARY KEY,
+        user_id TEXT PRIMARY KEY,
         config JSONB,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -99,7 +99,7 @@ export async function initDatabase() {
       )
     `);
 
-    console.log("[POSTGRES] Industrial Synchronization Successful.");
+    // console.log("[POSTGRES] Industrial Synchronization Successful.");
   } catch (err) {
     console.error("[POSTGRES] Schema Init Failure:", err.message);
   }
@@ -111,15 +111,15 @@ export async function initDatabase() {
 const SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
 
 export async function getNotes() {
-  const res = await query("SELECT data FROM notes WHERE id = $1", [SINGLETON_ID]);
+  const res = await query("SELECT data FROM notes WHERE user_id = $1", [SINGLETON_ID]);
   return res.rows[0] ? res.rows[0].data : { blocks: [] };
 }
 
 export async function saveNotes(data) {
   await query(
-    `INSERT INTO notes (id, data, updated_at) 
+    `INSERT INTO notes (user_id, data, updated_at) 
      VALUES ($1, $2, CURRENT_TIMESTAMP)
-     ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
+     ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
     [SINGLETON_ID, JSON.stringify(data)]
   );
 }
@@ -243,20 +243,28 @@ export async function restoreVocabItem(id) {
 // --- Forensic Whitelist System ---
 
 export async function getForensicWhitelist() {
-  console.log("[POSTGRES] >>> FETCHING FORENSIC WHITELIST <<<");
+  // console.log("[POSTGRES] >>> FETCHING FORENSIC WHITELIST <<<");
   const res = await query("SELECT word FROM forensic_whitelist");
-  console.log(`[POSTGRES] >>> SYNC SUCCESSFUL: ${res.rowCount} WORDS RETRIEVED <<<`);
+  // console.log(`[POSTGRES] >>> SYNC SUCCESSFUL: ${res.rowCount} WORDS RETRIEVED <<<`);
   return res.rows.map(r => r.word);
 }
 
 export async function addForensicWord(word) {
-  console.log(`[POSTGRES] >>> ATTEMPTING TO WHITELIST WORD: "${word}" <<<`);
+  // console.log(`[POSTGRES] >>> ATTEMPTING TO WHITELIST WORD: "${word}" <<<`);
   await query("INSERT INTO forensic_whitelist (word) VALUES ($1) ON CONFLICT DO NOTHING", [word]);
-  console.log(`[POSTGRES] >>> WORD PERMANENTLY WHITELISTED: "${word}" <<<`);
+  // console.log(`[POSTGRES] >>> WORD PERMANENTLY WHITELISTED: "${word}" <<<`);
 }
 
 export async function removeForensicWord(word) {
   await query("DELETE FROM forensic_whitelist WHERE word = $1", [word]);
+}
+
+export async function getForensicWhitelistMetadata() {
+  const res = await query("SELECT COUNT(*) as count, MAX(created_at) as last_updated FROM forensic_whitelist");
+  return {
+    count: parseInt(res.rows[0].count),
+    lastUpdated: res.rows[0].last_updated ? new Date(res.rows[0].last_updated).getTime() : 0
+  };
 }
 
 /**
@@ -332,15 +340,15 @@ export async function searchLibraryFTS(q) {
  * Settings API
  */
 export async function getAppSettings() {
-  const res = await query("SELECT config FROM settings WHERE id = $1", [SINGLETON_ID]);
+  const res = await query("SELECT config FROM settings WHERE user_id = $1", [SINGLETON_ID]);
   return res.rows[0] ? res.rows[0].config : {};
 }
 
 export async function saveAppSettings(config) {
   await query(`
-    INSERT INTO settings (id, config, updated_at) 
+    INSERT INTO settings (user_id, config, updated_at) 
     VALUES ($1, $2, CURRENT_TIMESTAMP)
-    ON CONFLICT (id) DO UPDATE SET config = EXCLUDED.config, updated_at = CURRENT_TIMESTAMP
+    ON CONFLICT (user_id) DO UPDATE SET config = EXCLUDED.config, updated_at = CURRENT_TIMESTAMP
   `, [SINGLETON_ID, JSON.stringify(config)]);
   return true;
 }

@@ -436,6 +436,13 @@ const HybridRouter = {
   },
 
   // --- Hardware Handlers (IPC) ---
+  getSavePath: async () =>
+    isElectron ? await window.youtubeAPI.getSavePath() : "",
+  setSavePath: async (p) =>
+    isElectron ? await window.youtubeAPI.setSavePath(p) : null,
+  pickSavePath: async () =>
+    isElectron ? await window.youtubeAPI.pickSavePath() : "",
+
   openExternal: async (url) =>
     isElectron
       ? window.youtubeAPI.openExternal(url)
@@ -451,8 +458,11 @@ const HybridRouter = {
   },
   getVersion: async () =>
     isElectron
-      ? (await window.youtubeAPI.getAppVersion?.()) || "1.0.11"
-      : "1.0.11-web",
+      ? (await window.youtubeAPI.getVersion?.()) || "1.0.13"
+      : "1.0.13-web",
+
+  exportDossier: async (data) =>
+    isElectron ? await window.youtubeAPI.exportDossier(data) : null,
 
   onEngineStatus: (callback) =>
     isElectron
