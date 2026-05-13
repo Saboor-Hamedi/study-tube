@@ -370,7 +370,7 @@ export default function GrammarForensicView({
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
         {/* Source Analysis Window (Seamless) */}
-        <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative z-[70]">
+        <div className="flex-1 min-w-0 flex flex-col bg-surface relative z-[70]">
           <div
             className="flex-1 min-w-0 overflow-y-auto custom-scroll relative"
             ref={containerRef}
@@ -425,20 +425,23 @@ export default function GrammarForensicView({
                                 backgroundPosition: "bottom",
                                 backgroundSize: "6px 3px",
                                 paddingBottom: "2px",
+                                isolation: "isolate", // Maintain clean layering
                               }}
                             >
-                              {/* Spatial Anchor (Keeps the manuscript footprint stable) */}
+                              {/* Spatial Anchor (STABLE WIDTH: This element NEVER disappears) */}
                               <span
-                                className={`grid-area-1-1 ${ghostPreview?.start === hl.start ? "text-transparent" : ""} font-light tracking-wide`}
+                                className={`grid-area-1-1 ${ghostPreview?.start === hl.start && ghostPreview?.suggestion ? "opacity-0" : "opacity-100"} transition-opacity duration-150 font-light tracking-wide`}
                                 style={{ gridArea: "1/1" }}
                               >
                                 {content.substring(hl.start, hl.end)}
                               </span>
 
-                              {/* Neural Ghost (Manifests exactly on top of anchor) */}
+                              {/* Neural Ghost (Overlay: Does NOT affect layout width) */}
                               {ghostPreview?.start === hl.start && (
-                                <span
-                                  className="grid-area-1-1 text-accent italic font-light tracking-wide whitespace-nowrap"
+                                <motion.span
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  className="grid-area-1-1 text-accent italic font-light tracking-wide whitespace-nowrap absolute left-0 text-[14px] md:text-[18px]"
                                   style={{ gridArea: "1/1" }}
                                 >
                                   {ghostPreview.suggestion === "Omit" ? (
@@ -448,7 +451,7 @@ export default function GrammarForensicView({
                                   ) : (
                                     ghostPreview.suggestion
                                   )}
-                                </span>
+                                </motion.span>
                               )}
                             </span>
                             <span

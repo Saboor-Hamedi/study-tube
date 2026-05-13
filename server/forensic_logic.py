@@ -121,7 +121,10 @@ def analyze_linguistics(text: str) -> List[Dict]:
                     pobj = [t for t in agent[0].children if t.dep_ == "pobj"]
                     if pobj:
                         # Get full subtree for the object and agent (preserving 'the', 'his', etc.)
+                        # We lowercase the first word of the object if it's being moved to the middle
                         obj_tokens = [t.text for t in nsubj_pass[0].subtree]
+                        if obj_tokens and obj_tokens[0].lower() in ["the", "a", "an", "this", "that", "these", "those"]:
+                            obj_tokens[0] = obj_tokens[0].lower()
                         obj_text = " ".join(obj_tokens)
                         
                         agent_text = pobj[0].text.lower()
