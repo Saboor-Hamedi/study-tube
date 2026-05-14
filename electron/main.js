@@ -59,7 +59,8 @@ const isDev = !app.isPackaged;
 function atomicWriteJsonSync(filePath, data) {
   const tempPath = `${filePath}.tmp`;
   try {
-    // Snapshot Engine: Multi-point recovery
+    // Snapshot Engine: Multi-point recovery (DECOMMISSIONED - Using PostgreSQL)
+    /* 
     if (fs.existsSync(filePath)) {
       const snapshotDir = path.join(path.dirname(filePath), ".snapshots");
       if (!fs.existsSync(snapshotDir))
@@ -70,6 +71,7 @@ function atomicWriteJsonSync(filePath, data) {
         path.join(snapshotDir, `${path.basename(filePath)}.${stamp}.bak`),
       );
     }
+    */
     fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), "utf8");
     fs.renameSync(tempPath, filePath);
     console.log(

@@ -1,4 +1,17 @@
 export const forensicRules = [
+  // Grammar: Capitalization & Sentence Structure (BLUE)
+  {
+    regex: /(?:^|[.!?]\s+)([a-z])/g,
+    type: "grammar",
+    suggestion: (match) => {
+      // If match is just a single char (start of text), return upper
+      if (match[0].length === 1) return match[0].toUpperCase();
+      // Otherwise, keep the boundary (dot + space) and upper the char
+      return match[0].slice(0, -1) + match[1].toUpperCase();
+    },
+    exp: "Sentences must start with a capital letter.",
+  },
+
   // Spelling & Phonetics (RED)
   {
     regex: /\bfroot\b/gi,
@@ -113,6 +126,54 @@ export const forensicRules = [
     type: "spelling",
     suggestion: "everybody",
     exp: "Possessive/Plural confusion.",
+  },
+  {
+    regex: /\balot\b/gi,
+    type: "spelling",
+    suggestion: "a lot",
+    exp: "Common compound word error.",
+  },
+  {
+    regex: /\bteh\b/gi,
+    type: "spelling",
+    suggestion: "the",
+    exp: "Typographic transposition error.",
+  },
+  {
+    regex: /\brecieve\b/gi,
+    type: "spelling",
+    suggestion: "receive",
+    exp: "'I before E except after C' violation.",
+  },
+  {
+    regex: /\bseperate\b/gi,
+    type: "spelling",
+    suggestion: "separate",
+    exp: "Common vowel sequence error.",
+  },
+  {
+    regex: /\bdefinately\b/gi,
+    type: "spelling",
+    suggestion: "definitely",
+    exp: "Commonly misspelled word.",
+  },
+  {
+    regex: /\boccured\b/gi,
+    type: "spelling",
+    suggestion: "occurred",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\bprefered\b/gi,
+    type: "spelling",
+    suggestion: "preferred",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\bcomitted\b/gi,
+    type: "spelling",
+    suggestion: "committed",
+    exp: "Missing double consonant.",
   },
 
   // Grammar: Pronoun-Verb Agreement & Case (BLUE)
@@ -258,7 +319,8 @@ export const forensicRules = [
     exp: "First-person subject requires base verb 'see'.",
   },
   {
-    regex: /\b(He|She|It)\s+(?:turn|see|go|want|think|know|remember|learn|make)\b/gi,
+    regex:
+      /\b(He|She|It)\s+(?:turn|see|go|want|think|know|remember|learn|make)\b/gi,
     type: "grammar",
     suggestion: "$1 [verb-s]",
     exp: "Third-person singular subject requires verb with -s suffix.",
@@ -270,7 +332,8 @@ export const forensicRules = [
     exp: "Subject-case pronoun required.",
   },
   {
-    regex: /\b(Him|Her|Us|Them)\s+(?:is|was|are|were|went|sat|saw|learned|learned|did|has|had)\b/gi,
+    regex:
+      /\b(Him|Her|Us|Them)\s+(?:is|was|are|were|went|sat|saw|learned|learned|did|has|had)\b/gi,
     type: "grammar",
     suggestion: "Subject pronoun required",
     exp: "Objective pronoun used incorrectly as the subject of a verb.",
@@ -385,6 +448,24 @@ export const forensicRules = [
     suggestion: "he cried",
     exp: "Subject-case and verb form anomaly.",
   },
+  {
+    regex: /\b(should|could|would|might|must)\s+of\b/gi,
+    type: "syntax",
+    suggestion: "$1 have",
+    exp: "Modal verb followed by 'of' instead of 'have'.",
+  },
+  {
+    regex: /\b(Why|When|Where|How)\s+he\s+(\w+s)\b/gi,
+    type: "syntax",
+    suggestion: "$1 does he $2",
+    exp: "Question word order requires auxiliary inversion.",
+  },
+  {
+    regex: /\b(What|Which)\s+he\s+(\w+s)\b/gi,
+    type: "syntax",
+    suggestion: "$1 does he $2",
+    exp: "Question word order requires auxiliary inversion.",
+  },
 
   // Tone & Sophistication (PURPLE)
   {
@@ -423,6 +504,18 @@ export const forensicRules = [
     type: "tone",
     suggestion: "Hypothesize",
     exp: "Professional research requires hypothesizing.",
+  },
+  {
+    regex: /\b(I|we)\s+(feel|guess|suppose)\b/gi,
+    type: "tone",
+    suggestion: "$1 contend | $1 argue | $1 assert",
+    exp: "Subjective language weakens academic authority.",
+  },
+  {
+    regex: /\bkinda\b|\bsorta\b/gi,
+    type: "tone",
+    suggestion: "somewhat | rather",
+    exp: "Colloquial modifiers are non-academic.",
   },
 
   // Diction & Modifiers (ORANGE)
@@ -485,6 +578,36 @@ export const forensicRules = [
     type: "diction",
     suggestion: "Omit",
     exp: "Weak adverbs reduce academic rigor.",
+  },
+  {
+    regex: /\btheir\s+(?:going|coming|walking|running)\b/gi,
+    type: "diction",
+    suggestion: "they're",
+    exp: "Homophone confusion: possessive 'their' vs contraction 'they're'.",
+  },
+  {
+    regex: /\byour\s+(?:going|coming|walking|running)\b/gi,
+    type: "diction",
+    suggestion: "you're",
+    exp: "Homophone confusion: possessive 'your' vs contraction 'you're'.",
+  },
+  {
+    regex: /\bits\s+(?:going|coming|raining|time)\b/gi,
+    type: "diction",
+    suggestion: "it's",
+    exp: "Possessive 'its' vs contraction 'it's'.",
+  },
+  {
+    regex: /\b(affect|effect)\s+(\w+)\b/gi,
+    type: "diction",
+    suggestion: "Check: affect (verb) vs effect (noun)",
+    exp: "Commonly confused word pair.",
+  },
+  {
+    regex: /\bloose\s+(\w+)\b/gi,
+    type: "diction",
+    suggestion: "lose",
+    exp: "Confusion between 'loose' (adjective) and 'lose' (verb).",
   },
 
   // Technical & Symbol Anomalies (RED)

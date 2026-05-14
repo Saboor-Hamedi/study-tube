@@ -5,6 +5,7 @@ import {
   forensicRules,
   commonWords,
   legitimateDoubles,
+  legitimateExceptions,
 } from "./rigor";
 import { Trie } from "./rigor/Trie";
 
@@ -196,9 +197,13 @@ export const useRigor = () => {
         const regex = new RegExp(rule.regex);
         while ((match = regex.exec(text)) !== null) {
           if (!highlights.find((h) => h.start === match.index)) {
-            // Process regex placeholders like $1, $2 in the suggestion string
-            let processedSuggestion = rule.suggestion;
-            if (processedSuggestion && processedSuggestion.includes("$")) {
+            // Handle functional suggestions or static strings
+            let processedSuggestion = typeof rule.suggestion === "function" 
+              ? rule.suggestion(match) 
+              : rule.suggestion;
+
+            // Process regex placeholders like $1, $2 if it's a string
+            if (typeof processedSuggestion === "string" && processedSuggestion.includes("$")) {
               processedSuggestion = processedSuggestion.replace(
                 /\$(\d+)/g,
                 (m, g) => {
@@ -219,9 +224,15 @@ export const useRigor = () => {
                 finalSuggestion.slice(1);
             }
 
-            // --- Neural Whitelist Check ---
-            const matchText = match[0].toLowerCase().replace(/[^a-z']/g, "");
-            if (truthTrie.has(matchText)) continue;
+            // --- Neural Whitelist Check (Pattern Exceptions Only) ---
+            const matchText = match[0].toLowerCase();
+            
+            // Check Static Pattern Exceptions (legitimateExceptions)
+            const isExcepted = legitimateExceptions.some(ex => {
+              const exRegex = new RegExp(ex.pattern);
+              return exRegex.test(text.substring(match.index, match.index + match[0].length));
+            });
+            if (isExcepted) continue;
 
             highlights.push({
               start: match.index,
@@ -252,14 +263,6 @@ export const useRigor = () => {
         },
       ];
 
-      const legitimatePairs = new Set([
-        "had had",
-        "that that",
-        "can can",
-        "is is", // Sometimes used in specific emphasis
-        "it it",
-      ]);
-
       const dictionarySet = new Set([...dbWhitelist]);
 
       redundancyRules.forEach((rule) => {
@@ -270,7 +273,10 @@ export const useRigor = () => {
 
           // Neural Clearance: Check common defaults OR user's personal dictionary
           const isWhitelisted =
-            legitimatePairs.has(matchText) ||
+            legitimateExceptions.some(ex => {
+              const exRegex = new RegExp(ex.pattern);
+              return exRegex.test(matchText);
+            }) ||
             dictionarySet.has(matchText) ||
             dictionarySet.has(match[1].toLowerCase());
 

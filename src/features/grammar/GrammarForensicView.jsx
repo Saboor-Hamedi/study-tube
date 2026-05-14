@@ -194,11 +194,7 @@ export default function GrammarForensicView({
     }
 
     const newContent =
-      content.substring(0, start).replace(/[ \t]+$/, "") +
-      (start > 0 && !/\n$/.test(content.substring(0, start)) ? " " : "") +
-      suggestion.trim() +
-      (end < content.length && !/^\n/.test(content.substring(end)) ? " " : "") +
-      content.substring(end).replace(/^[ \t]+/, "");
+      content.substring(0, start) + suggestion.trim() + content.substring(end);
 
     // Surgical Index Shift: Calculate the length delta to avoid full re-analysis
     const delta = suggestion.trim().length - (end - start);
@@ -401,12 +397,7 @@ export default function GrammarForensicView({
                               backgroundColor: "rgba(255, 107, 0, 0)",
                             }}
                             animate={{
-                              backgroundColor:
-                                hl.type === "spelling" ||
-                                hl.type === "grammar" ||
-                                hl.type === "syntax"
-                                  ? getCategoryBg(hl.type)
-                                  : "rgba(202, 17, 17, 0)",
+                              backgroundColor: "rgba(0,0,0,0)", // Background is now handled by the parent span for better consistency
                             }}
                             className={`cursor-help rounded-sm transition-all relative inline leading-none group/hl font-light tracking-wide px-[1px] -mx-[1px]`}
                             onMouseLeave={hideHl}
@@ -417,36 +408,42 @@ export default function GrammarForensicView({
                             }}
                           >
                             <span
-                              className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline"
+                              className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline px-[2px] rounded-sm transition-colors duration-200"
                               style={{
+                                backgroundColor: getCategoryBg(hl.type),
                                 display: "inline-grid",
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3' viewBox='0 0 6 3'%3E%3Cpath d='M0 2.5 C 0.5 2.5, 1.0 0.5, 1.5 0.5 C 2.0 0.5, 2.5 2.5, 3.0 2.5 C 3.5 2.5, 4.0 0.5, 4.5 0.5 C 5.0 0.5, 5.5 2.5, 6.0 2.5' fill='none' stroke='${getCategoryColor(hl.type).includes("blue") ? "%233b82f6" : getCategoryColor(hl.type).includes("emerald") ? "%2310b981" : getCategoryColor(hl.type).includes("orange") ? "%23f97316" : getCategoryColor(hl.type).includes("purple") ? "%23a855f7" : "%23ef4444"}' stroke-width='0.7'/%3E%3C/svg%3E")`,
-                                backgroundRepeat: "repeat-x",
-                                backgroundPosition: "bottom",
-                                backgroundSize: "6px 3px",
-                                paddingBottom: "2px",
-                                isolation: "isolate", // Maintain clean layering
+                                isolation: "isolate",
                               }}
                             >
-                              {/* Spatial Anchor (STABLE WIDTH: This element NEVER disappears) */}
-                              <span
-                                className={`grid-area-1-1 ${ghostPreview?.start === hl.start && ghostPreview?.suggestion ? "opacity-0" : "opacity-100"} transition-opacity duration-150 font-light tracking-wide`}
+                              {/* Spatial Anchor (Original Text) */}
+                              <motion.span
+                                className="grid-area-1-1 font-light tracking-wide"
                                 style={{ gridArea: "1/1" }}
+                                animate={{
+                                  y: ghostPreview?.start === hl.start ? -12 : 0,
+                                  opacity:
+                                    ghostPreview?.start === hl.start ? 0 : 1,
+                                }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
                               >
                                 {content.substring(hl.start, hl.end)}
-                              </span>
+                              </motion.span>
 
-                              {/* Neural Ghost (Overlay: Does NOT affect layout width) */}
+                              {/* Neural Ghost (Suggestion - Non-Absolute for Width Expansion) */}
                               {ghostPreview?.start === hl.start && (
                                 <motion.span
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  className="grid-area-1-1 text-accent italic font-light tracking-wide whitespace-nowrap absolute left-0 text-[14px] md:text-[18px]"
+                                  initial={{ y: 12, opacity: 0 }}
+                                  animate={{ y: 0, opacity: 1 }}
+                                  transition={{
+                                    duration: 0.2,
+                                    ease: "easeOut",
+                                  }}
+                                  className="grid-area-1-1 font-light tracking-wide whitespace-nowrap text-[14px] md:text-[18px]"
                                   style={{ gridArea: "1/1" }}
                                 >
                                   {ghostPreview.suggestion === "Omit" ? (
-                                    <span className="opacity-40 italic">
-                                      [Delete]
+                                    <span className="opacity-20 line-through">
+                                      {content.substring(hl.start, hl.end)}
                                     </span>
                                   ) : (
                                     ghostPreview.suggestion

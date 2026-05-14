@@ -8896,7 +8896,6 @@ export const commonWords = [
   "brochures",
   "herb",
   "tmp",
-  "alot",
   "ate",
   "breach",
   "whale",
