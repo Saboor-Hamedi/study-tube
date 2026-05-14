@@ -12,7 +12,7 @@ import Activitybar from "./components/Activitybar";
 import VideoView from "./features/video-intel/VideoView";
 import LibraryView from "./features/research-vault/LibraryView";
 import CopilotView from "./features/neural-chat/CopilotView";
-import PlagiarismView from "./features/AI/PlagiarismView";
+import PlagiarismView from "./features/plagiarism/PlagiarismView";
 import SettingsView from "./features/settings/SettingsView";
 import Profile from "./features/users/Profile";
 import EditorView from "./features/editor/EditorView";
@@ -26,7 +26,7 @@ import { useStore } from "./store/useStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
 import GrammarView from "./grammar/GrammarView";
-import AIDetectionView from "./features/AI/AIDetectionView";
+import DetectionView from "./features/detection/DetectionView";
 import Home from "./Home";
 import SystemStatus from "./features/users/SystemStatus";
 import DocView from "./documentation/DocView";
@@ -368,25 +368,26 @@ export default function App() {
   }, [view, setIsCopilotOpen, setCopilotContext]);
 
   const addVocab = async (item) => {
-    const basicItem = { 
-      ...item, 
+    const basicItem = {
+      ...item,
       id: new Date().toISOString(), // Unique ID for Upsert
-      date: new Date().toISOString(), 
-      loading: !item.skipAI 
-    }
-    
+      date: new Date().toISOString(),
+      loading: !item.skipAI,
+    };
+
     // Industrial Persistence: Upsert individual item
-    await api.saveVocabItem(basicItem)
-    syncStats()
+    await api.saveVocabItem(basicItem);
+    syncStats();
 
     // Local Sync for UI
-    const newList = [basicItem, ...vocab]
-    setVocab(newList)
-    
-    const displayTitle = item.text.length > 30 ? item.text.slice(0, 30) + '...' : item.text
-    showToast(`Saved "${displayTitle}"`)
+    const newList = [basicItem, ...vocab];
+    setVocab(newList);
 
-    if (item.skipAI) return
+    const displayTitle =
+      item.text.length > 30 ? item.text.slice(0, 30) + "..." : item.text;
+    showToast(`Saved "${displayTitle}"`);
+
+    if (item.skipAI) return;
 
     try {
       const entry = await api.explainWord({
@@ -663,7 +664,7 @@ export default function App() {
                           }}
                         />
                       </div>
-                      
+
                       {/* Integrated System Status - Right Panel (Visible on Large Screens) */}
                       <div className="hidden xl:block">
                         <SystemStatus forensicNodes={vocab.length} />
@@ -772,7 +773,7 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0"
                     >
-                      <AIDetectionView showToast={showToast} api={api} />
+                      <DetectionView showToast={showToast} onOpenCapture={() => setIsCaptureOpen(true)} />
                     </motion.div>
                   )}
                   {view === "plagiarism" && (
@@ -783,7 +784,7 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0"
                     >
-                      <PlagiarismView />
+                      <PlagiarismView showToast={showToast} onOpenCapture={() => setIsCaptureOpen(true)} />
                     </motion.div>
                   )}
                   {view === "documentation" && (
@@ -812,16 +813,20 @@ export default function App() {
               </main>
 
               {/* UNIFIED GLOBAL COPILOT SIDEBAR */}
-              {view !== "grammar" && view !== "documentation" && view !== "report" && (
-                <CopilotView
-                  isOpen={isCopilotOpen}
-                  onClose={handleCloseCopilot}
-                  onOpen={() => handleOpenCopilot(null)}
-                  api={api}
-                  showToast={showToast}
-                  sidebarMode={view !== "search" && view !== "settings"}
-                />
-              )}
+              {view !== "grammar" &&
+                view !== "documentation" &&
+                view !== "report" &&
+                view !== "ai-detection" &&
+                view !== "plagiarism" && (
+                  <CopilotView
+                    isOpen={isCopilotOpen}
+                    onClose={handleCloseCopilot}
+                    onOpen={() => handleOpenCopilot(null)}
+                    api={api}
+                    showToast={showToast}
+                    sidebarMode={view !== "search" && view !== "settings"}
+                  />
+                )}
 
               <DragOverlay
                 dropAnimation={null}

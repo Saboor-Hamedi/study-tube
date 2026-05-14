@@ -1,25 +1,15 @@
 import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  ShieldAlert,
-  Search,
-  Activity,
-  Zap,
-  Plus,
-  Copy,
-  Pencil,
-  Loader2,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Loader2, Plus } from "lucide-react";
 import { api } from "../../utils/api-bridge";
-import PlagiarismDiagnosticHub from "./PlagiarismDiagnosticHub";
-import PulseLoader from "../research-vault/PulseLoader";
+import PlagiarismBody from "./PlagiarismBody";
+import PlagiarismSidebar from "./PlagiarismSidebar";
 
-export default function PlagiarismView({ showToast, onOpenCapture }) {
+const PlagiarismView = ({ showToast, onOpenCapture }) => {
   const [content, setContent] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const containerRef = useRef(null);
 
   const handleScan = () => {
     if (!content.trim()) return;
@@ -80,64 +70,36 @@ export default function PlagiarismView({ showToast, onOpenCapture }) {
 
   return (
     <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
-      {/* Main Workspace */}
+      {/* Main Forensic Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
-        {/* Source Analysis Window */}
-        <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative z-[70]">
-          <div
-            className="flex-1 min-w-0 overflow-y-auto custom-scroll relative"
-            ref={containerRef}
-          >
-            <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
-              <AnimatePresence>
-                {isScanning && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px]"
-                  >
-                    <PulseLoader message="Auditing Global Originality Database..." />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+        
+        {/* Analysis Canvas */}
+        <PlagiarismBody 
+          content={content}
+          setContent={setContent}
+          isScanning={isScanning}
+          isAnalyzing={isAnalyzing}
+          results={results}
+        />
 
-              {isAnalyzing && results ? (
-                <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
-                  {content}
-                </div>
-              ) : (
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Paste research content for cross-database originality audit..."
-                  className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Diagnostic Sidebar */}
-        <div className="shrink-0 z-[60] relative border-l border-border">
-          <PlagiarismDiagnosticHub
-            results={results}
-            isScanning={isScanning}
-            content={content}
-            api={api}
-          />
-        </div>
+        {/* Intelligence Hub */}
+        <PlagiarismSidebar 
+          results={results}
+          isScanning={isScanning}
+          content={content}
+          api={api}
+        />
       </div>
 
       {/* Unified Industrial Footer */}
-      <div className="h-[40px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
+      <div className="h-[40px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative select-text cursor-text">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-[8px] font-bold text-muted/40 uppercase tracking-widest">
                 Security
               </span>
-              <span className="text-[10px] font-black uppercase text-red-500">
+              <span className="text-[10px] font-black uppercase text-blue-400">
                 Global Sync Active
               </span>
             </div>
@@ -159,10 +121,10 @@ export default function PlagiarismView({ showToast, onOpenCapture }) {
             disabled={isScanning || (!content.trim() && !isAnalyzing)}
             className={`h-8 px-4 md:px-8 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-medium text-[11px] ${
               isScanning
-                ? "bg-red-500/20 text-red-500 animate-pulse"
+                ? "bg-blue-500/20 text-blue-400 animate-pulse"
                 : isAnalyzing
                   ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
-                  : "bg-red-500 text-white hover:brightness-110 shadow-lg shadow-red-500/20 border border-white/10"
+                  : "bg-blue-500 text-white hover:brightness-110 shadow-lg shadow-blue-500/20 border border-white/10"
             }`}
           >
             {isScanning ? (
@@ -205,7 +167,7 @@ export default function PlagiarismView({ showToast, onOpenCapture }) {
 
           <button
             onClick={onOpenCapture}
-            className="h-8 w-8 bg-red-500 hover:brightness-110 text-white rounded-[4px] flex items-center justify-center transition-all shadow-lg shadow-red-500/20 border border-white/10"
+            className="h-8 w-8 bg-blue-500 hover:brightness-110 text-white rounded-[4px] flex items-center justify-center transition-all shadow-lg shadow-blue-500/20 border border-white/10"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -213,4 +175,6 @@ export default function PlagiarismView({ showToast, onOpenCapture }) {
       </div>
     </div>
   );
-}
+};
+
+export default PlagiarismView;

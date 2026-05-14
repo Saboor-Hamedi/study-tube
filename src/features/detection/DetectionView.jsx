@@ -1,28 +1,16 @@
-import { useState, useMemo, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Cpu,
-  Activity,
-  Zap,
-  CheckCircle,
-  Archive,
-  Pencil,
-  Plus,
-  BarChart3,
-  Loader2,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Loader2, Plus } from "lucide-react";
+import { api } from "../../utils/api-bridge";
+import DetectionBody from "./DetectionBody";
+import DetectionSidebar from "./DetectionSidebar";
 
-import { api } from "./../../utils/api-bridge";
-import AIDiagnosticHub from "./AIDiagnosticHub";
-import PulseLoader from "../research-vault/PulseLoader";
-
-export default function AIDetectionView({ showToast, onOpenCapture }) {
+const DetectionView = ({ showToast, onOpenCapture }) => {
   const [content, setContent] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false); 
   const [engineStatus, setEngineStatus] = useState("OFFLINE");
-  const containerRef = useRef(null);
 
   const handleScan = async () => {
     if (!content.trim()) return;
@@ -30,6 +18,7 @@ export default function AIDetectionView({ showToast, onOpenCapture }) {
     setIsScanning(true);
 
     try {
+      // Neural Engine Endpoint
       const response = await fetch("http://127.0.0.1:8008/detect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,52 +54,32 @@ export default function AIDetectionView({ showToast, onOpenCapture }) {
     api.getEngineStatus?.().then((status) => status && setEngineStatus(status));
     const unsub = api.onEngineStatus((status) => setEngineStatus(status));
     return unsub;
-  }, [api]);
+  }, []);
 
   return (
     <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
-      {/* Main Workspace */}
+      {/* Main Forensic Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
         
-        {/* Source Analysis Window */}
-        <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative z-[70]">
-          <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative" ref={containerRef}>
-            <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
-              <AnimatePresence>
-                {isScanning && (
-                  <motion.div 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px]"
-                  >
-                    <PulseLoader message="Conducting Neural Forensic Scan..." />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+        {/* Analysis Canvas */}
+        <DetectionBody 
+          content={content}
+          setContent={setContent}
+          isScanning={isScanning}
+          isAnalyzing={isAnalyzing}
+          results={results}
+        />
 
-              {isAnalyzing && results ? (
-                <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
-                  {content}
-                </div>
-              ) : (
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Paste research content for synthetic origin detection..."
-                  className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Diagnostic Sidebar */}
-        <div className="shrink-0 z-[60] relative">
-          <AIDiagnosticHub results={results} isScanning={isScanning} content={content} />
-        </div>
+        {/* Intelligence Hub */}
+        <DetectionSidebar 
+          results={results}
+          isScanning={isScanning}
+          content={content}
+        />
       </div>
 
       {/* Unified Industrial Footer */}
-      <div className="h-[40px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
+      <div className="h-[40px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative select-text cursor-text">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -171,4 +140,6 @@ export default function AIDetectionView({ showToast, onOpenCapture }) {
       </div>
     </div>
   );
-}
+};
+
+export default DetectionView;

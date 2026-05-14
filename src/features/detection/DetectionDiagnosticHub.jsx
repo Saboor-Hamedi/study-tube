@@ -10,13 +10,13 @@ import {
   Fingerprint,
 } from "lucide-react";
 
-export default function AIDiagnosticHub({
+export default function DetectionDiagnosticHub({
   results,
   isScanning,
   content,
 }) {
   return (
-    <div className="w-full md:w-[350px] bg-surface flex flex-col border-l border-border min-h-0 h-full overflow-x-hidden">
+    <div className="w-full md:w-[350px] bg-surface flex flex-col border-l border-border min-h-0 h-full overflow-x-hidden select-text cursor-text">
       <div className="h-7 md:h-12 px-3 md:px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
         <div className="flex items-center gap-3">
           <BarChart3 className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-400" />

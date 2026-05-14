@@ -18,10 +18,10 @@ export default function PlagiarismDiagnosticHub({
   api,
 }) {
   return (
-    <div className="w-full md:w-[350px] bg-surface flex flex-col border-l border-border min-h-0 h-full overflow-x-hidden">
+    <div className="w-full md:w-[350px] bg-surface flex flex-col border-l border-border min-h-0 h-full overflow-x-hidden select-text cursor-text">
       <div className="h-7 md:h-12 px-3 md:px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
         <div className="flex items-center gap-3">
-          <Copy className="h-3.5 w-3.5 md:h-4 md:w-4 text-red-500" />
+          <Copy className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" />
           <h2 className="text-[10px] md:text-[12px] font-black tracking-tight uppercase">
             Similarity Report
           </h2>
@@ -32,7 +32,7 @@ export default function PlagiarismDiagnosticHub({
         {!results ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-30">
             <div className="p-5 bg-surface-2 rounded-full border border-border">
-              <Globe className="h-10 w-10 text-red-500/30" />
+              <Globe className="h-10 w-10 text-blue-500/30" />
             </div>
             <div className="max-w-[200px]">
               <p className="text-[11px] font-black text-text tracking-tight mb-1">
@@ -52,7 +52,7 @@ export default function PlagiarismDiagnosticHub({
             {/* Originality Score Card */}
             <div className="bg-surface-2/30 border border-border/10 p-5 rounded-[12px] space-y-5 shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                <ShieldAlert className="h-12 w-12 text-red-500" />
+                <ShieldAlert className="h-12 w-12 text-blue-500" />
               </div>
 
               <div className="flex items-center justify-between relative z-10">
@@ -60,7 +60,7 @@ export default function PlagiarismDiagnosticHub({
                   <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">
                     Integrity Score
                   </span>
-                  <p className="text-[11px] font-black text-text tracking-tight uppercase">
+                  <p className={`text-[11px] font-black tracking-tight uppercase ${results.originality > 85 ? 'text-emerald-500' : 'text-red-500'}`}>
                     {results.originality > 85
                       ? "Authentic"
                       : "Potential Overlap"}
@@ -91,16 +91,16 @@ export default function PlagiarismDiagnosticHub({
                   <span className="text-[14px] font-black tabular-nums text-red-400">
                     {results.similarity}%
                   </span>
-                  <span className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
-                    Matched Content
+                  <span className="text-[7px] font-black text-red-500/40 uppercase tracking-widest">
+                    Plagiarism
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="text-[14px] font-black tabular-nums text-blue-400">
                     99.8%
                   </span>
-                  <span className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
-                    Index Accuracy
+                  <span className="text-[7px] font-black text-emerald-500/40 uppercase tracking-widest">
+                    Human
                   </span>
                 </div>
               </div>
@@ -110,10 +110,10 @@ export default function PlagiarismDiagnosticHub({
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-[9px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
-                  <Globe className="h-3.5 w-3.5 text-red-500" />
+                  <Globe className="h-3.5 w-3.5 text-blue-500" />
                   Database Matches
                 </h3>
-                <span className="text-[7px] font-black text-red-500/40 uppercase tracking-widest">
+                <span className="text-[7px] font-black text-blue-500/40 uppercase tracking-widest">
                   14.2B Indexed
                 </span>
               </div>
@@ -123,7 +123,7 @@ export default function PlagiarismDiagnosticHub({
                   <div
                     key={idx}
                     onClick={() => api?.openExternal(match.url)}
-                    className="p-4 bg-surface-2/50 border border-border/10 rounded-[12px] space-y-3 group hover:border-red-500/20 transition-all cursor-pointer shadow-sm"
+                    className="p-4 bg-surface-2/50 border border-border/10 rounded-[12px] space-y-3 group hover:border-blue-500/20 transition-all cursor-pointer shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -140,16 +140,16 @@ export default function PlagiarismDiagnosticHub({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black tabular-nums text-red-500">
-                          {match.similarity}%
+                        <span className="text-[9px] font-black tabular-nums text-red-500">
+                          {match.similarity}% Match
                         </span>
-                        <ExternalLink className="h-3 w-3 text-muted/20 group-hover:text-red-500 transition-colors" />
+                        <ExternalLink className="h-3 w-3 text-muted/20 group-hover:text-blue-500 transition-colors" />
                       </div>
                     </div>
 
-                    <div className="relative p-2.5 bg-surface/50 border border-border/5 rounded-lg">
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500/20 rounded-full" />
-                      <p className="text-[9px] leading-relaxed italic text-text/50 pl-3">
+                    <div className="relative p-2.5 bg-red-500/[0.03] border border-red-500/10 rounded-lg">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500/40 rounded-full" />
+                      <p className="text-[9px] leading-relaxed italic text-text/60 pl-3">
                         "...{match.snippet}..."
                       </p>
                     </div>

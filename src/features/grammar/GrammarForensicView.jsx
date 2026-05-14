@@ -27,6 +27,7 @@ import {
 import { useRigor } from "../../hooks/useRigor";
 import NeuralFeedbackHub from "./NeuralFeedbackHub";
 import ForensicDropdown from "./ForensicDropdown";
+import PulseLoader from "../research-vault/PulseLoader";
 
 export default function GrammarForensicView({
   api,
@@ -373,6 +374,19 @@ export default function GrammarForensicView({
           >
             {/* Added PB-96 (384px) safe zone for bottom-of-page highlights */}
             <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
+              <AnimatePresence>
+                {isNeuralScanning && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px]"
+                  >
+                    <PulseLoader />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {isAnalyzing ? (
                 <div className="flex-1">
                   <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
@@ -581,10 +595,10 @@ export default function GrammarForensicView({
             disabled={isNeuralScanning || (!content.trim() && !isAnalyzing)}
             className={`h-8 px-4 md:px-8 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-medium text-[11px] ${
               isNeuralScanning
-                ? "bg-accent/20 text-accent animate-pulse"
+                ? "bg-blue-500/20 text-blue-400 animate-pulse"
                 : isAnalyzing
                   ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
-                  : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 border border-white/10"
+                  : "bg-blue-500 text-white hover:brightness-110 shadow-lg shadow-blue-500/20 border border-white/10"
             }`}
           >
             {isNeuralScanning ? (
@@ -615,16 +629,20 @@ export default function GrammarForensicView({
                 <span className="hidden xs:inline">Scanning...</span>
               </div>
             ) : isAnalyzing ? (
-              "Reset"
+              <span className="font-semibold text-[10px] md:text-[11px]">
+                Edit
+              </span>
             ) : (
-              "Scan"
+              <span className="font-semibold text-[10px] md:text-[11px]">
+                Scan
+              </span>
             )}
           </button>
 
           <button
             onClick={handleArchive}
             disabled={!content.trim()}
-            className="h-8 px-4 md:px-8 rounded-[4px] bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 transition-all font-medium text-[11px] flex items-center justify-center border border-white/10"
+            className="h-8 px-4 md:px-8 rounded-[4px] bg-blue-500 text-white hover:brightness-110 shadow-lg shadow-blue-500/20 transition-all font-medium text-[11px] flex items-center justify-center border border-white/10"
           >
             Archive
           </button>
@@ -632,7 +650,7 @@ export default function GrammarForensicView({
           {!isMobile && (
             <button
               onClick={onOpenCapture}
-              className="h-8 w-8 bg-accent hover:brightness-110 text-white rounded-[4px] flex items-center justify-center transition-all shadow-lg shadow-accent/20 border border-white/10"
+              className="h-8 w-8 bg-blue-500 hover:brightness-110 text-white rounded-[4px] flex items-center justify-center transition-all shadow-lg shadow-blue-500/20 border border-white/10"
             >
               <Plus className="h-4 w-4" />
             </button>
