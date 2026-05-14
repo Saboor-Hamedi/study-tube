@@ -22,13 +22,13 @@ export const useRigor = () => {
   const truthTrie = useMemo(() => {
     // 1. Build or Retrieve the Static Base (450k+ words)
     if (!cachedStaticTrie) {
-      console.log("[FORENSIC] Initializing Master Base Trie (450k+ words)...");
+      // console.log("[FORENSIC] Initializing Master Base Trie (450k+ words)...");
       cachedStaticTrie = new Trie([
         ...academicLexicon,
         ...commonWords,
         ...legitimateDoubles,
       ]);
-      console.log("[FORENSIC] Master Base Ready.");
+      // console.log("[FORENSIC] Master Base Ready.");
     }
 
     // 2. Create a surgical layer for the Dynamic Whitelist
@@ -57,7 +57,7 @@ export const useRigor = () => {
           const list = await window.youtubeAPI.getForensicWhitelist();
           if (Array.isArray(list)) {
             setDbWhitelist(list);
-            console.log("[FORENSIC] Sync OK. Density:", list.length);
+            // console.log("[FORENSIC] Sync OK. Density:", list.length);
           }
         } else {
           const res = await fetch("http://127.0.0.1:8000/forensic/whitelist");
@@ -91,12 +91,12 @@ export const useRigor = () => {
           const meta = await window.youtubeAPI.getForensicWhitelistMetadata();
           
           if (meta && (meta.count !== whitelistMeta.count || meta.lastUpdated !== whitelistMeta.lastUpdated)) {
-            console.log("[FORENSIC] Industrial Dataset Change Detected.");
+            // console.log("[FORENSIC] Industrial Dataset Change Detected.");
             const list = await window.youtubeAPI.getForensicWhitelist();
             if (Array.isArray(list)) {
               setDbWhitelist(list);
               setWhitelistMeta({ count: meta.count, lastUpdated: meta.lastUpdated });
-              console.log("[FORENSIC] Industrial Sync Complete. New Count:", list.length);
+              // console.log("[FORENSIC] Industrial Sync Complete. New Count:", list.length);
             }
           }
         } else {
@@ -140,7 +140,7 @@ export const useRigor = () => {
           const updatedList = await window.youtubeAPI.getForensicWhitelist();
           if (Array.isArray(updatedList)) {
             setDbWhitelist(updatedList);
-            console.log("[FORENSIC] Neural Sync Complete. New Whitelist Density:", updatedList.length);
+            // console.log("[FORENSIC] Neural Sync Complete. New Whitelist Density:", updatedList.length);
           }
           return { success: true };
         }
@@ -312,7 +312,7 @@ export const useRigor = () => {
       // 2.5 LINGUISTIC LOGIC AUDIT (spaCy Sidecar)
       // We hit the port 8000 engine to get deterministic structural insights (Subject-Verb, Pronoun Case)
       try {
-        console.log("[FORENSIC] Dispatching Linguistic Audit to Sidecar (Port 8000)...");
+        // console.log("[FORENSIC] Dispatching Linguistic Audit to Sidecar (Port 8000)...");
         const forensicResponse = await fetch("http://127.0.0.1:8000/forensic/audit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -322,7 +322,7 @@ export const useRigor = () => {
         if (forensicResponse.ok) {
           const forensicData = await forensicResponse.json();
           if (Array.isArray(forensicData.highlights)) {
-            console.log(`[FORENSIC] Sidecar returned ${forensicData.highlights.length} structural anomalies.`);
+            // console.log(`[FORENSIC] Sidecar returned ${forensicData.highlights.length} structural anomalies.`);
             forensicData.highlights.forEach((highlight) => {
               // AUTHORITY OVERRIDE: Sidecar highlights replace any overlapping Regex/Local highlights
               const originalLength = highlights.length;
@@ -332,7 +332,7 @@ export const useRigor = () => {
               );
               
               if (highlights.length < originalLength) {
-                console.log(`[FORENSIC] Expert Logic overrode ${originalLength - highlights.length} local heuristic(s).`);
+                // console.log(`[FORENSIC] Expert Logic overrode ${originalLength - highlights.length} local heuristic(s).`);
               }
 
               // Smart Capitalization for Sidecar Suggestions
@@ -360,7 +360,7 @@ export const useRigor = () => {
         }
       } catch (e) {
         console.warn("[FORENSIC] Linguistic Sidecar Connection FAILURE:", e.message);
-        console.log("[FORENSIC] Falling back to local heuristics.");
+        // console.log("[FORENSIC] Falling back to local heuristics.");
       }
 
       // 3. NEURAL FUZZY LOOP (Similarity Scoring)

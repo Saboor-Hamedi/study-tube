@@ -11,7 +11,7 @@ import {
 import LibraryTrash from "./LibraryTrash";
 import LibraryView from "../research-vault/LibraryView";
 import DeleteModal from "../research-vault/DeleteModal";
-import GrammarForensicView from "../grammar/GrammarForensicView";
+import WritingView from "../writing/WritingView";
 import PulseLoader from "../research-vault/PulseLoader";
 import SystemStatus from "./SystemStatus";
 import StreamControls from "../../components/StreamControls";
@@ -164,7 +164,7 @@ const Profile = ({
               exit={{ opacity: 0 }}
               className="flex-1 h-full"
             >
-              <GrammarForensicView
+              <WritingView
                 api={api}
                 showToast={showToast}
                 initialData={initialForgeData}

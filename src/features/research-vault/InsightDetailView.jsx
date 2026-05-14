@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 import { formatNeuralText } from "../../utils/neuralFormat";
 import { useRigor } from "../../hooks/useRigor";
-import NeuralFeedbackHub from "../grammar/NeuralFeedbackHub";
-import ForensicDropdown from "../grammar/ForensicDropdown";
+import WritingHub from "../writing/WritingHub";
+import WritingMenu from "../writing/WritingMenu";
 import ReactMarkdown from "react-markdown";
 
 const StaticContent = memo(({ html }) => (
@@ -245,7 +245,7 @@ const InsightDetailView = ({
               )}
 
               <AnimatePresence>
-                <ForensicDropdown
+                <WritingMenu
                   selectedHl={selectedHl}
                   content={editVal}
                   onApplySuggestion={(suggestion) => {
@@ -265,7 +265,7 @@ const InsightDetailView = ({
 
               {isMobile && isAnalyzing && (
                 <div className="w-full mt-10 pb-6">
-                  <NeuralFeedbackHub
+                  <WritingHub
                     diagnostics={diagnostics}
                     isNeuralScanning={isNeuralScanning}
                     isAnalyzing={isAnalyzing}
@@ -282,7 +282,7 @@ const InsightDetailView = ({
         {/* Diagnostics Sidebar (Desktop Only) */}
         {!isMobile && isSidebarOpen && (
           <div className="shrink-0 z-[60] relative">
-            <NeuralFeedbackHub
+            <WritingHub
               diagnostics={diagnostics}
               isNeuralScanning={isNeuralScanning}
               isAnalyzing={isAnalyzing}

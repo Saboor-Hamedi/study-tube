@@ -268,7 +268,7 @@ export default function App() {
     const initGrammars = async () => {
       try {
         const data = await api.checkGrammar();
-        console.log("Grammars loaded:", data);
+        // console.log("Grammars loaded:", data);
         setGrammars(data);
       } catch (err) {
         console.error("Failed to load grammars", err);

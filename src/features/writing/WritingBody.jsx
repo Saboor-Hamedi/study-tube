@@ -1,0 +1,143 @@
+import React, { useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import PulseLoader from "../research-vault/PulseLoader";
+
+const WritingBody = ({
+  content,
+  setContent,
+  isAnalyzing,
+  isNeuralScanning,
+  diagnostics,
+  getCategoryBg,
+  getCategoryColor,
+  ghostPreview,
+  showHl,
+  hideHl,
+  scrollToAnomaly,
+  takeSnapshot,
+}) => {
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
+    }
+  }, [content]);
+
+  return (
+    <div className="flex-1 min-w-0 flex flex-col bg-surface relative z-[70] selection:bg-blue-500/10">
+      <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative">
+        <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative select-text cursor-text">
+          <AnimatePresence>
+            {isNeuralScanning && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px]"
+              >
+                <PulseLoader />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {isAnalyzing ? (
+            <div className="flex-1">
+              <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text cursor-text">
+                {(() => {
+                  let lastIndex = 0;
+                  const elements = [];
+                  const highlights = diagnostics?.highlights || [];
+                  const sorted = [...highlights].sort(
+                    (a, b) => a.start - b.start,
+                  );
+
+                  sorted.forEach((hl, i) => {
+                    if (hl.start < lastIndex) return;
+                    elements.push(content.substring(lastIndex, hl.start));
+                    elements.push(
+                      <motion.span
+                        key={i}
+                        id={`hl-${i + 1}`}
+                        className="cursor-help transition-all relative inline group/hl font-light tracking-wide"
+                        onMouseLeave={hideHl}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showHl(hl, i, e);
+                          scrollToAnomaly(i + 1);
+                        }}
+                      >
+                        <span
+                          className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline rounded-sm transition-colors duration-200"
+                          style={{
+                            display: "inline-grid",
+                            isolation: "isolate",
+                            lineHeight: "inherit",
+                          }}
+                        >
+                          <motion.span
+                            className="grid-area-1-1 font-light tracking-wide px-[1px]"
+                            style={{ 
+                              gridArea: "1/1",
+                              background: `linear-gradient(to bottom, transparent 8%, ${getCategoryBg(hl.type)} 8%, ${getCategoryBg(hl.type)} 92%, transparent 92%)`,
+                            }}
+                            animate={{
+                              y: ghostPreview?.start === hl.start ? -12 : 0,
+                              opacity: ghostPreview?.start === hl.start ? 0 : 1,
+                            }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                          >
+                            {content.substring(hl.start, hl.end)}
+                          </motion.span>
+
+                          {ghostPreview?.start === hl.start && (
+                            <motion.span
+                              initial={{ y: 12, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              transition={{ duration: 0.2, ease: "easeOut" }}
+                              className="grid-area-1-1 font-light tracking-wide whitespace-nowrap text-[14px] md:text-[18px]"
+                              style={{ gridArea: "1/1" }}
+                            >
+                              {ghostPreview.suggestion === "Omit" ? (
+                                <span className="opacity-20 line-through">
+                                  {content.substring(hl.start, hl.end)}
+                                </span>
+                              ) : (
+                                ghostPreview.suggestion
+                              )}
+                            </motion.span>
+                          )}
+                        </span>
+                        <span
+                          className={`absolute -top-1.5 -right-1 text-[7px] font-black opacity-80 px-0.5 rounded-[2px] leading-none ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
+                        >
+                          {i + 1}
+                        </span>
+                      </motion.span>,
+                    );
+                    lastIndex = hl.end;
+                  });
+                  elements.push(content.substring(lastIndex));
+                  return elements;
+                })()}
+              </div>
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onBlur={() => takeSnapshot(content)}
+              placeholder="Paste academic manuscript for neural forensic auditing..."
+              className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit select-text cursor-text"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default WritingBody;

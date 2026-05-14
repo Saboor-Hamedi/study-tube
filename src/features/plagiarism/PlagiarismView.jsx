@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Loader2, Plus } from "lucide-react";
 import { api } from "../../utils/api-bridge";
 import PlagiarismBody from "./PlagiarismBody";
-import PlagiarismSidebar from "./PlagiarismSidebar";
+import PlagiarismHub from "./PlagiarismHub";
 
 const PlagiarismView = ({ showToast, onOpenCapture }) => {
   const [content, setContent] = useState("");
@@ -83,7 +83,7 @@ const PlagiarismView = ({ showToast, onOpenCapture }) => {
         />
 
         {/* Intelligence Hub */}
-        <PlagiarismSidebar 
+        <PlagiarismHub 
           results={results}
           isScanning={isScanning}
           content={content}
