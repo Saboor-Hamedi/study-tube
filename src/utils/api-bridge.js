@@ -207,7 +207,57 @@ const HybridRouter = {
   checkGrammar: async (text) => {
     // Routed to sidecar AI engine
     if (isElectron) return await window.youtubeAPI.checkGrammar(text);
-    return [];
+    
+    // Web Fallback: Fetch from public archive
+    try {
+      const response = await fetch("/grammars/index.json");
+      let files = await response.json();
+      
+      // Safety: Ensure files is an array (PowerShell single-item fix)
+      if (!Array.isArray(files)) files = [files];
+      
+      const grammars = await Promise.all(files.map(async (f) => {
+        const contentResponse = await fetch(`/grammars/${f.Name}`);
+        const content = await contentResponse.text();
+        return { name: f.Name, content };
+      }));
+
+      return grammars;
+    } catch (err) {
+      console.error("[WEB API] Grammar Fetch Failure:", err);
+      return [];
+    }
+  },
+
+  checkDocs: async () => {
+    if (isElectron) {
+      try {
+        // We use the same pattern as grammar archive for docs
+        const files = await window.youtubeAPI.getDocs?.();
+        if (files) return Array.isArray(files) ? files : [files];
+      } catch (err) {
+        console.warn("[ELECTRON] Docs IPC failure, falling back to web fetch.");
+      }
+    }
+    
+    try {
+      const response = await fetch("/docs/index.json");
+      let files = await response.json();
+      
+      // Safety: Ensure files is an array
+      if (!Array.isArray(files)) files = [files];
+      
+      const docs = await Promise.all(files.map(async (f) => {
+        const contentResponse = await fetch(`/docs/${f.Name}`);
+        const content = await contentResponse.text();
+        return { name: f.Name, content };
+      }));
+
+      return docs;
+    } catch (err) {
+      console.error("[WEB API] Docs Fetch Failure:", err);
+      return [];
+    }
   },
 
   // --- Industrial Data Persistence (PostgreSQL ONLY) ---

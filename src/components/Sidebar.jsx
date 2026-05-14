@@ -91,6 +91,7 @@ export default function Sidebar({
     { id: "grammar", name: "Grammar Lab", icon: GraduationCap },
     { id: "ai-detection", name: "AI Detection", icon: Cpu },
     { id: "plagiarism", name: "Plagiarism", icon: Hash },
+    { id: "documentation", name: "System Docs", icon: Library },
     { id: "report", name: "Report", icon: BarChart2 },
   ];
 
@@ -127,14 +128,14 @@ export default function Sidebar({
                     onClick={() => setView?.(item.id)}
                     className={`flex items-center transition-all duration-200 text-left shrink-0 ${
                       isCollapsed
-                        ? `w-10 h-10 justify-center rounded-full border-0 ${active ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
-                        : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${active ? "bg-accent/10 text-accent font-bold" : "text-muted hover:bg-surface-3 hover:text-text"}`
+                        ? `w-10 h-10 justify-center rounded-full border-0 ${active ? "bg-accent/10 text-accent shadow-[inset_0_0_0_1px_rgba(var(--accent-rgb),0.1)]" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
+                        : `w-full gap-3 px-3 py-2 rounded-[5px] border ${active ? "bg-accent/10 border-accent/10 text-accent font-black shadow-sm" : "border-transparent text-muted hover:bg-surface-3 hover:text-text"}`
                     }`}
                   >
                     <item.icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`} />
                     {!isCollapsed && <span className="text-[11px] font-black truncate flex-1">{item.name}</span>}
                     {isCollapsed && (
-                      <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-black opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120]">
+                      <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-black opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120] uppercase tracking-widest">
                         {item.name}
                       </div>
                     )}

@@ -1,4 +1,4 @@
-# 🛠️ Neural Forensic Suite: Maintenance & Troubleshooting Guide
+# Neural Forensic Suite: Maintenance & Troubleshooting Guide
 
 This document outlines the critical architecture and constraints of the **Writella Neural Forensic Suite**. Follow these guidelines strictly to maintain synchronization between the Electron desktop app, the Web interface, and the PostgreSQL cloud backend.
 

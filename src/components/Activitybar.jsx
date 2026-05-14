@@ -9,8 +9,8 @@ import {
   FileText, 
   User as UserIcon, 
   LogOut, 
-  Shield, 
-  GraduationCap 
+  GraduationCap,
+  Library
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
@@ -77,7 +77,22 @@ export default function Activitybar({ view, setView, onExport, theme, onToggleTh
             />
           )}
           <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-bold uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[200]">
-            Grammar Archive
+            Grammar Hub
+          </div>
+        </button>
+        <button
+          onClick={() => setView('documentation')}
+          className={`relative w-12 h-12 flex items-center justify-center transition-all duration-300 group ${view === 'documentation' ? 'bg-accent/10 text-accent' : 'text-muted/40 hover:bg-surface-2 hover:text-text'}`}
+        >
+          <Library className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+          {view === 'documentation' && (
+            <motion.div 
+              layoutId="sidebar-active" 
+              className="absolute left-0 top-2 w-0.5 h-8 bg-accent" 
+            />
+          )}
+          <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-bold uppercase tracking-widest opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[200]">
+            System Documentation
           </div>
         </button>
       </div>

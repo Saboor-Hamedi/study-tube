@@ -25,10 +25,12 @@ import Notification from "./components/Notification";
 import { useStore } from "./store/useStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
-import GrammarView from "./features/grammar/GrammarView";
+import GrammarView from "./grammar/GrammarView";
 import AIDetectionView from "./features/AI/AIDetectionView";
 import Home from "./Home";
 import SystemStatus from "./features/users/SystemStatus";
+import DocView from "./documentation/DocView";
+import ReportView from "./reports/ReportView";
 
 import { api } from "./utils/api-bridge";
 
@@ -757,7 +759,7 @@ export default function App() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="absolute inset-0 overflow-y-auto"
+                      className="absolute inset-0"
                     >
                       <GrammarView grammars={grammars} setView={setView} />
                     </motion.div>
@@ -784,18 +786,42 @@ export default function App() {
                       <PlagiarismView />
                     </motion.div>
                   )}
+                  {view === "documentation" && (
+                    <motion.div
+                      key="documentation"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0"
+                    >
+                      <DocView />
+                    </motion.div>
+                  )}
+                  {view === "report" && (
+                    <motion.div
+                      key="report"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0"
+                    >
+                      <ReportView />
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </main>
 
               {/* UNIFIED GLOBAL COPILOT SIDEBAR */}
-              <CopilotView
-                isOpen={isCopilotOpen && view !== "grammar"}
-                onClose={handleCloseCopilot}
-                onOpen={() => handleOpenCopilot(null)}
-                api={api}
-                showToast={showToast}
-                sidebarMode={view !== "search" && view !== "settings"}
-              />
+              {view !== "grammar" && view !== "documentation" && view !== "report" && (
+                <CopilotView
+                  isOpen={isCopilotOpen}
+                  onClose={handleCloseCopilot}
+                  onOpen={() => handleOpenCopilot(null)}
+                  api={api}
+                  showToast={showToast}
+                  sidebarMode={view !== "search" && view !== "settings"}
+                />
+              )}
 
               <DragOverlay
                 dropAnimation={null}

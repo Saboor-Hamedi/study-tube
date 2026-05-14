@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 import {
   app,
   BrowserWindow,
@@ -163,14 +163,14 @@ const startCloudBackend = () => {
   // Industrial Path Resolution: Handle ASAR vs Unpacked states
   let serverPath = path.join(__dirname, "..", "server", "main.py");
   let binaryPath = path.join(__dirname, "..", "server", "dist", "main.exe");
-  
+
   if (app.isPackaged) {
     serverPath = serverPath.replace("app.asar", "app.asar.unpacked");
     binaryPath = binaryPath.replace("app.asar", "app.asar.unpacked");
   }
 
   const isProduction = app.isPackaged;
-  
+
   // If we have a compiled binary in production, run it directly
   if (isProduction && fs.existsSync(binaryPath)) {
     console.log(`[SYSTEM] Launching Compiled Cloud Binary: ${binaryPath}`);
@@ -182,8 +182,10 @@ const startCloudBackend = () => {
   } else {
     // Development or Fallback: Use Python
     const pythonCmd = process.platform === "win32" ? "python" : "python3";
-    console.log(`[SYSTEM] Launching Cloud Bridge (Python): ${pythonCmd} -m uvicorn server.main:app`);
-    
+    console.log(
+      `[SYSTEM] Launching Cloud Bridge (Python): ${pythonCmd} -m uvicorn server.main:app`,
+    );
+
     cloudProcess = spawn(
       pythonCmd,
       ["-m", "uvicorn", "server.main:app", "--port", "8000"],
@@ -191,7 +193,7 @@ const startCloudBackend = () => {
         cwd: path.join(__dirname, ".."),
         windowsHide: true,
         env: { ...process.env, PYTHONUNBUFFERED: "1" },
-      }
+      },
     );
   }
 
@@ -202,10 +204,14 @@ const startCloudBackend = () => {
     const msg = data.toString();
     console.error(`[CLOUD ERROR] ${msg}`);
     if (msg.includes("address already in use") || msg.includes("EADDRINUSE")) {
-      console.error("==========================================================");
+      console.error(
+        "==========================================================",
+      );
       console.error("CRITICAL: PORT 8000 IS BLOCKED BY ANOTHER PROCESS!");
       console.error("Please run: taskkill /F /IM python.exe /T");
-      console.error("==========================================================");
+      console.error(
+        "==========================================================",
+      );
     }
   });
   cloudProcess.on("close", (code) => {
@@ -227,7 +233,6 @@ app.on("will-quit", () => {
     cloudProcess = null;
   }
 });
-
 
 if (process.platform === "win32") app.setAppUserModelId(APP_ID);
 
@@ -1504,11 +1509,11 @@ app.on("web-contents-created", (event, contents) => {
 app.whenReady().then(async () => {
   try {
     console.log("[SYSTEM] >>> MASTER STARTUP INITIATED <<<");
-    
+
     // PRIORITY 1: Initialize IPC Bridge (Forensic Handlers)
     console.log("[SYSTEM] Registering Neural Sentry Handlers...");
     registerIpcHandlers();
-    
+
     // PRIORITY 2: Initialize Databases
     console.log("[SYSTEM] Initializing Neural Database (PostgreSQL)...");
     try {
@@ -1518,10 +1523,10 @@ app.whenReady().then(async () => {
       console.error("[CRITICAL] PostgreSQL Init Failure:", e.message);
       dialog.showErrorBox(
         "PostgreSQL Connection Failure",
-        `Electron failed to connect to the Forensic Database.\n\nError: ${e.message}\n\nVerify that PostgreSQL is running on port 5432 and the credentials are correct.`
+        `Electron failed to connect to the Forensic Database.\n\nError: ${e.message}\n\nVerify that PostgreSQL is running on port 5432 and the credentials are correct.`,
       );
     }
-    
+
     // Perform Archive Audit
     try {
       const stats = await getCollectionStats();
@@ -1553,7 +1558,7 @@ app.whenReady().then(async () => {
     };
     globalShortcut.register("F12", toggleDevTools);
     globalShortcut.register("CommandOrControl+Shift+I", toggleDevTools);
-    
+
     console.log("[SYSTEM] >>> STARTUP COMPLETE - BRIDGE ONLINE <<<");
   } catch (err) {
     console.error("[CRITICAL STARTUP FAILURE]", err);
