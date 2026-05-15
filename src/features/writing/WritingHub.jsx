@@ -3,17 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
   Zap,
-  CheckCircle,
-  Archive,
-  ArrowRight,
   RotateCcw,
   Plus,
   MessageSquare,
-  AlertCircle,
-  Loader2,
-  Layers,
   GraduationCap,
   EyeOff,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
 import { truncateChars } from "../../utils/textUtils";
 
@@ -32,15 +28,13 @@ export default function WritingHub({
   const anomalies = diagnostics?.highlights || [];
 
   return (
-    <div className="w-full md:w-[350px] bg-surface flex flex-col border-l border-border min-h-0 h-full overflow-x-hidden select-text cursor-text">
+    <div className="w-full bg-surface flex flex-col min-h-0 h-full overflow-x-hidden select-text cursor-text">
       {/* this my "diagnostic head" - where all the forensic stats start */}
-      <div className="h-7 md:h-12 px-3 md:px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
-        <div className="flex items-center gap-3">
-          <GraduationCap className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-400" />
-          <h2 className="text-[10px] md:text-[12px] font-black tracking-tight uppercase">
-            Writing Diagnostic
-          </h2>
-        </div>
+      <div className="h-10 px-3 border-b border-border bg-surface flex items-center justify-start gap-3 shrink-0 z-20">
+        <GraduationCap className="h-3.5 w-3.5 text-blue-400" />
+        <h2 className="text-[10px] font-black tracking-[0.2em] uppercase text-text/50">
+          Writing Hub
+        </h2>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scroll">
@@ -65,32 +59,32 @@ export default function WritingHub({
               <div className="px-2 py-1 border-b border-border/5 bg-surface-3/20 flex items-center gap-1">
                 <Activity className="h-3 w-3 text-blue-400" />
               </div>
-              <div className="p-1 grid grid-cols-2 gap-1">
+              <div className="p-1 grid grid-cols-3 gap-1">
                 {[
                   {
-                    label: "Grammar",
+                    label: "Gram",
                     value: diagnostics.grammar,
                     color: "text-blue-500",
                   },
                   {
-                    label: "Spelling",
+                    label: "Spell",
                     value: diagnostics.spelling,
                     color: "text-red-500",
                   },
                   {
-                    label: "Syntax",
+                    label: "Syntx",
                     value: diagnostics.syntax,
                     color: "text-emerald-500",
                   },
                   {
-                    label: "Diction",
+                    label: "Dictn",
                     value: diagnostics.diction,
                     color: "text-orange-500",
                   },
                   {
                     label: "Acad",
                     value: diagnostics.academic,
-                    color: "text-purple-500",
+                    color: "text-indigo-400",
                   },
                   {
                     label: "Flow",
@@ -100,18 +94,16 @@ export default function WritingHub({
                 ].map((stat, idx) => (
                   <div
                     key={stat.label}
-                    className="flex items-center justify-between p-1.5 bg-surface-3/30 rounded-[4px] border border-border/5"
+                    className="flex flex-col items-center justify-center p-1 bg-surface-3/30 rounded-[6px] border border-border/5"
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
-                        {stat.label}
-                      </span>
-                      <span
-                        className={`text-[12px] font-black tabular-nums ${stat.color}`}
-                      >
-                        {stat.value || 0}%
-                      </span>
-                    </div>
+                    <span className="text-[6px] font-black text-muted/40 uppercase tracking-[0.1em] mb-0.5">
+                      {stat.label}
+                    </span>
+                    <span
+                      className={`text-[10px] font-black tabular-nums ${stat.color}`}
+                    >
+                      {stat.value || 0}%
+                    </span>
                   </div>
                 ))}
               </div>
@@ -119,42 +111,46 @@ export default function WritingHub({
 
             {/* Linguistic Health Summary */}
             <div className="bg-surface-2/30 border border-border/10 p-2 rounded-[8px] grid grid-cols-2 gap-2">
-               <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Zap className="h-3 w-3 text-pink-400" />
-                      <span className="text-[8px] font-black text-muted uppercase tracking-widest">Cohesion</span>
-                    </div>
-                    <span className="text-[9px] font-black text-pink-500 tabular-nums">
-                      {diagnostics.flow || 0}%
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="h-3 w-3 text-pink-400" />
+                    <span className="text-[8px] font-black text-muted uppercase tracking-widest">
+                      Cohesion
                     </span>
                   </div>
-                  <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${diagnostics.flow || 0}%` }}
-                      className="h-full bg-pink-500" 
-                    />
-                  </div>
-               </div>
-               <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <RotateCcw className="h-3 w-3 text-emerald-400" />
-                      <span className="text-[8px] font-black text-muted uppercase tracking-widest">Rhythm</span>
-                    </div>
-                    <span className="text-[9px] font-black text-emerald-500 tabular-nums">
-                      {diagnostics.rhythm || 0}%
+                  <span className="text-[9px] font-black text-pink-500 tabular-nums">
+                    {diagnostics.flow || 0}%
+                  </span>
+                </div>
+                <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${diagnostics.flow || 0}%` }}
+                    className="h-full bg-pink-500"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <RotateCcw className="h-3 w-3 text-emerald-400" />
+                    <span className="text-[8px] font-black text-muted uppercase tracking-widest">
+                      Rhythm
                     </span>
                   </div>
-                  <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${diagnostics.rhythm || 0}%` }}
-                      className="h-full bg-emerald-500" 
-                    />
-                  </div>
-               </div>
+                  <span className="text-[9px] font-black text-emerald-500 tabular-nums">
+                    {diagnostics.rhythm || 0}%
+                  </span>
+                </div>
+                <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${diagnostics.rhythm || 0}%` }}
+                    className="h-full bg-emerald-500"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Rigor Score Card */}
@@ -169,13 +165,13 @@ export default function WritingHub({
                     IELTS Band Estimate
                   </p>
                 </div>
-                <div className="text-right flex flex-col items-end min-w-[120px]">
+                <div className="text-right flex flex-col items-end min-w-[80px]">
                   <div className="flex flex-col items-end">
-                    <span className="text-[36px] font-black tabular-nums leading-none text-blue-400">
+                    <span className="text-[32px] font-black tabular-nums leading-none text-blue-400">
                       {diagnostics.ielts || diagnostics.ieltsBand || "N/A"}
                     </span>
-                    <p className="text-[7px] font-black text-muted/40 uppercase tracking-[0.2em] mt-1">
-                      Band Estimate
+                    <p className="text-[6px] font-black text-muted/40 uppercase tracking-[0.2em] mt-1">
+                      Band Est.
                     </p>
                   </div>
 

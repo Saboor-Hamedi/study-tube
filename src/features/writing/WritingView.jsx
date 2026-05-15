@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { RotateCcw, RotateCw, Plus } from "lucide-react";
 import {
@@ -330,7 +331,7 @@ export default function WritingView({
           takeSnapshot={takeSnapshot}
         />
 
-        {!isMobile && isSidebarOpen && (
+        {!isMobile && isSidebarOpen && document.getElementById("writing-hub-portal") && createPortal(
           <WritingHub
             diagnostics={diagnostics}
             isNeuralScanning={isNeuralScanning}
@@ -342,7 +343,8 @@ export default function WritingView({
             onApplySuggestion={handleApplySuggestion}
             onIgnore={handleIgnoreHighlight}
             setGhostPreview={setGhostPreview}
-          />
+          />,
+          document.getElementById("writing-hub-portal")
         )}
 
         {isMobile && isAnalyzing && (

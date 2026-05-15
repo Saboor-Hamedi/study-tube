@@ -201,7 +201,7 @@ const LibraryView = ({
   return (
     <div className="h-full flex flex-col bg-surface border border-border rounded-[8px] text-text font-sans relative overflow-hidden select-text">
       {/* Standardized Control Bar - Hidden on small screens, Full Width */}
-      <div className="hidden md:flex h-12 px-4 border-b border-border items-center justify-between shrink-0">
+      <div className="hidden md:flex h-12 px-6 border-b border-border items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <Library className="h-4 w-4 text-accent" />
           <div className="flex items-center gap-2">

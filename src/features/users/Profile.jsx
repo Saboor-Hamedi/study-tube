@@ -119,10 +119,11 @@ const Profile = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-background text-text overflow-hidden font-sans select-text">
-      {/* TABS HEADER - SHARED */}
-      <div className="h-10 px-3 border-b border-border bg-surface flex items-center justify-start gap-4 shrink-0 z-20">
-        <div className="flex h-full">
+    <div className="h-full flex flex-row bg-background text-text overflow-hidden font-sans select-text">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* TABS HEADER - SHARED */}
+      <div className="h-10 px-3 border-b border-border bg-surface flex items-center justify-start gap-2 shrink-0 z-20">
+        <div className="flex h-full items-center">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -186,7 +187,7 @@ const Profile = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden p-3 gap-3"
+              className="flex-1 flex flex-col min-h-0 overflow-hidden p-3"
             >
               <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                 <div className="flex-1 flex flex-col min-h-0 gap-3">
@@ -346,11 +347,6 @@ const Profile = ({
                   </div>
                 </div>
               </div>
-
-              {/* Diagnostics Sidebar (Desktop Only) */}
-              <div className="hidden md:block w-80 shrink-0 overflow-y-auto custom-scroll">
-                <SystemStatus forensicNodes={forensicNodes} />
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -373,6 +369,17 @@ const Profile = ({
           />
         )}
       </AnimatePresence>
+      </div>
+
+      {/* GLOBAL SIDEBAR - Anchored to Global Header */}
+      <div 
+        id="writing-hub-portal"
+        className="hidden md:block w-80 shrink-0 border-l border-border bg-surface overflow-y-auto custom-scroll"
+      >
+        {activeTab !== "profile" && (
+          <SystemStatus forensicNodes={forensicNodes} />
+        )}
+      </div>
     </div>
   );
 };

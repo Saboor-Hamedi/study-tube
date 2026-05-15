@@ -39,10 +39,10 @@ const WritingMenu = ({
       className="bg-surface border border-border/20 shadow-2xl rounded-[12px] overflow-hidden w-[280px] select-text cursor-text"
     >
       <div className="p-3 border-b border-border/10 bg-surface-3/30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Zap className="h-3 w-3 text-blue-400" />
-          <span className="text-[8px] font-black uppercase tracking-[0.25em] text-muted">
-            Neural Action
+        <div className="flex items-center gap-1.5">
+          <Zap className="h-2.5 w-2.5 text-blue-400" />
+          <span className="text-[7px] font-black uppercase tracking-[0.2em] text-muted/60">
+            Audit
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -99,10 +99,6 @@ const WritingMenu = ({
         </div>
 
         <div className="space-y-2">
-          <p className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
-            Neural Suggestions
-          </p>
-          <div className="grid grid-cols-1 gap-1.5">
             {(() => {
               const suggestions = Array.isArray(selectedHl.suggestions)
                 ? selectedHl.suggestions
@@ -111,44 +107,38 @@ const WritingMenu = ({
                   : [];
 
               return suggestions.map((s, si) => (
-                <div key={si} className="space-y-2">
-                  {/* this my "neural swap card" - where i see the old word and the new one side by side */}
-                  {/* Section 3: Word & Suggestion */}
-                  <div className="flex flex-col gap-1.5 p-2 bg-blue-500/5 border border-blue-500/10 rounded-[6px]">
-                    <span className="text-[10px] font-black text-text/40  leading-relaxed">
-                      {truncateChars(
-                        content.substring(selectedHl.start, selectedHl.end),
-                        40,
-                      )}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <ArrowRight className="h-3 w-3 text-blue-400 shrink-0" />
-                      <span className="text-[10px] font-black text-blue-400 leading-snug">
+                <div key={si} className="group/suggest space-y-3">
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[7px] font-black text-muted/30 uppercase tracking-widest mb-1">Current</p>
+                      <p className="text-[11px] font-black text-text/40 truncate italic">
+                        {truncateChars(content.substring(selectedHl.start, selectedHl.end), 20)}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-center">
+                       <ArrowRight className="h-3 w-3 text-blue-400/30 group-hover/suggest:text-blue-400 transition-colors" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[7px] font-black text-blue-400/40 uppercase tracking-widest mb-1">Suggest</p>
+                      <p className="text-[11px] font-black text-blue-400 leading-none">
                         {s}
-                      </span>
+                      </p>
                     </div>
                   </div>
 
-                  {/* Section 4: Action Section (Bottom Right) */}
-                  <div className="flex justify-end pt-1 border-t border-border/5">
-                    <button
-                      onMouseEnter={() =>
-                        setGhostPreview({
-                          start: selectedHl.start,
-                          suggestion: s,
-                        })
-                      }
-                      onMouseLeave={() => setGhostPreview(null)}
-                      onClick={() => onApplySuggestion(s, selectedHl)}
-                      className="px-4 py-1.5 bg-blue-500 text-white text-[10px] font-black rounded-[6px] hover:brightness-110 transition-all shadow-md"
-                    >
-                      Apply
-                    </button>
-                  </div>
+                  <button
+                    onMouseEnter={() => setGhostPreview({ start: selectedHl.start, suggestion: s })}
+                    onMouseLeave={() => setGhostPreview(null)}
+                    onClick={() => onApplySuggestion(s, selectedHl)}
+                    className="w-full py-2 bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-black uppercase tracking-[0.1em] rounded-[8px] transition-all shadow-lg shadow-blue-500/10 active:scale-[0.98]"
+                  >
+                    Apply Neural Logic
+                  </button>
                 </div>
               ));
             })()}
-          </div>
         </div>
       </div>
     </motion.div>
