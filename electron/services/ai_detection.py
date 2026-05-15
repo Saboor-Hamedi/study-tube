@@ -42,46 +42,68 @@ class DetectionResponse(BaseModel):
 
 def preprocess_text(text: str) -> str:
     """
-    CONSERVATIVE PRE-PROCESSOR: Removes decorative bullets without altering rhythm.
-    We removed the aggressive period-adding and prose-joining logic because it 
-    was 'smoothing' the AI's natural signature, reducing detection accuracy.
-    This version only strips bullet markers while preserving original punctuation 
-    and line breaks.
+    NEURAL SCRUB (v2.0): Removes Markdown artifacts and structural noise.
+    Neural analysis requires raw prose; markers like **bold** or ### headers 
+    can skew perplexity and burstiness.
     """
+    # 1. Strip Markdown Bold/Italic/Strikethrough
+    text = re.sub(r'(\*\*|__|~~|\*|_)', '', text)
+    
+    # 2. Strip Markdown Headers (e.g., ### Title)
+    text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
+    
+    # 3. Strip Link Syntax [text](url) -> text
+    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+    
+    # 4. Strip Blockquote Markers
+    text = re.sub(r'^>\s+', '', text, flags=re.MULTILINE)
+    
+    # 5. Final line-by-line cleanup for bullet markers
     lines = text.split('\n')
     processed_lines = []
-    
     for line in lines:
-        # Only strip leading decorative bullets (-, *, •)
-        # We keep numbers (1.) because they are often part of the neural flow.
         clean = re.sub(r'^[\-\*\•]\s*', '', line)
         processed_lines.append(clean)
         
     return "\n".join(processed_lines)
 
-def calculate_perplexity(text: str) -> float:
+def calculate_forensics(text: str) -> dict:
     """
-    Calculates perplexity using a fixed-window approach optimized for speed.
-    INDUSTRIAL OPTIMIZATION: We cap analysis at 1024 tokens (~700-800 words).
-    Processing more than 1024 tokens on CPU is computationally expensive
-    and rarely changes the statistical signature of the neural origin.
+    DEEP FORENSIC ANALYSIS (v6.0)
+    Calculates Perplexity and Top-K distribution.
+    INDUSTRIAL UPGRADE: We now analyze the probability distribution of every token 
+    to see if it follows the 'stale' statistical pattern of neural generation.
     """
-    # Use truncation to ensure we only process the first 1024 tokens
     encodings = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024)
     input_ids = encodings.input_ids.to(DEVICE)
     
     if input_ids.size(1) < 10:
-        return 0.0
+        return {"ppl": 0.0, "top_k_score": 0.0}
 
-    target_ids = input_ids.clone()
-    
     with torch.no_grad():
-        outputs = model(input_ids, labels=target_ids)
-        # Average negative log-likelihood
-        neg_log_likelihood = outputs.loss
+        outputs = model(input_ids, labels=input_ids)
+        logits = outputs.logits
+        # Shift so that tokens < n predict n
+        shift_logits = logits[..., :-1, :].contiguous()
+        shift_labels = input_ids[..., 1:].contiguous()
+        
+        # Calculate cross entropy per token
+        loss_fct = torch.nn.CrossEntropyLoss(reduction="none")
+        token_loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+        
+        # Calculate Top-K hits (Forensic marker: How often the model 'guessed' the next word)
+        # AI text stays in the Top-10 predictions ~90% of the time.
+        _, top_10_indices = torch.topk(shift_logits, 10, dim=-1)
+        top_10_hits = (shift_labels.unsqueeze(-1) == top_10_indices).any(dim=-1).float()
+        top_k_score = top_10_hits.mean().item() * 100
 
-    ppl = torch.exp(neg_log_likelihood)
-    return ppl.item()
+        # Mean Perplexity
+        ppl = torch.exp(token_loss.mean())
+
+    return {
+        "ppl": ppl.item(),
+        "top_k_score": top_k_score
+    }
 
 def calculate_burstiness(text: str) -> float:
     """
@@ -102,57 +124,61 @@ def calculate_burstiness(text: str) -> float:
         
     return std_dev / mean_len
 
-def determine_classification(ppl: float, burst: float, length: int) -> dict:
+def determine_classification(ppl: float, top_k: float, burst: float, length: int) -> dict:
     """
-    NEURAL SIGMOID SCORING (v4.0)
-    Implements a non-linear probability curve to match modern LLM benchmarks.
-    This creates a much sharper distinction between 'Advanced AI' and 'Human' text.
+    NEURAL SIGMOID SCORING (v6.2) - High-Rigor AI Calibration
+    Optimized for modern LLMs (Gemini, DeepSeek, GPT-4o).
     """
     import math
 
     # 1. Neural Predictability Sigmoid
-    # Center Point (50% score) at PPL 100
-    # Steepness factor: 25
-    # For GPT-4 text (PPL ~80-120), this curve is very sensitive.
-    ppl_score = 100 / (1 + math.exp((ppl - 100) / 25))
+    # Standard AI: low ppl. High-End AI: moderate ppl (for GPT-2).
+    ppl_score = 100 / (1 + math.exp((ppl - 45) / 12))
     
-    # 2. Structural Monotony Sigmoid
-    # Center Point (50% score) at Burst 0.4
-    # Steepness factor: 0.1
+    # 2. Top-K Profiling Sigmoid
+    top_k_score = 100 / (1 + math.exp((72 - top_k) / 4))
+
+    # 3. Structural Monotony Sigmoid (The strongest signal for High-End AI)
+    # Modern AI is 'perfect' but monotonous.
     burst_score = 100 / (1 + math.exp((burst - 0.4) / 0.1))
 
-    # 3. Hybrid Confidence Weighting
-    # Predictability is the primary forensic marker (70% weight)
-    base_prob = (ppl_score * 0.70) + (burst_score * 0.30)
+    # 4. Multi-Marker Hybrid
+    neural_base = (ppl_score * 0.5) + (top_k_score * 0.5)
+    final_prob = (neural_base * 0.7) + (burst_score * 0.3)
     
-    # 4. The 'Neural Signature' Synergy
-    # If both markers point to AI, the probability accelerates toward 99%.
-    final_prob = base_prob
-    if ppl_score > 70 and burst_score > 70:
-        final_prob = max(final_prob, 96.0)
-    elif ppl_score > 50 and burst_score > 50:
-        final_prob += 20
+    # 5. High-End AI Heuristic (The 'Genius AI' Profile)
+    # If the text is monotonous (low burst) AND uses advanced vocabulary (ppl > 55)
+    # AND maintains a neural top-k distribution (>65), it is almost certainly modern AI.
+    if burst < 0.22 and ppl > 55 and top_k > 65:
+        final_prob = max(final_prob, 88.0)
+    elif burst < 0.25 and (ppl_score > 60 or top_k_score > 60):
+        # Broaden synergy for mixed cases
+        final_prob = max(final_prob, 72.0)
 
-    # 5. Length Compensation
-    if length > 300 and final_prob > 60:
-        final_prob += 5
+    # 6. Length & Confidence Adjustments
+    if length > 200:
+        if final_prob > 60: final_prob = min(99.9, final_prob + 8)
+    elif length < 50:
+        final_prob = (final_prob * 0.6) + 18
 
     # Clamp to 1-99.9
     final_prob = max(1, min(99.9, final_prob))
     
     classification = "Human"
-    if final_prob > 80:
+    if final_prob > 75:
         classification = "Likely AI"
-    elif final_prob > 45:
+    elif final_prob > 35:
         classification = "Mixed / Neural-Assist"
         
     return {
         "probability": round(final_prob, 2),
         "classification": classification,
         "details": {
-            "ppl_interpretation": "Neural Pattern" if ppl_score > 50 else "Natural Complexity",
-            "burst_interpretation": "Robotic Monotony" if burst_score > 50 else "Human Rhythm",
+            "ppl_interpretation": "Neural Pattern" if ppl_score > 55 else "Natural Complexity",
+            "top_k_interpretation": "Predictable Distribution" if top_k_score > 55 else "Organic Variation",
+            "burst_interpretation": "Robotic Monotony" if burst_score > 55 else "Human Rhythm",
             "ppl_score": round(ppl_score, 2),
+            "top_k_score": round(top_k_score, 2),
             "burst_score": round(burst_score, 2)
         }
     }
@@ -171,12 +197,15 @@ async def detect_ai(request: DetectionRequest):
         raise HTTPException(status_code=400, detail="Text too short for analysis")
 
     try:
-        # Use processed_text for neural analysis
-        perplexity = calculate_perplexity(processed_text)
-        # Use original text structure for burstiness (it relies on sentence length variance)
+        # Use processed_text for deep neural analysis
+        forensics = calculate_forensics(processed_text)
+        perplexity = forensics["ppl"]
+        top_k = forensics["top_k_score"]
+        
+        # Use original text structure for burstiness
         burstiness = calculate_burstiness(text)
         
-        result = determine_classification(perplexity, burstiness, len(text.split()))
+        result = determine_classification(perplexity, top_k, burstiness, len(text.split()))
         
         return DetectionResponse(
             ai_probability=result["probability"],

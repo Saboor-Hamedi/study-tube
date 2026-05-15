@@ -31,14 +31,18 @@ const DetectionView = ({ showToast, onOpenCapture }) => {
       setResults({
         aiScore: Math.round(data.ai_probability),
         humanScore: Math.round(100 - data.ai_probability),
-        confidence: 0.92 + Math.random() * 0.05,
-        anomalies: Math.floor(data.ai_probability / 15),
+        confidence: 0.85 + (Math.abs(data.ai_probability - 50) / 400), 
+        anomalies: Math.floor(data.ai_probability / 20) + (data.perplexity > 100 ? 0 : 2),
         burstiness: data.details.burst_interpretation || "High Variation",
         perplexity: data.details.ppl_interpretation || "Natural Pattern",
+        classification: data.classification,
+        raw: data,
         segments: [
-          { text: content.slice(0, 100) + "...", probability: data.ai_probability / 100, type: data.ai_probability > 75 ? "synthetic" : data.ai_probability > 40 ? "mixed" : "human" },
-          { text: "Neural Perplexity Analysis...", probability: 0.8, type: "human" },
-          { text: "Burstiness/Variation Scan...", probability: 0.1, type: "human" },
+          { 
+            text: content.slice(0, 120) + "...", 
+            probability: data.ai_probability / 100, 
+            type: data.ai_probability > 75 ? "synthetic" : data.ai_probability > 35 ? "mixed" : "human" 
+          }
         ],
       });
       setIsAnalyzing(true);
@@ -59,23 +63,27 @@ const DetectionView = ({ showToast, onOpenCapture }) => {
   return (
     <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
       {/* Main Forensic Workspace */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
+      <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-0 relative">
         
         {/* Analysis Canvas */}
-        <DetectionBody 
-          content={content}
-          setContent={setContent}
-          isScanning={isScanning}
-          isAnalyzing={isAnalyzing}
-          results={results}
-        />
+        <div className="flex-1 flex flex-col min-h-[400px] md:min-h-0">
+          <DetectionBody 
+            content={content}
+            setContent={setContent}
+            isScanning={isScanning}
+            isAnalyzing={isAnalyzing}
+            results={results}
+          />
+        </div>
 
         {/* Intelligence Hub */}
-        <DetectionSidebar 
-          results={results}
-          isScanning={isScanning}
-          content={content}
-        />
+        <div className="w-full md:w-auto h-auto md:h-full shrink-0 border-t md:border-t-0 md:border-l border-border/10">
+          <DetectionSidebar 
+            results={results}
+            isScanning={isScanning}
+            content={content}
+          />
+        </div>
       </div>
 
       {/* Unified Industrial Footer */}

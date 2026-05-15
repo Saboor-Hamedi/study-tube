@@ -38,5 +38,6 @@
 3.  **Scope Control**: DO NOT add extra features, UI elements, or "helpful" extras that were not in the user's specific request.
 4.  **Port Discipline**: Port 8000 is for Linguistic Logic; Port 8008 is for Neural Transformer Inference. Do NOT mix them.
 5.  **Local First**: All neural forensic calculations MUST remain on the user's machine. Never send manuscript data to external LLM APIs for detection.
+6.  **No Emojis**: Never use emojis in documentation, commit messages, or UI labels. Maintain a strictly industrial, academic tone.
 
 ---

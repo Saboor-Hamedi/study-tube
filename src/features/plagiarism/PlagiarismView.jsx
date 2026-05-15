@@ -71,24 +71,28 @@ const PlagiarismView = ({ showToast, onOpenCapture }) => {
   return (
     <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
       {/* Main Forensic Workspace */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
+      <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-0 relative">
         
         {/* Analysis Canvas */}
-        <PlagiarismBody 
-          content={content}
-          setContent={setContent}
-          isScanning={isScanning}
-          isAnalyzing={isAnalyzing}
-          results={results}
-        />
+        <div className="flex-1 flex flex-col min-h-[400px] md:min-h-0">
+          <PlagiarismBody 
+            content={content}
+            setContent={setContent}
+            isScanning={isScanning}
+            isAnalyzing={isAnalyzing}
+            results={results}
+          />
+        </div>
 
         {/* Intelligence Hub */}
-        <PlagiarismHub 
-          results={results}
-          isScanning={isScanning}
-          content={content}
-          api={api}
-        />
+        <div className="w-full md:w-auto h-auto md:h-full shrink-0 border-t md:border-t-0 md:border-l border-border/10">
+          <PlagiarismHub 
+            results={results}
+            isScanning={isScanning}
+            content={content}
+            api={api}
+          />
+        </div>
       </div>
 
       {/* Unified Industrial Footer */}
