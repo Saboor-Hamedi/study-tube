@@ -18,6 +18,7 @@ const WritingBody = ({
 }) => {
   const textareaRef = useRef(null);
 
+  // this my "auto-growing editor" - keeps the workspace clean as i write more
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -29,8 +30,10 @@ const WritingBody = ({
   return (
     <div className="flex-1 min-w-0 flex flex-col bg-surface relative z-[70] selection:bg-blue-500/10">
       <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative">
-        <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative select-text cursor-text">
+        {/* this my "document canvas" - true full-width layout with scroll clearance */}
+        <div className="w-full max-w-none p-4 md:px-6 md:py-10 pb-96 min-h-full flex flex-col relative select-text cursor-text">
           <AnimatePresence>
+            {/* this my "neural scanning shield" - keeps me focused while the brain is working */}
             {isNeuralScanning && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -44,8 +47,8 @@ const WritingBody = ({
           </AnimatePresence>
 
           {isAnalyzing ? (
-            <div className="flex-1">
-              <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text cursor-text">
+            <div className="w-full relative">
+              <div className="w-full text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text cursor-text">
                 {(() => {
                   let lastIndex = 0;
                   const elements = [];
@@ -70,21 +73,20 @@ const WritingBody = ({
                         }}
                       >
                         <span
+                          // this my "zero-shift grid" - back to the stack but with better baseline logic
                           className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline rounded-sm transition-colors duration-200"
-                          style={{
-                            display: "inline-grid",
-                            isolation: "isolate",
-                            lineHeight: "inherit",
-                          }}
+                          style={{ display: "inline-grid" }}
                         >
+                          {/*  this my "old word sliding up" */}
                           <motion.span
                             className="grid-area-1-1 font-light tracking-wide px-[1px]"
-                            style={{ 
+                            style={{
                               gridArea: "1/1",
+                              // this my "industrial highlight" - clean colors that don't mess with my line height
                               background: `linear-gradient(to bottom, transparent 8%, ${getCategoryBg(hl.type)} 8%, ${getCategoryBg(hl.type)} 92%, transparent 92%)`,
                             }}
                             animate={{
-                              y: ghostPreview?.start === hl.start ? -12 : 0,
+                              y: ghostPreview?.start === hl.start ? -15 : 0,
                               opacity: ghostPreview?.start === hl.start ? 0 : 1,
                             }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
@@ -92,12 +94,14 @@ const WritingBody = ({
                             {content.substring(hl.start, hl.end)}
                           </motion.span>
 
+                          {/* this my "new word sliding in" - showing me the future before i commit */}
                           {ghostPreview?.start === hl.start && (
                             <motion.span
-                              initial={{ y: 12, opacity: 0 }}
+                              initial={{ y: 15, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
                               transition={{ duration: 0.2, ease: "easeOut" }}
-                              className="grid-area-1-1 font-light tracking-wide whitespace-nowrap text-[14px] md:text-[18px]"
+                              // this my "ghost stack" - sharing the exact same grid space as the original
+                              className="grid-area-1-1 font-light tracking-wide whitespace-nowrap text-[14px] md:text-[18px] pointer-events-none select-none"
                               style={{ gridArea: "1/1" }}
                             >
                               {ghostPreview.suggestion === "Omit" ? (
@@ -111,7 +115,8 @@ const WritingBody = ({
                           )}
                         </span>
                         <span
-                          className={`absolute -top-1.5 -right-1 text-[7px] font-black opacity-80 px-0.5 rounded-[2px] leading-none ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
+                          // this my "anomaly index" - helping me track my errors one by one (disabled selection so i don't copy numbers)
+                          className={`absolute -top-1.5 -right-1 text-[7px] font-black opacity-80 px-0.5 rounded-[2px] leading-none select-none pointer-events-none ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
                         >
                           {i + 1}
                         </span>
@@ -131,7 +136,8 @@ const WritingBody = ({
               onChange={(e) => setContent(e.target.value)}
               onBlur={() => takeSnapshot(content)}
               placeholder="Paste academic manuscript for neural forensic auditing..."
-              className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit select-text cursor-text"
+              // this my "industrial editor" - matched line-height exactly with read-mode to prevent jumping
+              className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.8] md:leading-[2.2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit select-text cursor-text"
             />
           )}
         </div>

@@ -256,7 +256,7 @@ def analyze_linguistics(text: str) -> List[Dict]:
                 agent = [t for t in token.children if t.dep_ == "agent"]
                 nsubj_pass = [t for t in token.children if t.dep_ == "nsubjpass"]
                 
-                suggestion = "Active Voice"
+                suggestion = None
                 if agent and nsubj_pass:
                     # Get the 'pobj' of the agent (e.g., 'me' in 'by me')
                     pobj = [t for t in agent[0].children if t.dep_ == "pobj"]
@@ -414,7 +414,7 @@ def analyze_linguistics(text: str) -> List[Dict]:
                 "end": token.idx + len(token.text),
                 "type": "tone",
                 "reason": "Subjective Language",
-                "suggestion": "Be more neutral",
+                "suggestion": None,
                 "explanation": "Academic writing should remain objective. Avoid emotive or intensifying words."
             })
 
@@ -455,7 +455,7 @@ def analyze_linguistics(text: str) -> List[Dict]:
                 "end": match.end(),
                 "type": "tone",
                 "reason": reason,
-                "suggestion": "Be more direct",
+                "suggestion": None,
                 "explanation": f"The phrase '{phrase}' is a hedging expression. Academic writing should be assertive."
             })
 
@@ -478,16 +478,16 @@ def analyze_linguistics(text: str) -> List[Dict]:
                     "explanation": "This sentence appears to be a fragment. Ensure it has both a subject and a finite verb."
                 })
 
-        # 2. PREPOSITIONAL PILE-UP
+        # 2. PREPOSITIONAL PILE-UP (Reduced sensitivity for academic complex sentences)
         preps = [t for t in sent if t.pos_ == "ADP"]
-        if len(preps) > 3:
+        if len(preps) > 6:
             highlights.append({
                 "start": sent.start_char,
                 "end": sent.end_char,
                 "type": "tone",
                 "reason": "Prepositional Pile-up",
-                "suggestion": "Simplify structure",
-                "explanation": "Too many prepositional phrases (in, of, at) make sentences hard to follow."
+                "suggestion": None,
+                "explanation": "High density of prepositional phrases (in, of, at) detected. Consider simplifying for better academic clarity."
             })
 
     return highlights

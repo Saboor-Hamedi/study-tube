@@ -30,6 +30,7 @@ const WritingMenu = ({
   const isTop = placement.startsWith("top");
 
   return (
+    // this my "surgical hud" - the little brain that follows my cursor
     <motion.div
       initial={{ opacity: 0, scale: 0.95, y: isTop ? -10 : 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -53,6 +54,7 @@ const WritingMenu = ({
       </div>
 
       <div className="px-3 py-2 bg-surface-2/50 border-b border-border/10 flex items-center gap-2">
+        {/* this my "vocabulary forge" - adding words so the engine remembers them */}
         <button
           onClick={() =>
             onAddToDictionary(
@@ -103,6 +105,7 @@ const WritingMenu = ({
 
               return suggestions.map((s, si) => (
                 <div key={si} className="space-y-2">
+                  {/* this my "neural swap card" - where i see the old word and the new one side by side */}
                   {/* Section 3: Word & Suggestion */}
                   <div className="flex flex-col gap-1.5 p-2 bg-blue-500/5 border border-blue-500/10 rounded-[6px]">
                     <span className="text-[10px] font-black text-text/40  leading-relaxed">

@@ -33,6 +33,7 @@ export default function WritingHub({
 
   return (
     <div className="w-full md:w-[350px] bg-surface flex flex-col border-l border-border min-h-0 h-full overflow-x-hidden select-text cursor-text">
+      {/* this my "diagnostic head" - where all the forensic stats start */}
       <div className="h-7 md:h-12 px-3 md:px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
         <div className="flex items-center gap-3">
           <GraduationCap className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-400" />
@@ -59,7 +60,7 @@ export default function WritingHub({
           </div>
         ) : (
           <div className="p-1 space-y-1">
-            {/* Categorical Audit Section */}
+            {/* this my "neural scoreboard" - showing me exactly where my writing is weak */}
             <div className="bg-surface-2/30 border border-border/10 rounded-[8px] overflow-hidden">
               <div className="px-2 py-1 border-b border-border/5 bg-surface-3/20 flex items-center gap-1">
                 <Activity className="h-3 w-3 text-blue-400" />
@@ -113,7 +114,7 @@ export default function WritingHub({
 
             {/* Rigor Score Card */}
             <div className="bg-surface-2/30 border border-border/10 p-2 rounded-[8px] space-y-2">
-              {/* Bottom: Rigor Index */}
+              {/* this my "rigor index" - the final academic verdict */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">
@@ -138,6 +139,7 @@ export default function WritingHub({
                       <span className="text-[14px] font-black text-text tabular-nums leading-none">
                         {anomalies.length}
                       </span>
+                      {/* this my "anomaly heat bar" - when it turns red, i know i've got work to do */}
                       <span className="text-[7px] font-black text-muted uppercase tracking-widest">
                         Detected Flags
                       </span>
@@ -167,6 +169,7 @@ export default function WritingHub({
                 </div>
 
                 <div className="space-y-1">
+                  {/* this my "forensic timeline" - every single flag mapped out in order */}
                   {anomalies.map((hl, i) => (
                     <motion.div
                       key={i}
@@ -246,6 +249,7 @@ export default function WritingHub({
                               {/* Section 4: Action Section (Bottom Right) */}
                               <div className="flex justify-end pt-1 border-t border-border/5">
                                 <button
+                                  // this my "neural bridge" - the button that triggers my ghost preview animation
                                   onMouseEnter={() =>
                                     setGhostPreview({
                                       start: hl.start,
