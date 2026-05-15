@@ -613,6 +613,8 @@ export const getCategoryColor = (type) => {
       return "text-purple-500";
     case "spelling":
       return "text-red-500";
+    case "acad":
+      return "text-indigo-400";
     default:
       return "text-accent";
   }
@@ -630,6 +632,8 @@ export const getCategoryBg = (type) => {
       return "rgba(168, 85, 247, 0.1)";
     case "spelling":
       return "rgba(239, 68, 68, 0.1)";
+    case "acad":
+      return "rgba(129, 140, 248, 0.1)";
     default:
       return "rgba(255, 107, 0, 0.1)";
   }

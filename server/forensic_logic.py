@@ -1,5 +1,6 @@
 import spacy
 import re
+import statistics
 from typing import List, Dict
 
 # INDUSTRIAL NLP CORE
@@ -97,20 +98,23 @@ hedge_map = {
     "it could be that": "Hedging",
     "this suggests that": "Hedging",
     "tends to": "Hedging",
-    "to some extent": "Hedging"
+    "to some extent": "Hedging",
+    "perhaps": "Hedging",
+    "maybe": "Hedging",
+    "arguably": "Hedging",
+    "presumably": "Hedging",
+    "reportedly": "Hedging",
+    "supposedly": "Hedging"
 }
 
 # 5. JARGON & BUZZWORDS
 jargon_map = {
     "synergy": "cooperation",
-    "leverage": "utilize",
-    "paradigm": "framework",
     "disruptive": "innovative",
     "optimize": "improve",
     "bandwidth": "capacity",
     "deep dive": "thorough analysis",
-    "holistic": "comprehensive",
-    "robust": "reliable"
+    "holistic": "comprehensive"
 }
 
 # 6. NOMINALIZATION SUFFIXES
@@ -128,8 +132,8 @@ def analyze_linguistics(text: str) -> List[Dict]:
     doc = nlp(text)
     highlights = []
     
-    # Track dominant tense for consistency checks
-    tenses = [t.morph.get("Tense")[0] for t in doc if t.pos_ == "VERB" and t.morph.get("Tense")]
+    # Track dominant tense for consistency checks (Only consider finite verbs)
+    tenses = [t.morph.get("Tense")[0] for t in doc if t.pos_ == "VERB" and t.tag_ in ["VBP", "VBZ", "VBD"] and t.morph.get("Tense")]
     dominant_tense = max(set(tenses), key=tenses.count) if tenses else None
 
     for token in doc:
@@ -137,9 +141,25 @@ def analyze_linguistics(text: str) -> List[Dict]:
         if token.dep_ == "nsubj":
             verb = token.head
             if verb.pos_ == "VERB":
-                # CASE: Plural subject vs Singular Verb
-                is_plural_subj = token.tag_ in ["NNS", "NNPS"] or token.text.lower() in ["i", "you", "we", "they", "people", "these", "those"]
+                # CASE: Relative Pronoun Agreement (that, which, who)
+                # We need to find the antecedent to determine the correct number
+                is_rel_pronoun = token.text.lower() in ["that", "which", "who"]
                 
+                is_plural_subj = False
+                is_singular_subj = False
+                
+                if is_rel_pronoun:
+                    # In a relative clause, the antecedent is usually the head of the verb
+                    # e.g., "models (head) that (nsubj) assume (verb)"
+                    antecedent = verb.head
+                    if antecedent.tag_ in ["NNS", "NNPS"] or antecedent.text.lower() in ["people", "those", "these", "we", "they"]:
+                        is_plural_subj = True
+                    else:
+                        is_singular_subj = True
+                else:
+                    is_plural_subj = token.tag_ in ["NNS", "NNPS"] or token.text.lower() in ["i", "you", "we", "they", "people", "these", "those"]
+                    is_singular_subj = token.tag_ in ["NN", "NNP"] or token.text.lower() in ["he", "she", "it", "nobody", "everyone", "someone", "anybody", "this", "that"]
+
                 # Check for "was" (VBD) with plural subject
                 is_singular_past_be = verb.lemma_ == "be" and verb.text.lower() == "was"
                 
@@ -174,7 +194,7 @@ def analyze_linguistics(text: str) -> List[Dict]:
                 # SAFETY: Skip if verb has an auxiliary (e.g., "didn't work", "will go")
                 has_aux = any(t.dep_ == "aux" for t in verb.children)
                 
-                if is_singular_subj and verb.tag_ in ["VBP", "VB"] and token.text.lower() not in ["i", "you"] and not has_aux:
+                if is_singular_subj and verb.tag_ in ["VBP", "VB"] and token.text.lower() not in ["i", "you", "we", "that", "which", "who"] and not has_aux:
                     def get_correct_form_sing(v):
                         if v.lemma_ == "be": return "is"
                         if v.lemma_ == "have": return "has"
@@ -194,11 +214,13 @@ def analyze_linguistics(text: str) -> List[Dict]:
 
         # 2. SYNTACTIC FLOW & WORD ORDER (Misplaced Modifiers)
         # CASE: Adjective after Noun (Syntactic Inversion) - e.g., "The house blue"
+        # We skip reduced relative clauses where the adjective has children (e.g., "grids capable of managing")
         if token.pos_ == "ADJ" and token.dep_ == "amod":
             noun = token.head
-            if noun.pos_ == "NOUN" and token.i > noun.i:
+            has_children = any(t.dep_ != "punct" for t in token.children)
+            if noun.pos_ == "NOUN" and token.i > noun.i and not has_children:
                 highlights.append({
-                    "start": token.idx,
+                    "start": noun.idx,
                     "end": token.idx + len(token.text),
                     "type": "syntax",
                     "reason": "Syntactic Inversion",
@@ -295,10 +317,14 @@ def analyze_linguistics(text: str) -> List[Dict]:
                 })
 
         # 4. TENSE CONSISTENCY CHECK
-        # If a verb deviates from the dominant tense without a conjunction or shift-marker
-        if dominant_tense and token.pos_ == "VERB":
+        # If a finite verb deviates from the dominant tense without a conjunction or shift-marker
+        if dominant_tense and token.pos_ == "VERB" and token.tag_ in ["VBP", "VBZ", "VBD"]:
             token_tense = token.morph.get("Tense")
-            if token_tense and token_tense[0] != dominant_tense:
+            
+            # SAFETY: Skip check for modal-influenced verbs (e.g. "could diminish", "will act")
+            has_modal = any(t.pos_ == "MD" for t in token.children) or (token.head and any(t.pos_ == "MD" for t in token.head.children))
+            
+            if token_tense and token_tense[0] != dominant_tense and not has_modal:
                 # Basic heuristic: Check if it's a jarred shift in the same sentence
                 if not any(t.text.lower() in ["but", "while", "although", "when", "if"] for t in token.sent):
                     highlights.append({
@@ -384,30 +410,34 @@ def analyze_linguistics(text: str) -> List[Dict]:
         word_lower = token.text.lower()
         lemma = token.lemma_.lower()
         
-        # Jargon Check
-        if lemma in jargon_map:
-            highlights.append({
-                "start": token.idx,
-                "end": token.idx + len(token.text),
-                "type": "diction",
-                "reason": "Vague Jargon",
-                "suggestion": jargon_map[lemma],
-                "explanation": f"The word '{token.text}' is considered vague corporate jargon. Use '{jargon_map[lemma]}' for academic clarity."
-            })
-            
-        # Weak Verbs Check
-        elif word_lower in strength_map:
-            is_aux = token.dep_ in ["aux", "auxpass"]
-            is_negated = any(c.dep_ == "neg" for c in token.children) or any(c.text == "n't" for c in token.children)
-            if not is_aux and not is_negated:
+        # SAFETY: Skip words that are part of a hyphenated compound (e.g. "decision-making")
+        is_compound = (token.i > 0 and doc[token.i-1].text == "-") or (token.i < len(doc)-1 and doc[token.i+1].text == "-")
+        
+        if not is_compound:
+            # Jargon Check
+            if lemma in jargon_map:
                 highlights.append({
                     "start": token.idx,
                     "end": token.idx + len(token.text),
                     "type": "diction",
-                    "reason": "Weak Academic Verb",
-                    "suggestion": strength_map[word_lower],
-                    "explanation": f"The word '{token.text}' is vague. Consider a more precise academic alternative like '{strength_map[word_lower]}'."
+                    "reason": "Vague Jargon",
+                    "suggestion": jargon_map[lemma],
+                    "explanation": f"The word '{token.text}' is considered vague corporate jargon. Use '{jargon_map[lemma]}' for academic clarity."
                 })
+                
+            # Weak Verbs Check
+            elif word_lower in strength_map:
+                is_aux = token.dep_ in ["aux", "auxpass"]
+                is_negated = any(c.dep_ == "neg" for c in token.children) or any(c.text == "n't" for c in token.children)
+                if not is_aux and not is_negated:
+                    highlights.append({
+                        "start": token.idx,
+                        "end": token.idx + len(token.text),
+                        "type": "diction",
+                        "reason": "Weak Academic Verb",
+                        "suggestion": strength_map[word_lower],
+                        "explanation": f"The word '{token.text}' is vague. Consider a more precise academic alternative like '{strength_map[word_lower]}'."
+                    })
                 
         # Subjective Words Check
         elif word_lower in subjective_words:
@@ -523,12 +553,10 @@ def analyze_linguistics(text: str) -> List[Dict]:
             })
 
         # B. RHYTHMIC MONOTONY (Sentence Length Variance)
-        # We calculate the standard deviation of sentence lengths to detect robotic patterns
+        # We calculate the standard deviation of sentence lengths using the statistics module
         if len(sentences) >= 4:
             lengths = [len(s.text.split()) for s in sentences]
-            mean = sum(lengths) / len(lengths)
-            variance = sum((x - mean) ** 2 for x in lengths) / len(lengths)
-            std_dev = variance ** 0.5
+            std_dev = statistics.stdev(lengths)
             
             if std_dev < 3.5: # Sentences are too similar in length
                 highlights.append({
@@ -539,5 +567,28 @@ def analyze_linguistics(text: str) -> List[Dict]:
                     "suggestion": None,
                     "explanation": "Sentences in this paragraph have very similar lengths. Vary your sentence structure (combine or split) to create a more professional academic rhythm."
                 })
+
+    # FINAL PASS: Whitelist for false positives
+    # Industrial safety layer: removes valid constructions often misidentified by NLP
+    legitimate_patterns = [
+        (r'\bhad\s+had\b', "Past perfect of 'have'"),
+        (r'\bthat\s+that\b', "Nominal clause + demonstrative"),
+        (r'\ba\s+unique\b', "'Unique' begins with consonant sound /juː/"),
+        (r'\ba\s+university\b', "'University' begins with consonant sound /juː/"),
+        (r'\ban\s+hour\b', "'Hour' has silent 'h', vowel sound"),
+        (r'\b(?:saw|met|helped|told|asked)\s+them\b', "Valid object pronoun"),
+        (r'\bparadigm\s+shift\b', "Fixed academic collocation"),
+        (r'\brobust\s+(?:framework|methodology|approach|system)\b', "Standard academic phrasing"),
+    ]
+
+    def is_whitelisted(txt, start, end):
+        substring = txt[start:end]
+        for pattern, reason in legitimate_patterns:
+            if re.search(pattern, substring, re.IGNORECASE):
+                return True
+        return False
+
+    # Filter out whitelisted items
+    highlights = [h for h in highlights if not is_whitelisted(text, h["start"], h["end"])]
 
     return highlights

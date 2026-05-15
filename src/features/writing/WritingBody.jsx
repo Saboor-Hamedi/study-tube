@@ -64,8 +64,7 @@ const WritingBody = ({
                       <motion.span
                         key={i}
                         id={`hl-${i + 1}`}
-                        className="cursor-help transition-all relative inline group/hl font-light tracking-wide"
-                        onMouseLeave={hideHl}
+                        className="cursor-pointer transition-all relative inline group/hl font-light tracking-wide"
                         onClick={(e) => {
                           e.stopPropagation();
                           showHl(hl, i, e);
@@ -79,11 +78,11 @@ const WritingBody = ({
                         >
                           {/*  this my "old word sliding up" */}
                           <motion.span
-                            className="grid-area-1-1 font-light tracking-wide px-[1px]"
+                            className="grid-area-1-1 font-light tracking-wide px-[2px] mx-[0.5px] rounded-[2px]"
                             style={{
                               gridArea: "1/1",
-                              // this my "industrial highlight" - clean colors that don't mess with my line height
-                              background: `linear-gradient(to bottom, transparent 8%, ${getCategoryBg(hl.type)} 8%, ${getCategoryBg(hl.type)} 92%, transparent 92%)`,
+                              // this my "industrial highlight" - clean colors with microscopic vertical gaps to prevent merging
+                              background: `linear-gradient(to bottom, transparent 4%, ${getCategoryBg(hl.type)} 4%, ${getCategoryBg(hl.type)} 95%, transparent 95%)`,
                             }}
                             animate={{
                               y: ghostPreview?.start === hl.start ? -15 : 0,
@@ -115,8 +114,18 @@ const WritingBody = ({
                           )}
                         </span>
                         <span
-                          // this my "anomaly index" - helping me track my errors one by one (disabled selection so i don't copy numbers)
-                          className={`absolute -top-1.5 -right-1 text-[7px] font-black opacity-80 px-0.5 rounded-[2px] leading-none select-none pointer-events-none ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
+                          // this my "anomaly index" - perfect circles for an industrial look
+                          className={`absolute -top-3.5 -right-3.5 w-5 h-5 flex items-center justify-center text-[9px] font-black rounded-full shadow-sm border border-white/10 select-none cursor-pointer ${getCategoryColor(hl.type)} ${getCategoryColor(
+                            hl.type,
+                          )
+                            .replace("text-", "bg-")
+                            .replace(/-(400|500)/, "-$1/20")}`}
+                          style={{
+                            backgroundColor: getCategoryBg(hl.type).replace(
+                              "0.1",
+                              "0.25",
+                            ),
+                          }}
                         >
                           {i + 1}
                         </span>

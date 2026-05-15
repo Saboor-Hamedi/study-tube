@@ -41,7 +41,6 @@ export default function WritingView({
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const containerRef = useRef(null);
-  const closeTimeoutRef = useRef(null);
 
   const takeSnapshot = useCallback(
     (newText) => {
@@ -72,17 +71,23 @@ export default function WritingView({
     }
   };
 
-  const { x, y, refs, strategy, placement: finalPlacement } = useFloating({
+  const {
+    x,
+    y,
+    refs,
+    strategy,
+    placement: finalPlacement,
+  } = useFloating({
     open: !!selectedHl,
     onOpenChange: (open) => !open && setSelectedHl(null),
     placement: "bottom-start",
     strategy: "fixed",
     middleware: [
       offset(15),
-      flip({ 
+      flip({
         padding: 20,
         fallbackPlacements: ["top-start", "bottom-end", "top-end"],
-        boundary: "clippingAncestors"
+        boundary: "clippingAncestors",
       }),
       shift({ padding: 10 }),
     ],
@@ -133,7 +138,8 @@ export default function WritingView({
     let end = hl.end;
 
     const isNeuralFix =
-      suggestion.split(/\s+/).length > 4 || /[.!?]$/.test(suggestion);
+      (hl.type === "sentence" || hl.reason === "Sentence Structure") &&
+      (suggestion.split(/\s+/).length > 4 || /[.!?]$/.test(suggestion));
 
     if (isNeuralFix) {
       const textBefore = content.substring(Math.max(0, start - 150), start);
@@ -251,30 +257,48 @@ export default function WritingView({
   };
 
   const showHl = (hl, i, e) => {
-    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     refs.setReference(e.currentTarget);
     setSelectedHl({ ...hl, index: i + 1 });
   };
 
-  const hideHl = () => {
-    closeTimeoutRef.current = setTimeout(() => {
-      setSelectedHl(null);
-      setGhostPreview(null);
-    }, 400);
-  };
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      // If menu is open and click is outside refs.floating, close it
+      if (
+        selectedHl &&
+        refs.floating.current &&
+        !refs.floating.current.contains(e.target)
+      ) {
+        // Also ensure we aren't clicking the highlight itself again
+        const isHighlightClick = e.target.closest(".group\\/hl");
+        if (!isHighlightClick) {
+          setSelectedHl(null);
+          setGhostPreview(null);
+        }
+      }
+    };
 
-  const cancelHide = () => {
-    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
-  };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setSelectedHl(null);
+        setGhostPreview(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedHl, refs.floating, setGhostPreview]);
 
   const scrollToHl = (index) => {
     const el = document.getElementById(`hl-${index}`);
     const container = el?.closest(".overflow-y-auto");
     if (el && container) {
       const topPos =
-        el.offsetTop -
-        container.offsetHeight / 2 +
-        el.offsetHeight / 2;
+        el.offsetTop - container.offsetHeight / 2 + el.offsetHeight / 2;
       container.scrollTo({ top: topPos, behavior: "smooth" });
     }
   };
@@ -284,9 +308,7 @@ export default function WritingView({
     const container = el?.closest(".overflow-y-auto");
     if (el && container) {
       const topPos =
-        el.offsetTop -
-        container.offsetHeight / 2 +
-        el.offsetHeight / 2;
+        el.offsetTop - container.offsetHeight / 2 + el.offsetHeight / 2;
       container.scrollTo({ top: topPos, behavior: "smooth" });
     }
   };
@@ -304,7 +326,6 @@ export default function WritingView({
           getCategoryColor={getCategoryColor}
           ghostPreview={ghostPreview}
           showHl={showHl}
-          hideHl={hideHl}
           scrollToAnomaly={scrollToAnomaly}
           takeSnapshot={takeSnapshot}
         />
@@ -475,9 +496,10 @@ export default function WritingView({
               onApplySuggestion={handleApplySuggestion}
               onAddToDictionary={handleAddToDictionary}
               onIgnore={handleIgnoreHighlight}
-              onClose={() => setSelectedHl(null)}
-              onMouseEnter={cancelHide}
-              onMouseLeave={hideHl}
+              onClose={() => {
+                setSelectedHl(null);
+                setGhostPreview(null);
+              }}
               setGhostPreview={setGhostPreview}
               getCategoryColor={getCategoryColor}
               getCategoryBg={getCategoryBg}

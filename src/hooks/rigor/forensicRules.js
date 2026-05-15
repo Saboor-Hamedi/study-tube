@@ -179,15 +179,6 @@ export const forensicRules = [
   // Grammar: Pronoun-Verb Agreement & Case (BLUE)
   {
     regex: /\bMe\s+and\s+(\w+)\s+is\b/gi,
-    type: "grammar",
-    suggestion: "$1 and I are",
-    exp: "Compound subject case and agreement error.",
-  },
-  {
-    regex: /\bthem\b/gi,
-    type: "grammar",
-    suggestion: "they",
-    exp: "Objective pronoun used as subject.",
   },
   {
     regex:
@@ -520,18 +511,6 @@ export const forensicRules = [
 
   // Diction & Modifiers (ORANGE)
   {
-    regex: /\ba\s+[aeiou]\w+/gi,
-    type: "diction",
-    suggestion: "an",
-    exp: "Incorrect article usage before vowel sound.",
-  },
-  {
-    regex: /\ban\s+[^aeiou]\w+/gi,
-    type: "diction",
-    suggestion: "a",
-    exp: "Incorrect article usage before consonant sound.",
-  },
-  {
     regex: /\bmore\s+(\w+er)\b/gi,
     type: "diction",
     suggestion: "$1",
@@ -715,12 +694,7 @@ export const forensicRules = [
     suggestion: "original message",
     exp: "Semantic error: 'massage' detected where 'message' is contextually implied.",
   },
-  {
-    regex: /\bsuposed\s+to\s+be\b/gi,
-    type: "syntax",
-    suggestion: "supposed to be",
-    exp: "Passive form 'supposed' required.",
-  },
+
   {
     regex: /\bthere\s+work\b/gi,
     type: "diction",
@@ -827,12 +801,6 @@ export const forensicRules = [
   },
   // Academic & Diction Refinements (PURPLE/ORANGE)
   {
-    regex: /\bparadigm\b/gi,
-    type: "academic",
-    suggestion: "framework",
-    exp: "Academic refinement: 'framework' is often preferred for structural clarity.",
-  },
-  {
     regex: /\bover-reliance\b/gi,
     type: "spelling",
     suggestion: "overreliance",
@@ -849,9 +817,21 @@ export const forensicRules = [
     exp: "Sophistication: Rephrasing for better logical flow.",
   },
   {
-    regex: /\brobust\b/gi,
-    type: "diction",
-    suggestion: "reliable",
-    exp: "Word choice: 'reliable' provides a more direct connotation in this context.",
+    regex: /\b(represents a significant departure from)\b/gi,
+    type: "acad",
+    suggestion: "diverges substantially from",
+    exp: "Academic Vigor: Using precise verbal phrases for impact.",
+  },
+  {
+    regex: /\b(functions as a powerful tool)\b/gi,
+    type: "acad",
+    suggestion: "serves as a robust mechanism",
+    exp: "Academic Vigor: Elevating functional descriptions.",
+  },
+  {
+    regex: /\b(leveraging|leverages)\s+the\s+human\s+tendency\b/gi,
+    type: "acad",
+    suggestion: "capitalizing on innate cognitive heuristics",
+    exp: "Academic Vigor: Using specialized psychological terminology.",
   },
 ];

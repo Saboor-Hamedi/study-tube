@@ -8,6 +8,7 @@ import {
   AlertCircle,
   EyeOff,
   BookOpen,
+  X,
 } from "lucide-react";
 import { truncateChars } from "../../utils/textUtils";
 
@@ -35,8 +36,6 @@ const WritingMenu = ({
       initial={{ opacity: 0, scale: 0.95, y: isTop ? -10 : 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: isTop ? -10 : 10 }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       className="bg-surface border border-border/20 shadow-2xl rounded-[12px] overflow-hidden w-[280px] select-text cursor-text"
     >
       <div className="p-3 border-b border-border/10 bg-surface-3/30 flex items-center justify-between">
@@ -46,11 +45,19 @@ const WritingMenu = ({
             Neural Action
           </span>
         </div>
-        <span
-          className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider ${getCategoryColor(selectedHl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(selectedHl.type)}`}
-        >
-          {selectedHl.type}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider ${getCategoryColor(selectedHl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(selectedHl.type)}`}
+          >
+            {selectedHl.type}
+          </span>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-surface-4 rounded-full transition-colors text-muted hover:text-text"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
       </div>
 
       <div className="px-3 py-2 bg-surface-2/50 border-b border-border/10 flex items-center gap-2">
