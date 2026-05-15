@@ -92,6 +92,11 @@ export default function WritingHub({
                     value: diagnostics.academic,
                     color: "text-purple-500",
                   },
+                  {
+                    label: "Flow",
+                    value: diagnostics.flow || 0,
+                    color: "text-pink-500",
+                  },
                 ].map((stat, idx) => (
                   <div
                     key={stat.label}
@@ -104,12 +109,52 @@ export default function WritingHub({
                       <span
                         className={`text-[12px] font-black tabular-nums ${stat.color}`}
                       >
-                        {stat.value}%
+                        {stat.value || 0}%
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Linguistic Health Summary */}
+            <div className="bg-surface-2/30 border border-border/10 p-2 rounded-[8px] grid grid-cols-2 gap-2">
+               <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="h-3 w-3 text-pink-400" />
+                      <span className="text-[8px] font-black text-muted uppercase tracking-widest">Cohesion</span>
+                    </div>
+                    <span className="text-[9px] font-black text-pink-500 tabular-nums">
+                      {diagnostics.flow || 0}%
+                    </span>
+                  </div>
+                  <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${diagnostics.flow || 0}%` }}
+                      className="h-full bg-pink-500" 
+                    />
+                  </div>
+               </div>
+               <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <RotateCcw className="h-3 w-3 text-emerald-400" />
+                      <span className="text-[8px] font-black text-muted uppercase tracking-widest">Rhythm</span>
+                    </div>
+                    <span className="text-[9px] font-black text-emerald-500 tabular-nums">
+                      {diagnostics.rhythm || 0}%
+                    </span>
+                  </div>
+                  <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${diagnostics.rhythm || 0}%` }}
+                      className="h-full bg-emerald-500" 
+                    />
+                  </div>
+               </div>
             </div>
 
             {/* Rigor Score Card */}

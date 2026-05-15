@@ -825,4 +825,33 @@ export const forensicRules = [
     suggestion: "has not",
     exp: "Formal expansion required.",
   },
+  // Academic & Diction Refinements (PURPLE/ORANGE)
+  {
+    regex: /\bparadigm\b/gi,
+    type: "academic",
+    suggestion: "framework",
+    exp: "Academic refinement: 'framework' is often preferred for structural clarity.",
+  },
+  {
+    regex: /\bover-reliance\b/gi,
+    type: "spelling",
+    suggestion: "overreliance",
+    exp: "Standardized spelling (removing hyphen).",
+  },
+  {
+    regex: /\ballowing\s+(me|him|her|us|them)\s+to\s+([a-z]+)\b/gi,
+    type: "diction",
+    suggestion: (match) => {
+      const map = { me: "I", him: "he", her: "she", us: "we", them: "they" };
+      const sub = map[match[1].toLowerCase()] || match[1];
+      return `so that ${sub} can ${match[2]}`;
+    },
+    exp: "Sophistication: Rephrasing for better logical flow.",
+  },
+  {
+    regex: /\brobust\b/gi,
+    type: "diction",
+    suggestion: "reliable",
+    exp: "Word choice: 'reliable' provides a more direct connotation in this context.",
+  },
 ];

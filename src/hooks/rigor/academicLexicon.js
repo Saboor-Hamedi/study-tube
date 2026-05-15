@@ -79,4 +79,12 @@ export const academicLexicon = [
   "applications",
   "integrated",
   "integration",
+  "paradigm",
+  "catalyst",
+  "unprecedented",
+  "endeavors",
+  "faculties",
+  "stringent",
+  "proactive",
+  "resilient",
 ];

@@ -225,15 +225,17 @@ def analyze_linguistics(text: str) -> List[Dict]:
         # 3. PRONOUN CASE AUDIT (Hardened)
         # CASE A: Objective pronouns as subjects (Him was sitting)
         if token.text.lower() in ["him", "her", "us", "them"] and token.dep_ == "nsubj":
-            mapping = {"him": "He", "her": "She", "us": "We", "them": "They"}
-            highlights.append({
-                "start": token.idx,
-                "end": token.idx + len(token.text),
-                "type": "grammar",
-                "reason": "Pronoun Case Error",
-                "suggestion": mapping.get(token.text.lower(), "Subject pronoun"),
-                "explanation": f"The objective pronoun '{token.text}' is used as a subject. Use '{mapping.get(token.text.lower())}'."
-            })
+            # SAFETY: Ensure the head is a finite verb (not an infinitive or part of a complex object)
+            if token.head.tag_ in ["VBP", "VBZ", "VBD", "MD"]:
+                mapping = {"him": "He", "her": "She", "us": "We", "them": "They"}
+                highlights.append({
+                    "start": token.idx,
+                    "end": token.idx + len(token.text),
+                    "type": "grammar",
+                    "reason": "Pronoun Case Error",
+                    "suggestion": mapping.get(token.text.lower(), "Subject pronoun"),
+                    "explanation": f"The objective pronoun '{token.text}' is used as a subject. Use '{mapping.get(token.text.lower())}'."
+                })
             
         # CASE B: Objective pronouns used as possessives (Him head)
         if token.text.lower() in ["him", "them", "us"] and token.dep_ == "poss":
@@ -489,5 +491,53 @@ def analyze_linguistics(text: str) -> List[Dict]:
                 "suggestion": None,
                 "explanation": "High density of prepositional phrases (in, of, at) detected. Consider simplifying for better academic clarity."
             })
+
+    # THIRD PASS: Paragraph-Level Flow Diagnostics
+    # We audit cohesion and rhythmic variance across the entire manuscript
+    paragraphs = [p for p in text.split("\n") if p.strip()]
+    search_pos = 0
+    for para in paragraphs:
+        # Find exact position in the original text to maintain highlight accuracy
+        start_idx = text.find(para, search_pos)
+        if start_idx == -1: continue
+        end_idx = start_idx + len(para)
+        search_pos = end_idx
+        
+        para_doc = nlp(para)
+        sentences = list(para_doc.sents)
+        if not sentences: continue
+        
+        # A. TRANSITION DENSITY (Cohesion Audit)
+        # Academic flow requires bridge words to link complex ideas
+        transitions = ["however", "furthermore", "moreover", "consequently", "therefore", "nevertheless", "additionally", "similarly", "consequently"]
+        found_transitions = [t for t in transitions if t in para.lower()]
+        
+        if len(para_doc) > 60 and len(found_transitions) < 1:
+            highlights.append({
+                "start": start_idx,
+                "end": start_idx + min(len(para), 40), # Highlight the "Topic Sentence"
+                "type": "tone",
+                "reason": "Low Transition Density",
+                "suggestion": None,
+                "explanation": "This paragraph is dense but lacks transition words. Use bridge words (e.g., 'Furthermore', 'In contrast') to guide the reader through your logic."
+            })
+
+        # B. RHYTHMIC MONOTONY (Sentence Length Variance)
+        # We calculate the standard deviation of sentence lengths to detect robotic patterns
+        if len(sentences) >= 4:
+            lengths = [len(s.text.split()) for s in sentences]
+            mean = sum(lengths) / len(lengths)
+            variance = sum((x - mean) ** 2 for x in lengths) / len(lengths)
+            std_dev = variance ** 0.5
+            
+            if std_dev < 3.5: # Sentences are too similar in length
+                highlights.append({
+                    "start": start_idx,
+                    "end": end_idx,
+                    "type": "syntax",
+                    "reason": "Rhythmic Monotony",
+                    "suggestion": None,
+                    "explanation": "Sentences in this paragraph have very similar lengths. Vary your sentence structure (combine or split) to create a more professional academic rhythm."
+                })
 
     return highlights

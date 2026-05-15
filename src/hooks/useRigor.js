@@ -177,6 +177,8 @@ export const useRigor = () => {
       await new Promise((r) => setTimeout(r, 1200));
 
       const text = content.replace(/’/g, "'");
+      const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+      const wordsArray = text.split(/\s+/).filter((w) => w.trim().length > 0);
       let highlights = [];
 
       // 1. COMPREHENSIVE FORENSIC DATABASE
@@ -309,15 +311,39 @@ export const useRigor = () => {
         }
       });
 
-      // 2.5 LINGUISTIC LOGIC AUDIT (spaCy Sidecar)
-      // We hit the port 8000 engine to get deterministic structural insights (Subject-Verb, Pronoun Case)
+      // 2.5 LINGUISTIC & NEURAL LOGIC AUDIT
+      // We hit the port 8000 (spaCy) and port 8008 (BERT/GPT-2) engines
+      let semanticIntegrity = 1.0; // multiplier (1.0 = perfect, 0.0 = nonsense)
+      let neuralData = null;
+
       try {
-        // console.log("[FORENSIC] Dispatching Linguistic Audit to Sidecar (Port 8000)...");
-        const forensicResponse = await fetch("http://127.0.0.1:8000/forensic/audit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-        });
+        // Dispatch both requests in parallel for industrial performance
+        const [forensicResponse, neuralResponse] = await Promise.all([
+          fetch("http://127.0.0.1:8000/forensic/audit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          }),
+          fetch("http://127.0.0.1:8008/detect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          }).catch(() => null) // Neural engine might be offline
+        ]);
+
+        if (neuralResponse && neuralResponse.ok) {
+          neuralData = await neuralResponse.json();
+          const ppl = neuralData.perplexity;
+          
+          // NEURAL ANCHORING LOGIC:
+          // 1. If Perplexity is EXTREME (> 500), it's likely nonsensical word salad.
+          // 2. If Perplexity is TOO LOW (< 15), it's robotic/monotonous.
+          if (ppl > 500) {
+             semanticIntegrity = Math.max(0.1, 1 - (ppl - 500) / 1000);
+          } else if (ppl < 15) {
+             semanticIntegrity = Math.max(0.4, ppl / 15);
+          }
+        }
 
         if (forensicResponse.ok) {
           const forensicData = await forensicResponse.json();
@@ -485,19 +511,41 @@ export const useRigor = () => {
         100 - totalAnomalies * 2 - toneCount * 5,
       );
 
+      // --- INDUSTRIAL ANCHORING (Safety Protocol) ---
+      // We calculate a "Linguistic Health Index" (0.0 to 1.0)
+      // If the writing is broken, we cannot have good Flow or Rhythm.
+      const healthIndex = (gramScore * 0.4 + syntaxScore * 0.4 + academicScore * 0.2) / 100;
+      
+      // Anomaly Density Check: If there's an error every 5 words, it's nonsense.
+      const anomalyDensity = totalAnomalies / Math.max(1, wordsArray.length);
+      const densityPenalty = anomalyDensity > 0.15 ? 0.4 : anomalyDensity > 0.1 ? 0.7 : 1.0;
+
+      // Combine Neural Integrity with Linguistic Health
+      const effectiveIntegrity = semanticIntegrity * healthIndex * densityPenalty;
+
+      // FLOW & RHYTHM CALCULATIONS (Weighted by Neural & Linguistic Integrity)
+      const flowCount = highlights.filter(h => h.reason === "Low Transition Density").length;
+      const rhythmCount = highlights.filter(h => h.reason === "Rhythmic Monotony").length;
+
+      const baseFlow = Math.max(0, 100 - (flowCount * 20));
+      const baseRhythm = Math.max(0, 100 - (rhythmCount * 25));
+
+      // Final Anchored Scores
+      const finalFlow = Math.round(baseFlow * effectiveIntegrity);
+      const finalRhythm = Math.round(baseRhythm * effectiveIntegrity);
+
       const writingScore = Math.round(
-        gramScore * 0.3 +
+        gramScore * 0.25 +
           spellScore * 0.1 +
-          syntaxScore * 0.25 +
-          dictionScore * 0.15 +
-          academicScore * 0.2,
+          syntaxScore * 0.2 +
+          dictionScore * 0.1 +
+          academicScore * 0.15 +
+          finalFlow * 0.2
       );
 
       setIsNeuralScanning(false);
 
       // --- Industrial Complexity Guard ---
-      const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
-      const wordsArray = text.split(/\s+/).filter((w) => w.trim().length > 0);
       const avgLen = wordsArray.length / Math.max(1, sentences.length);
       
       const academicMatches = wordsArray.filter(w => 
@@ -505,15 +553,17 @@ export const useRigor = () => {
       ).length;
 
       // Deductive Score (Errors)
-      const errorDeduction = highlights.length * 0.25;
+      const errorDeduction = highlights.length * 0.3;
       
       // Complexity Reward/Penalty
-      // If text is too simple (short sentences + basic vocab), it caps at Band 6.5-7.0
       let baseBand = 9.0;
       if (avgLen < 10) baseBand -= 1.0; 
       if (academicMatches < 2 && wordsArray.length > 20) baseBand -= 1.5;
+      
+      // Integrity Penalty: If the text is nonsensical or broken, drop the band hard
+      const integrityPenalty = (1 - effectiveIntegrity) * 6.0;
 
-      const ieltsFinal = Math.max(1.0, baseBand - errorDeduction);
+      const ieltsFinal = Math.max(1.0, baseBand - errorDeduction - integrityPenalty);
 
       return {
         diagnostics: {
@@ -522,6 +572,8 @@ export const useRigor = () => {
           syntax: Math.round(syntaxScore),
           diction: Math.round(dictionScore),
           academic: Math.round(academicScore),
+          flow: finalFlow,
+          rhythm: finalRhythm,
           writing: Math.max(0, Math.round(writingScore)),
           ielts: ieltsFinal.toFixed(1),
           ieltsLabel:
