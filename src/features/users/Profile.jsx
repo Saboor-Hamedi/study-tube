@@ -7,6 +7,7 @@ import {
   Library as LibraryIcon,
   Award,
   FileText,
+  ChevronRight,
 } from "lucide-react";
 import LibraryTrash from "./LibraryTrash";
 import LibraryView from "../research-vault/LibraryView";
@@ -122,78 +123,80 @@ const Profile = ({
     <div className="h-full flex flex-row bg-background text-text overflow-hidden font-sans select-text">
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* TABS HEADER - SHARED */}
-      <div className="h-10 px-3 border-b border-border bg-surface flex items-center justify-start gap-2 shrink-0 z-20">
-        <div className="flex h-full items-center">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.id === "sync") {
-                  handleSync();
-                } else {
-                  setActiveTab(tab.id);
-                }
-              }}
-              className={`flex items-center gap-1.5 px-2.5 border-r border-border/10 group transition-all h-full relative ${activeTab === tab.id ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
-            >
-              <tab.icon
-                className={`h-2.5 w-2.5 ${activeTab === tab.id ? "text-accent" : "text-muted"} group-hover:text-accent transition-all ${tab.id === "sync" && isSyncing ? "animate-spin text-accent" : ""}`}
-              />
-              <span
-                className={`text-[9px] font-black tracking-tight leading-tight uppercase ${activeTab === tab.id ? "text-text" : "text-muted"} group-hover:text-text transition-all`}
-              >
-                {tab.id === "profile" ? "Saboor" : tab.label}
-              </span>
-              {activeTab === tab.id && (
-                <motion.div
-                  layoutId="profile-tab-indicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
-                />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden">
-        <AnimatePresence mode="wait">
-          {activeTab === "profile" ? (
-            <motion.div
-              key="profile-forge"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1 h-full"
-            >
-              <WritingView
-                api={api}
-                showToast={showToast}
-                initialData={initialForgeData}
-                content={forgeContent}
-                setContent={setForgeContent}
-                diagnostics={forgeDiagnostics}
-                setDiagnostics={setForgeDiagnostics}
-                isAnalyzing={isForgeAnalyzing}
-                setIsAnalyzing={setIsForgeAnalyzing}
-                onSaveDraft={(draft) => {
-                  setVocab([draft, ...vocab]);
+        <div className="h-10 px-3 border-b border-border bg-surface flex items-center justify-start gap-2 shrink-0 z-20">
+          <div className="flex h-full items-center">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.id === "sync") {
+                    handleSync();
+                  } else {
+                    setActiveTab(tab.id);
+                  }
                 }}
-                onOpenCapture={onOpenCapture}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="other-tabs"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col min-h-0 overflow-hidden p-3"
-            >
-              <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-                <div className="flex-1 flex flex-col min-h-0 gap-3">
+                className={`flex items-center gap-1.5 px-2.5 border-r border-border/10 group transition-all h-full relative ${activeTab === tab.id ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
+              >
+                <tab.icon
+                  className={`h-2.5 w-2.5 ${activeTab === tab.id ? "text-accent" : "text-muted"} group-hover:text-accent transition-all ${tab.id === "sync" && isSyncing ? "animate-spin text-accent" : ""}`}
+                />
+                <span
+                  className={`text-[9px] font-black tracking-tight leading-tight uppercase ${activeTab === tab.id ? "text-text" : "text-muted"} group-hover:text-text transition-all`}
+                >
+                  {tab.id === "profile" ? "Saboor" : tab.label}
+                </span>
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="profile-tab-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 flex overflow-hidden">
+          <AnimatePresence mode="wait">
+            {activeTab === "profile" ? (
+              <motion.div
+                key="profile-forge"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex-1 h-full"
+              >
+                <WritingView
+                  api={api}
+                  showToast={showToast}
+                  initialData={initialForgeData}
+                  content={forgeContent}
+                  setContent={setForgeContent}
+                  diagnostics={forgeDiagnostics}
+                  setDiagnostics={setForgeDiagnostics}
+                  isAnalyzing={isForgeAnalyzing}
+                  setIsAnalyzing={setIsForgeAnalyzing}
+                  onSaveDraft={(draft) => {
+                    setVocab([draft, ...vocab]);
+                  }}
+                  onOpenCapture={onOpenCapture}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="other-tabs"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex-1 flex flex-col min-h-0 overflow-hidden"
+              >
+                <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden md:gap-3">
                   {/* Global Mobile Diagnostics - Anchored at the top */}
                   <div className="block md:hidden shrink-0">
-                    <SystemStatus forensicNodes={forensicNodes} />
+                    <SystemStatus
+                      forensicNodes={forensicNodes}
+                      hideMetrics={activeTab !== "profile"}
+                    />
                   </div>
 
                   <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -248,9 +251,9 @@ const Profile = ({
                         historyRef={historyRef}
                       />
                     ) : (
-                      <div className="flex flex-col h-full bg-surface border border-border rounded-[8px] overflow-hidden">
+                      <div className="flex flex-col h-full bg-surface overflow-hidden">
                         {/* Standardized Insights Header - Full Width */}
-                        <div className="hidden md:flex h-9 md:h-12 px-4 border-b border-border bg-surface-3/30 items-center justify-between shrink-0">
+                        <div className="hidden md:flex h-10 px-3 border-b border-border bg-surface-3/30 items-center justify-between shrink-0">
                           <div className="flex items-center gap-3">
                             <FileText className="h-4 w-4 text-accent" />
                             <div className="flex items-center gap-2">
@@ -265,69 +268,92 @@ const Profile = ({
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scroll">
-                          <div className="p-3 md:p-6 space-y-3 max-w-5xl mx-auto w-full pb-20">
-                            {vocab
-                              .filter((v) => !v.archived)
-                              .slice(0, displayLimit)
-                              .map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="p-3 lg:p-4 bg-surface border border-border rounded-[12px] flex flex-col lg:flex-row lg:items-center justify-between gap-4 group hover:border-accent/40 transition-all cursor-pointer shadow-sm"
-                                  onClick={() => handleLoadDraft(item)}
-                                >
-                                  <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-[8px] bg-surface-2 flex items-center justify-center border border-border shrink-0">
-                                      <FileText className="h-4 w-4 text-muted group-hover:text-accent transition-colors" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <h4 className="text-[13px] font-bold text-text break-words group-hover:text-accent transition-colors">
-                                        {truncateWords(item.text, 20)}
-                                      </h4>
-                                      <div className="flex items-center gap-3 mt-1">
-                                        <span className="text-[9px] text-muted font-bold uppercase tracking-widest shrink-0 opacity-40">
-                                          {new Date(
-                                            item.date,
-                                          ).toLocaleDateString()}
+                          <div className="p-1 w-full pb-20">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+                              {vocab
+                                .filter((v) => !v.archived)
+                                .slice(0, displayLimit)
+                                .map((item) => (
+                                  <motion.div
+                                    key={item.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="h-auto min-h-[150px] flex flex-col transition-all duration-500 border rounded-[5px] overflow-hidden border-border/10 bg-surface-2/50 group hover:border-blue-500/20 transition-all cursor-pointer relative shadow-sm"
+                                    onClick={() => handleLoadDraft(item)}
+                                  >
+                                    {/* Body: Content & Context */}
+                                    <div className="p-3 flex-1 flex flex-col gap-2 min-w-0 pr-4">
+                                      <div className="flex items-center gap-2">
+                                        <FileText className="h-3 w-3 text-blue-400 shrink-0 opacity-40" />
+                                        <span className="text-[7px] font-black uppercase tracking-[0.2em] text-muted truncate opacity-60">
+                                          Neural Draft
                                         </span>
-                                        {(item.band ||
-                                          item.metadata?.band ||
-                                          item.diagnostics?.ielts ||
-                                          item.metadata?.diagnostics
-                                            ?.ielts) && (
-                                          <span className="flex items-center gap-1.5 text-[9px] font-black text-accent bg-accent/5 px-2 py-0.5 rounded-full border border-accent/10 uppercase tracking-widest shrink-0">
-                                            <Award className="h-2.5 w-2.5" />{" "}
-                                            Band{" "}
-                                            {item.band ||
-                                              item.metadata?.band ||
-                                              item.diagnostics?.ielts ||
-                                              item.metadata?.diagnostics?.ielts}
+                                      </div>
+
+                                      <div className="min-w-0 space-y-1">
+                                        <h4 className="text-[12px] font-black text-text leading-snug group-hover:text-blue-400 transition-colors line-clamp-2">
+                                          {truncateWords(item.text, 15)}
+                                        </h4>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[7px] font-black text-muted/40 uppercase tracking-widest">
+                                            {new Date(
+                                              item.date,
+                                            ).toLocaleDateString()}
                                           </span>
-                                        )}
+                                        </div>
+                                        <p className="text-[9px] text-muted leading-relaxed opacity-60 line-clamp-2">
+                                          {item.definition ||
+                                            "No additional context available for this forensic node."}
+                                        </p>
                                       </div>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 lg:justify-end shrink-0">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleLoadDraft(item);
-                                      }}
-                                      className="h-6 px-3 bg-surface-3 border border-border/10 text-muted text-[8px] font-black uppercase tracking-widest rounded-[4px] hover:bg-accent hover:text-white transition-all"
-                                    >
-                                      Open
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setItemToDelete(item.id);
-                                      }}
-                                      className="p-1.5 text-muted/30 hover:text-red-500 hover:bg-red-500/5 rounded-[4px] transition-all"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
+
+                                    {/* Beautiful Slim Footer */}
+                                    <div className="px-3 py-1.5 bg-surface-3/30 border-t border-border/10 flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[6px] font-black text-muted/30 uppercase tracking-[0.2em]">
+                                          Diagnostic Node
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-3">
+                                        {/* Beautiful Small Score Badge */}
+                                        {(item.band ||
+                                          item.metadata?.band ||
+                                          item.diagnostics?.ielts) && (
+                                          <span className="flex items-center gap-1 text-[8px] font-black text-accent bg-accent/5 px-1.5 py-0.5 border border-accent/10 uppercase tracking-widest rounded-[2px]">
+                                            B
+                                            {item.band ||
+                                              item.metadata?.band ||
+                                              item.diagnostics?.ielts}
+                                          </span>
+                                        )}
+
+                                        <div className="flex items-center gap-1.5 border-l border-border/10 pl-3">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setItemToDelete(item.id);
+                                            }}
+                                            className="p-1 text-muted/20 hover:text-red-500 transition-all"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleLoadDraft(item);
+                                            }}
+                                            className="p-1 text-blue-400 hover:text-blue-300 transition-all"
+                                          >
+                                            <ChevronRight className="h-3.5 w-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                ))}
+                            </div>
 
                             {/* Unified Stream Controls */}
                             <StreamControls
@@ -346,38 +372,37 @@ const Profile = ({
                     )}
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence>
+          {itemToDelete && (
+            <DeleteModal
+              isOpen={!!itemToDelete}
+              onClose={() => setItemToDelete(null)}
+              onConfirm={async () => {
+                if (itemToDelete) {
+                  await handleDeleteDraft(
+                    { stopPropagation: () => {} },
+                    itemToDelete,
+                  );
+                  setItemToDelete(null);
+                }
+              }}
+            />
           )}
         </AnimatePresence>
       </div>
 
-      <AnimatePresence>
-        {itemToDelete && (
-          <DeleteModal
-            isOpen={!!itemToDelete}
-            onClose={() => setItemToDelete(null)}
-            onConfirm={async () => {
-              if (itemToDelete) {
-                await handleDeleteDraft(
-                  { stopPropagation: () => {} },
-                  itemToDelete,
-                );
-                setItemToDelete(null);
-              }
-            }}
-          />
-        )}
-      </AnimatePresence>
-      </div>
-
       {/* GLOBAL SIDEBAR - Anchored to Global Header */}
-      <div 
+      <div
         id="writing-hub-portal"
         className="hidden md:block w-80 shrink-0 border-l border-border bg-surface overflow-y-auto custom-scroll"
       >
         {activeTab !== "profile" && (
-          <SystemStatus forensicNodes={forensicNodes} />
+          <SystemStatus forensicNodes={forensicNodes} hideMetrics />
         )}
       </div>
     </div>
