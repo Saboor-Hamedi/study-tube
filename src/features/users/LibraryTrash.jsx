@@ -61,44 +61,30 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
 
   return (
     <div className="flex flex-col h-full bg-surface overflow-hidden">
-      <div className="h-9 md:h-12 px-4 border-b border-border flex items-center justify-between bg-surface-3/30 shrink-0">
-        <div className="flex items-center gap-3">
-          <Trash2 className="h-4 w-4 text-red-500" />
-          <h2 className="text-[12px] font-black tracking-tight uppercase">
-            Trash
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <div className="flex-1 overflow-y-auto custom-scroll">
+        <div className="p-1 md:p-6 pb-20">
+          {/* Global Trash Actions */}
           {trashItems.length > 0 && (
-            <>
+            <div className="flex items-center justify-end gap-2 mb-3 px-2">
+              <span className="text-[8px] text-muted/40 font-bold uppercase tracking-widest mr-auto">
+                {trashItems.length} Decommissioned Nodes
+              </span>
               <button
                 onClick={() => setIsRestoringAll(true)}
                 className="h-7 px-3 bg-accent/10 text-accent text-[8px] font-black uppercase tracking-widest rounded-[4px] border border-accent/20 hover:bg-accent/20 transition-all flex items-center gap-1.5"
               >
                 <RefreshCcw className="h-2.5 w-2.5" />
-                Restore All
+                Recover
               </button>
               <button
                 onClick={() => setIsPurgingAll(true)}
                 className="h-7 px-3 bg-red-500/10 text-red-500 text-[8px] font-black uppercase tracking-widest rounded-[4px] border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center gap-1.5"
               >
                 <Trash2 className="h-2.5 w-2.5" />
-                Purge Vault
+                Delete
               </button>
-            </>
+            </div>
           )}
-          <button
-            onClick={loadTrash}
-            className="p-2 hover:bg-surface-3 text-muted hover:text-text rounded-[4px] transition-all"
-          >
-            <RefreshCcw className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto custom-scroll">
-        <div className="p-1 w-full pb-20">
           {loading ? (
             <div className="h-full py-20 flex flex-col items-center justify-center gap-4">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent/40" />

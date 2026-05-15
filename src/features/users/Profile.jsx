@@ -252,21 +252,6 @@ const Profile = ({
                       />
                     ) : (
                       <div className="flex flex-col h-full bg-surface overflow-hidden">
-                        {/* Standardized Insights Header - Full Width */}
-                        <div className="hidden md:flex h-10 px-3 border-b border-border bg-surface-3/30 items-center justify-between shrink-0">
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-4 w-4 text-accent" />
-                            <div className="flex items-center gap-2">
-                              <h2 className="text-[12px] font-black tracking-tight uppercase">
-                                Archive
-                              </h2>
-                              <span className="text-[8px] text-muted/40 font-bold uppercase">
-                                / Diagnostic Archive Flow
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
                         <div className="flex-1 overflow-y-auto custom-scroll">
                           <div className="p-1 w-full pb-20">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">

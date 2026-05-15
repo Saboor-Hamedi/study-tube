@@ -210,20 +210,6 @@ const LibraryView = ({
 
   return (
     <div className="h-full flex flex-col bg-surface text-text font-sans relative overflow-hidden select-text">
-      {/* Standardized Control Bar - Hidden on small screens, Full Width */}
-      <div className="hidden md:flex h-12 px-6 border-b border-border items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Library className="h-4 w-4 text-accent" />
-          <div className="flex items-center gap-2">
-            <h2 className="text-[12px] font-black tracking-tight uppercase">
-              Research Vault
-            </h2>
-            <span className="text-[8px] text-muted/40 font-bold uppercase">
-              / {selectedCollection} ({totalInCollection})
-            </span>
-          </div>
-        </div>
-      </div>
 
       <div className="flex-1 overflow-y-auto custom-scroll ">
         <div className="p-1 md:p-6 pb-128">

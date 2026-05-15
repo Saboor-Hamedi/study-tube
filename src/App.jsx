@@ -664,11 +664,6 @@ export default function App() {
                           }}
                         />
                       </div>
-
-                      {/* Integrated System Status - Right Panel (Visible on Large Screens) */}
-                      <div className="hidden xl:block">
-                        <SystemStatus forensicNodes={vocab.length} />
-                      </div>
                     </motion.div>
                   )}
                   {view === "research-detail" && (
@@ -773,7 +768,10 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0"
                     >
-                      <DetectionView showToast={showToast} onOpenCapture={() => setIsCaptureOpen(true)} />
+                      <DetectionView
+                        showToast={showToast}
+                        onOpenCapture={() => setIsCaptureOpen(true)}
+                      />
                     </motion.div>
                   )}
                   {view === "plagiarism" && (
@@ -784,7 +782,10 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="absolute inset-0"
                     >
-                      <PlagiarismView showToast={showToast} onOpenCapture={() => setIsCaptureOpen(true)} />
+                      <PlagiarismView
+                        showToast={showToast}
+                        onOpenCapture={() => setIsCaptureOpen(true)}
+                      />
                     </motion.div>
                   )}
                   {view === "documentation" && (
@@ -817,7 +818,9 @@ export default function App() {
                 view !== "documentation" &&
                 view !== "report" &&
                 view !== "ai-detection" &&
-                view !== "plagiarism" && (
+                view !== "plagiarism" &&
+                view !== "profile" &&
+                view !== "home" && (
                   <CopilotView
                     isOpen={isCopilotOpen}
                     onClose={handleCloseCopilot}
