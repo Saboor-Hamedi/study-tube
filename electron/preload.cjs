@@ -97,5 +97,6 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   addForensicWord: (word) => ipcRenderer.invoke("forensic:add-word", word),
   removeForensicWord: (word) => ipcRenderer.invoke("forensic:remove-word", word),
   toggleDevTools: () => ipcRenderer.invoke("settings:toggle-dev-tools"),
+  getDevTools: () => ipcRenderer.invoke("settings:get-dev-tools"),
   getDocs: () => ipcRenderer.invoke("docs:load"),
 })

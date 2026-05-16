@@ -49,6 +49,10 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
         setSavePath(path || "");
         const ver = await activeApi.getVersion?.();
         if (ver) setVersion(ver);
+        if (activeApi.getDevTools) {
+          const devToolsState = await activeApi.getDevTools();
+          setDevToolsEnabled(devToolsState);
+        }
       } catch (err) {
         console.warn("[IPC SYNC] Version deferred.", err);
       }
@@ -116,24 +120,36 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
       <div className="max-w-3xl mx-auto space-y-8 pb-10">
         <header className="border-b border-border pb-4">
           <h1 className="text-2xl font-semibold text-text">Settings</h1>
-          <p className="text-sm text-muted mt-1">Manage application preferences and configurations.</p>
+          <p className="text-sm text-muted mt-1">
+            Manage application preferences and configurations.
+          </p>
         </header>
 
         <div className="space-y-6">
           {/* General Section */}
           <section className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">General</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+              General
+            </h2>
             <div className="bg-surface border border-border rounded-lg divide-y divide-border overflow-hidden shadow-sm">
-              
               <div className="flex items-center justify-between p-4 hover:bg-surface-2/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-surface-3 rounded-md text-text"><Folder className="w-4 h-4" /></div>
+                  <div className="p-2 bg-surface-3 rounded-md text-text">
+                    <Folder className="w-4 h-4" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium text-text">Save Location</p>
-                    <p className="text-xs text-muted font-mono mt-0.5">{savePath || "Not set"}</p>
+                    <p className="text-sm font-medium text-text">
+                      Save Location
+                    </p>
+                    <p className="text-xs text-muted font-mono mt-0.5">
+                      {savePath || "Not set"}
+                    </p>
                   </div>
                 </div>
-                <button onClick={handlePickPath} className="text-xs font-medium text-accent hover:text-accent/80 px-3 py-1.5 bg-accent/10 rounded-md transition-colors">
+                <button
+                  onClick={handlePickPath}
+                  className="text-xs font-medium text-accent hover:text-accent/80 px-3 py-1.5 bg-accent/10 rounded-md transition-colors"
+                >
                   Change
                 </button>
               </div>
@@ -141,22 +157,29 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
               <div className="flex items-center justify-between p-4 hover:bg-surface-2/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-surface-3 rounded-md text-text">
-                    {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                    {theme === "dark" ? (
+                      <Moon className="w-4 h-4" />
+                    ) : (
+                      <Sun className="w-4 h-4" />
+                    )}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-text">Appearance</p>
-                    <p className="text-xs text-muted mt-0.5">Toggle light or dark theme</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      Toggle light or dark theme
+                    </p>
                   </div>
                 </div>
-                <Toggle enabled={theme === 'dark'} onChange={onToggleTheme} />
+                <Toggle enabled={theme === "dark"} onChange={onToggleTheme} />
               </div>
-
             </div>
           </section>
 
           {/* Integration Section */}
           <section className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Integration</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+              Integration
+            </h2>
             <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm p-4 space-y-4">
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-text">
@@ -194,17 +217,26 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
 
           {/* Data Section */}
           <section className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Data</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+              Data
+            </h2>
             <div className="bg-surface border border-border rounded-lg divide-y divide-border overflow-hidden shadow-sm">
               <div className="flex items-center justify-between p-4 hover:bg-surface-2/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-surface-3 rounded-md text-text"><Download className="w-4 h-4" /></div>
+                  <div className="p-2 bg-surface-3 rounded-md text-text">
+                    <Download className="w-4 h-4" />
+                  </div>
                   <div>
                     <p className="text-sm font-medium text-text">Export Data</p>
-                    <p className="text-xs text-muted mt-0.5">Download a copy of your library</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      Download a copy of your library
+                    </p>
                   </div>
                 </div>
-                <button onClick={onExport} className="text-xs font-medium text-text hover:text-text px-3 py-1.5 border border-border bg-surface-3 rounded-md transition-colors hover:bg-surface-2">
+                <button
+                  onClick={onExport}
+                  className="text-xs font-medium text-text hover:text-text px-3 py-1.5 border border-border bg-surface-3 rounded-md transition-colors hover:bg-surface-2"
+                >
                   Export
                 </button>
               </div>
@@ -213,57 +245,90 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
 
           {/* Developer Section */}
           <section className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Developer</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+              Developer
+            </h2>
             <div className="bg-surface border border-border rounded-lg divide-y divide-border overflow-hidden shadow-sm">
               <div className="flex items-center justify-between p-4 hover:bg-surface-2/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-500/10 text-red-500 rounded-md"><Terminal className="w-4 h-4" /></div>
+                  <div className="p-2 bg-red-500/10 text-red-500 rounded-md">
+                    <Terminal className="w-4 h-4" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium text-text">Developer Tools</p>
-                    <p className="text-xs text-muted mt-0.5">Allow F12 / Ctrl+Shift+I for debugging</p>
+                    <p className="text-sm font-medium text-text">
+                      Developer Tools
+                    </p>
+                    <p className="text-xs text-muted mt-0.5">
+                      Allow F12 / Ctrl+Shift+I for debugging
+                    </p>
                   </div>
                 </div>
-                <Toggle enabled={devToolsEnabled} onChange={handleToggleDevTools} />
+                <Toggle
+                  enabled={devToolsEnabled}
+                  onChange={handleToggleDevTools}
+                />
               </div>
             </div>
           </section>
 
           {/* About Section */}
           <section className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">About</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+              About
+            </h2>
             <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm p-4">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-text">Version {version}</span>
+                  <span className="text-sm font-medium text-text">
+                    Version {version}
+                  </span>
                   {isElectron && (
                     <span className="text-xs text-muted mt-0.5">
-                      {updateStatus === "downloaded" ? "Update ready to install." : 
-                       updateStatus === "available" ? "Downloading update..." : 
-                       updateStatus === "checking" ? "Checking for updates..." : 
-                       updateStatus === "error" ? "Update check failed." :
-                       updateStatus === "not-available" ? "App is up to date." : "Up to date."}
+                      {updateStatus === "downloaded"
+                        ? "Update ready to install."
+                        : updateStatus === "available"
+                          ? "Downloading update..."
+                          : updateStatus === "checking"
+                            ? "Checking for updates..."
+                            : updateStatus === "error"
+                              ? "Update check failed."
+                              : updateStatus === "not-available"
+                                ? "App is up to date."
+                                : "Up to date."}
                     </span>
                   )}
                 </div>
-                {isElectron && (
-                  updateStatus === "downloaded" ? (
-                    <button onClick={handleInstallUpdate} className="text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 rounded-md transition-all shadow-sm hover:shadow active:scale-[0.98]">
+                {isElectron &&
+                  (updateStatus === "downloaded" ? (
+                    <button
+                      onClick={handleInstallUpdate}
+                      className="text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 rounded-md transition-all shadow-sm hover:shadow active:scale-[0.98]"
+                    >
                       Restart to Update
                     </button>
                   ) : (
-                    <button 
-                      onClick={handleCheckUpdate} 
-                      disabled={updateStatus === "checking" || updateStatus === "downloading"} 
+                    <button
+                      onClick={handleCheckUpdate}
+                      disabled={
+                        updateStatus === "checking" ||
+                        updateStatus === "downloading"
+                      }
                       className="text-xs font-medium text-text px-3.5 py-2 border border-border bg-surface-2 rounded-md hover:bg-surface-3 hover:border-text/20 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
                     >
-                      {updateStatus === "checking" && <RefreshCcw className="w-3.5 h-3.5 animate-spin" />}
-                      {updateStatus === "checking" ? "Checking..." : 
-                       updateStatus === "downloading" ? "Downloading..." : 
-                       updateStatus === "not-available" ? "Check Again" : 
-                       updateStatus === "error" ? "Retry Check" : "Check for Updates"}
+                      {updateStatus === "checking" && (
+                        <RefreshCcw className="w-3.5 h-3.5 animate-spin" />
+                      )}
+                      {updateStatus === "checking"
+                        ? "Checking..."
+                        : updateStatus === "downloading"
+                          ? "Downloading..."
+                          : updateStatus === "not-available"
+                            ? "Check Again"
+                            : updateStatus === "error"
+                              ? "Retry Check"
+                              : "Check for Updates"}
                     </button>
-                  )
-                )}
+                  ))}
               </div>
               {isElectron && updateStatus === "downloading" && (
                 <div className="mt-4 space-y-1.5">
@@ -272,13 +337,15 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
                     <span>{updateProgress}%</span>
                   </div>
                   <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
-                    <div className="h-full bg-accent transition-all duration-300" style={{ width: `${updateProgress}%` }} />
+                    <div
+                      className="h-full bg-accent transition-all duration-300"
+                      style={{ width: `${updateProgress}%` }}
+                    />
                   </div>
                 </div>
               )}
             </div>
           </section>
-
         </div>
       </div>
     </motion.div>

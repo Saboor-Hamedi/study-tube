@@ -69,6 +69,7 @@ const HybridRouter = {
   },
 
   saveAppSettings: async (config) => {
+    if (isElectron) return await window.youtubeAPI.saveSettings(config);
     try {
       await cloudRequest("/settings", {
         method: "POST",
@@ -327,6 +328,7 @@ const HybridRouter = {
     }
   },
   saveCollections: async (list) => {
+    if (isElectron) return await window.youtubeAPI.saveCollections(list);
     try {
       await cloudRequest("/collections", {
         method: "POST",
@@ -347,6 +349,7 @@ const HybridRouter = {
     }
   },
   saveNotes: async (data) => {
+    if (isElectron) return await window.youtubeAPI.saveNotes(data);
     try {
       await cloudRequest("/notes", {
         method: "POST",
@@ -416,6 +419,7 @@ const HybridRouter = {
   saveSettings: async (config) => await HybridRouter.saveAppSettings(config),
 
   searchLibraryFTS: async (query) => {
+    if (isElectron) return await window.youtubeAPI.searchLibraryFTS(query);
     try {
       return await cloudRequest(
         `/library/search?q=${encodeURIComponent(query)}`,
@@ -477,6 +481,7 @@ const HybridRouter = {
 
   // --- Forensic Intelligence ---
   metadata: async (url) => {
+    if (isElectron) return await window.youtubeAPI.metadata(url);
     try {
       return await cloudRequest(
         `/youtube/metadata?url=${encodeURIComponent(url)}`,
@@ -487,6 +492,7 @@ const HybridRouter = {
   },
 
   getTranscript: async (videoId) => {
+    if (isElectron) return await window.youtubeAPI.getTranscript(videoId);
     try {
       return await cloudRequest(
         `/youtube/transcript?videoId=${encodeURIComponent(videoId)}`,
@@ -499,6 +505,7 @@ const HybridRouter = {
   search: async (q) => await HybridRouter.youtubeSearch(q),
 
   youtubeSearch: async (q) => {
+    if (isElectron) return await window.youtubeAPI.search(q);
     try {
       return await cloudRequest(`/youtube/search?q=${encodeURIComponent(q)}`);
     } catch (err) {
@@ -540,8 +547,15 @@ const HybridRouter = {
     ? window.youtubeAPI.updater
     : { check: async () => ({}), install: async () => {} },
 
-  toggleDevTools: async () =>
-    isElectron ? await window.youtubeAPI.toggleDevTools() : false,
+  toggleDevTools: async () => {
+    const state = isElectron ? await window.youtubeAPI.toggleDevTools() : false;
+    localStorage.setItem("study_devtools_enabled", String(state));
+    return state;
+  },
+  getDevTools: async () => {
+    if (isElectron) return await window.youtubeAPI.getDevTools();
+    return localStorage.getItem("study_devtools_enabled") === "true";
+  },
 };
 
 const api = HybridRouter;

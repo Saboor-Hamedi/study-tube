@@ -6,6 +6,9 @@
 > [!IMPORTANT]
 > This is the **Primary Entry Point** for all AI agents. If you are an agent acting on this codebase, you MUST read this file first. It maps the system's "soul" and technical constraints.
 
+> [!IMPORTANT]
+> **MANDATORY AGENT READING PROTOCOL**: When you visit this master guide, you MUST actively visit and read the relevant `.md` files listed below in Section 1, 2, and 3 before making any architectural or code changes. Do NOT stop after reading this single file. You are strictly required to verify the specific guidelines (e.g. `08-hybrid-architecture-guidelines.md`) for your domain.
+
 ---
 
 ## 1. The Infrastructure (Technical Core)

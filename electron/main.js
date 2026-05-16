@@ -627,7 +627,7 @@ async function downloadVideo({
 }
 
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
-let allowDevTools = false;
+let allowDevTools = readAppState().allowDevTools || false;
 
 function registerIpcHandlers() {
   console.log("[SENTRY] Bootstrapping Neural IPC Bridge...");
@@ -822,10 +822,7 @@ function registerIpcHandlers() {
 
   safeHandle("library:search-fts", async (event, query) => {
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/library/search?q=${encodeURIComponent(query)}`,
-      );
-      return await res.json();
+      return await searchLibraryFTS(query);
     } catch (e) {
       console.error("[POSTGRES] Search Fail:", e.message);
       return [];
@@ -1131,9 +1128,7 @@ function registerIpcHandlers() {
   // ─── Data Persistence (PostgreSQL Powered via FastAPI) ────────────────────
   safeHandle("vocab:load", async (_e, includeArchived = false) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/library");
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      return await getLibrary(includeArchived);
     } catch (e) {
       console.error("[POSTGRES] Library Load Fail", e.message);
       return [];
@@ -1285,6 +1280,11 @@ function registerIpcHandlers() {
 
   safeHandle("settings:toggle-dev-tools", () => {
     allowDevTools = !allowDevTools;
+    writeAppState({ allowDevTools });
+    return allowDevTools;
+  });
+
+  safeHandle("settings:get-dev-tools", () => {
     return allowDevTools;
   });
 
@@ -1444,12 +1444,39 @@ function createWindow() {
     },
   });
 
-  // Smart DevTool Protocol: Disable shortcuts in production by default, but allow toggling
+  // Smart DevTool Protocol: Intercept shortcuts at the native window level to prevent Chromium flash
   if (app.isPackaged) {
-    mainWindow.removeMenu();
+    const template = [
+      {
+        label: "Developer",
+        submenu: [
+          {
+            label: "Toggle DevTools",
+            accelerator: "CommandOrControl+Shift+I",
+            click: () => {
+              if (allowDevTools && mainWindow) {
+                mainWindow.webContents.toggleDevTools();
+              }
+            },
+          },
+          {
+            label: "Toggle DevTools F12",
+            accelerator: "F12",
+            click: () => {
+              if (allowDevTools && mainWindow) {
+                mainWindow.webContents.toggleDevTools();
+              }
+            },
+          },
+        ],
+      },
+    ];
+    const customMenu = Menu.buildFromTemplate(template);
+    mainWindow.setMenu(customMenu);
+    mainWindow.setMenuBarVisibility(false); // Keeps the menu bar completely hidden
   }
 
-  // Handle DevTools keyboard shortcuts natively since we have no Application Menu
+  // Handle DevTools keyboard shortcuts natively as a secondary defense layer
   mainWindow.webContents.on("devtools-opened", () => {
     if (!allowDevTools) mainWindow.webContents.closeDevTools();
   });

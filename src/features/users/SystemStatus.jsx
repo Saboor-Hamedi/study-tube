@@ -62,31 +62,46 @@ export default function SystemStatus({ forensicNodes = 0, hideMetrics = false })
           </>
         )}
 
-        {/* Research Quota Card - Rigor Index Style */}
-        <div className="bg-surface-2/30 border border-border/10 p-2 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">Research Quota</span>
-              <p className="text-[12px] font-black text-text tracking-tight uppercase leading-tight">Weekly ACHIEVEMENT</p>
+        {/* Weekly Writings Quota Card */}
+        <div className="bg-surface-2/30 border border-border/10 p-3 space-y-3 shadow-sm">
+          <div className="grid grid-cols-2 gap-2 items-center">
+            {/* Column 1: Labels */}
+            <div className="space-y-1">
+              <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em] block">Weekly Writings</span>
+              <p className="text-[12px] font-black text-text tracking-tight uppercase leading-tight block">Active Drafts</p>
             </div>
-            <div className="text-right flex flex-col items-end min-w-[80px]">
-              <div className="flex flex-col items-end">
-                <span className="text-[32px] font-black tabular-nums leading-none text-blue-400">{forensicNodes}/20</span>
-                <p className="text-[6px] font-black text-muted/40 uppercase tracking-[0.2em] mt-1">Nodes Archived</p>
-              </div>
-              <div className="mt-3 w-full space-y-1.5">
-                <div className="flex justify-between items-end">
-                  <span className="text-[14px] font-black text-text tabular-nums leading-none">{forensicNodes}</span>
-                  <span className="text-[7px] font-black text-muted uppercase tracking-widest">Current Density</span>
+            
+            {/* Column 2: Status & Counter */}
+            <div className="flex flex-col items-end space-y-0.5 text-right">
+              {forensicNodes >= 20 ? (
+                <div className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-emerald-400">
+                  <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Quota Achieved</span>
                 </div>
-                <div className="h-1.5 w-full bg-surface-3 overflow-hidden border border-border/10 relative">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (forensicNodes / 20) * 100)}%` }}
-                    className="h-full bg-blue-500 transition-all duration-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
-                  />
+              ) : (
+                <div className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-blue-400">
+                  <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" />
+                  <span>In Progress</span>
                 </div>
+              )}
+              <div className="flex items-baseline justify-end gap-0.5 font-black w-full pt-0.5">
+                <span className="text-[28px] tabular-nums leading-none text-blue-400 tracking-tight">{forensicNodes}</span>
+                <span className="text-[14px] text-muted/60 tabular-nums leading-none">/20</span>
               </div>
+            </div>
+          </div>
+
+          <div className="w-full space-y-1.5 pt-1 border-t border-border/5">
+            <div className="flex justify-between items-center text-[7px] font-black text-muted uppercase tracking-widest">
+              <span>0</span>
+              <span>20 Target</span>
+            </div>
+            <div className="h-1.5 w-full bg-surface-3 overflow-hidden border border-border/10 relative rounded-full">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, (forensicNodes / 20) * 100)}%` }}
+                className="h-full bg-blue-500 transition-all duration-500 shadow-[0_0_8px_rgba(59,130,246,0.3)] rounded-full"
+              />
             </div>
           </div>
         </div>
