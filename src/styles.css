@@ -1,22 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;700;900&family=Outfit:wght@100;300;400;500;700;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root { 
-  --surface: #101010;
-  --surface-2: #161616;
-  --surface-3: #1c1c1c;
-  --border: rgba(255,255,255,0.08);
-  --muted: #666;
+:root {
+  --background: #08090a;
+  --surface: #0c0d0f;
+  --surface-2: #121417;
+  --surface-3: #181a1f;
+  --border: #22252a;
+  --text: #e2e8f0;
+  --muted: #64748b;
   --accent: #3b82f6;
-  --accent-rgb: 59, 130, 246;
-  --accent-hover: #2563eb;
-  --success: #22c55e;
+  --accent-glow: rgba(59, 130, 246, 0.15);
+  --success: #10b981;
   --danger: #ef4444;
-  --background: #000000;
-  --text: #ffffff;
   --glass: rgba(15, 15, 15, 0.7);
   --selection: rgba(59, 130, 246, 0.3);
   color-scheme: dark; 
@@ -98,5 +97,265 @@ body {
 
 ::selection {
   background: var(--selection);
+  color: inherit;
+}
+
+mark {
+  background: #ffeb3b;
+  color: #000;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 700;
+}
+
+/* Floating Action Button */
+.fab-button {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  color: white;
+}
+
+.fab-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+}
+
+.fab-button:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* Industrial Modal System */
+.industrial-modal {
+  border-radius: 5px !important;
+  overflow: hidden !important;
+  transition: border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.industrial-modal.maximized {
+  border-radius: 0 !important;
+}
+
+/* Internal Surface Guarding */
+.industrial-surface-l { border-top-left-radius: 5px !important; border-bottom-left-radius: 5px !important; }
+.industrial-surface-r { border-top-right-radius: 5px !important; border-bottom-right-radius: 5px !important; }
+
+.maximized .industrial-surface-l,
+.maximized .industrial-surface-r {
+  border-radius: 0 !important;
+}
+
+/* End */
+
+/* --- Neural Report Theme (High-Performance Markdown) --- */
+.neural-report {
+  color: #1e293b;
+  font-weight: 400;
+}
+
+.dense-report .neural-report, .dense-report {
+  /* Dynamic Sizing controlled by components */
+}
+
+[data-theme='dark'] .neural-report {
+  color: var(--text);
+}
+
+.neural-report p {
+  margin-bottom: 0.6rem;
+}
+
+.neural-report b, .neural-report strong {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.neural-report h1, .neural-report h2, .neural-report h3 {
+  font-size: 12px !important;
+  font-weight: 800;
+  color: var(--accent);
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.1);
+  padding-bottom: 0.3rem;
+  text-align: left;
+}
+
+.neural-report *:first-child {
+  margin-top: 0 !important;
+}
+
+.neural-report h4, .neural-report h5, .neural-report h6 {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+  display: block;
+  text-align: left;
+}
+
+/* Elite List System */
+.neural-report ul, .neural-report ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.neural-report ul { list-style-type: none; }
+.neural-report ul li { position: relative; margin-bottom: 0.5rem; }
+.neural-report ul li::before {
+  content: "•";
+  color: var(--accent);
+  font-weight: bold;
+  position: absolute;
+  left: -1.25rem;
+}
+
+.neural-report ol { list-style-type: decimal; }
+.neural-report ol li { margin-bottom: 0.5rem; padding-left: 0.5rem; }
+
+.neural-list-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.neural-list-item > span:first-child {
+  opacity: 0.3;
+  font-weight: 900;
+  flex-shrink: 0;
+  min-width: 14px;
+}
+
+.neural-list-num {
+  color: var(--accent);
+  font-weight: 900;
+  font-size: 11px;
+}
+
+/* Elite Markdown & Neural Table System */
+.neural-report table, .neural-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 11px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.neural-report th, .neural-table th {
+  background: var(--surface-3);
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 8px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+
+.neural-report td, .neural-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.neural-report tr:last-child td, .neural-table tr:last-child td {
+  border-bottom: none;
+}
+
+.neural-report tr:nth-child(even), .neural-table tr:nth-child(even) {
+  background: rgba(var(--accent-rgb), 0.02);
+}
+
+.neural-report tr:hover td, .neural-table tr:hover td {
+  background: rgba(var(--accent-rgb), 0.05);
+  color: var(--accent);
+}
+
+.neural-hr, .neural-report hr {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 1.25rem 0;
+  opacity: 0.5;
+}
+
+.neural-divider {
+  text-align: left;
+  font-weight: 800;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  opacity: 0.9;
+  margin: 1.25rem 0 0.5rem 0;
+  white-space: nowrap;
+}
+
+.marker-success { color: #10b981; font-weight: 700; }
+.marker-error { color: #ef4444; font-weight: 700; }
+.marker-header { 
+  display: block;
+  font-weight: 900; 
+  text-transform: uppercase; 
+  letter-spacing: 0.2em; 
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+/* Blockquotes */
+.neural-report blockquote {
+  border-left: 4px solid var(--accent);
+  background: var(--surface-2);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Code Snippets */
+.neural-report code {
+  background: var(--surface-3);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+  color: var(--accent);
+}
+
+.neural-report pre {
+  background: var(--surface-3);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+}
+
+.neural-report pre code {
+  padding: 0;
+  background: none;
   color: inherit;
 }

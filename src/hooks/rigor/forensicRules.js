@@ -1,0 +1,837 @@
+export const forensicRules = [
+  // Grammar: Capitalization & Sentence Structure (BLUE)
+  {
+    regex: /(?:^|[.!?]\s+)([a-z])/g,
+    type: "grammar",
+    suggestion: (match) => {
+      // If match is just a single char (start of text), return upper
+      if (match[0].length === 1) return match[0].toUpperCase();
+      // Otherwise, keep the boundary (dot + space) and upper the char
+      return match[0].slice(0, -1) + match[1].toUpperCase();
+    },
+    exp: "Sentences must start with a capital letter.",
+  },
+
+  // Spelling & Phonetics (RED)
+  {
+    regex: /\bfroot\b/gi,
+    type: "spelling",
+    suggestion: "fruit",
+    exp: "Phonetic spelling anomaly.",
+  },
+  {
+    regex: /\bwheather\b/gi,
+    type: "spelling",
+    suggestion: "weather",
+    exp: "Semantic confusion (weather vs whether).",
+  },
+  {
+    regex: /\bTheir\s+was\b/gi,
+    type: "spelling",
+    suggestion: "There was",
+    exp: "Homophone confusion (There/Their).",
+  },
+  {
+    regex: /\bpeples\b/gi,
+    type: "spelling",
+    suggestion: "people",
+    exp: "Irregular plural spelling error.",
+  },
+  {
+    regex: /\bshoping\b/gi,
+    type: "spelling",
+    suggestion: "shopping",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\btrys\b/gi,
+    type: "spelling",
+    suggestion: "tries",
+    exp: "Incorrect verb suffix.",
+  },
+  {
+    regex: /\binsted\b/gi,
+    type: "spelling",
+    suggestion: "instead",
+    exp: "Spelling anomaly.",
+  },
+  {
+    regex: /\bfreind\b/gi,
+    type: "spelling",
+    suggestion: "friend",
+    exp: "I before E error.",
+  },
+  {
+    regex: /\bcrazyness\b/gi,
+    type: "spelling",
+    suggestion: "craziness",
+    exp: "Suffix spelling error.",
+  },
+  {
+    regex: /\bexpensve\b/gi,
+    type: "spelling",
+    suggestion: "expensive",
+    exp: "Missing vowel.",
+  },
+  {
+    regex: /\bgrocerie\b/gi,
+    type: "spelling",
+    suggestion: "grocery",
+    exp: "Spelling anomaly.",
+  },
+  {
+    regex: /\brelized\b/gi,
+    type: "spelling",
+    suggestion: "realized",
+    exp: "Missing vowel.",
+  },
+  {
+    regex: /\bimportent\b/gi,
+    type: "spelling",
+    suggestion: "important",
+    exp: "Vowel confusion.",
+  },
+  {
+    regex: /\bgeting\b/gi,
+    type: "spelling",
+    suggestion: "getting",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\bsoked\b/gi,
+    type: "spelling",
+    suggestion: "soaked",
+    exp: "Spelling anomaly.",
+  },
+  {
+    regex: /\btotaly\b/gi,
+    type: "spelling",
+    suggestion: "totally",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\bfinaly\b/gi,
+    type: "spelling",
+    suggestion: "finally",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\bcitys\b/gi,
+    type: "spelling",
+    suggestion: "cities",
+    exp: "Plural spelling anomaly.",
+  },
+  {
+    regex: /\beverybodys\b/gi,
+    type: "spelling",
+    suggestion: "everybody",
+    exp: "Possessive/Plural confusion.",
+  },
+  {
+    regex: /\balot\b/gi,
+    type: "spelling",
+    suggestion: "a lot",
+    exp: "Common compound word error.",
+  },
+  {
+    regex: /\bteh\b/gi,
+    type: "spelling",
+    suggestion: "the",
+    exp: "Typographic transposition error.",
+  },
+  {
+    regex: /\brecieve\b/gi,
+    type: "spelling",
+    suggestion: "receive",
+    exp: "'I before E except after C' violation.",
+  },
+  {
+    regex: /\bseperate\b/gi,
+    type: "spelling",
+    suggestion: "separate",
+    exp: "Common vowel sequence error.",
+  },
+  {
+    regex: /\bdefinately\b/gi,
+    type: "spelling",
+    suggestion: "definitely",
+    exp: "Commonly misspelled word.",
+  },
+  {
+    regex: /\boccured\b/gi,
+    type: "spelling",
+    suggestion: "occurred",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\bprefered\b/gi,
+    type: "spelling",
+    suggestion: "preferred",
+    exp: "Missing double consonant.",
+  },
+  {
+    regex: /\bcomitted\b/gi,
+    type: "spelling",
+    suggestion: "committed",
+    exp: "Missing double consonant.",
+  },
+
+  // Grammar: Pronoun-Verb Agreement & Case (BLUE)
+  {
+    regex: /\bMe\s+and\s+(\w+)\s+is\b/gi,
+  },
+  {
+    regex:
+      /\bhim\b(?=\s+(?:is|was|went|go|goes|want|wants|thinks|knows|cryed|cried|has|had|did))/gi,
+    type: "grammar",
+    suggestion: "he",
+    exp: "Objective pronoun used as subject.",
+  },
+  {
+    regex:
+      /\bher\b(?=\s+(?:is|was|went|go|goes|want|wants|thinks|knows|don't|doesn't|has|had|did))/gi,
+    type: "grammar",
+    suggestion: "she",
+    exp: "Objective pronoun used as subject.",
+  },
+  {
+    regex:
+      /\bus\b(?=\s+(?:is|was|went|go|goes|want|wants|thinks|knows|drinked|drank|has|had|did))/gi,
+    type: "grammar",
+    suggestion: "we",
+    exp: "Objective pronoun used as subject.",
+  },
+  {
+    regex: /\bHer\s+don't\b/gi,
+    type: "grammar",
+    suggestion: "She doesn't",
+    exp: "Subject-case and auxiliary agreement error.",
+  },
+  {
+    regex: /\bMe\s+is\b/gi,
+    type: "grammar",
+    suggestion: "I am",
+    exp: "Subject-case and agreement mismatch.",
+  },
+  {
+    regex: /\bia\s+m\b/gi,
+    type: "grammar",
+    suggestion: "I am",
+    exp: "Subject-auxiliary typographic anomaly.",
+  },
+  {
+    regex: /\bi\s+am\s+([a-z]{2,})(?<!ing|being|doing|going)\b/gi,
+    type: "grammar",
+    suggestion: "I am $1ing",
+    exp: "Incorrect present continuous form.",
+  },
+  {
+    regex: /\bi\b/g,
+    type: "grammar",
+    suggestion: "I",
+    exp: "First-person pronoun must always be capitalized.",
+  },
+  {
+    regex: /\bMe\s+(\w+)\b/gi,
+    type: "grammar",
+    suggestion: "I $1",
+    exp: "Subject-case pronoun error.",
+  },
+  {
+    regex: /\bda\b/gi,
+    type: "grammar",
+    suggestion: "the",
+    exp: "Non-standard article usage.",
+  },
+  {
+    regex: /\bdem\s+dont\b/gi,
+    type: "grammar",
+    suggestion: "they don't",
+    exp: "Subject-case and auxiliary agreement error.",
+  },
+  {
+    regex: /\bu\s+no\s+has\b/gi,
+    type: "grammar",
+    suggestion: "you don't have",
+    exp: "Subject-case and verb agreement error.",
+  },
+  {
+    regex: /\bwanna\b/gi,
+    type: "grammar",
+    suggestion: "want to",
+    exp: "Colloquial contraction is non-academic.",
+  },
+  {
+    regex: /\bgunna\b/gi,
+    type: "grammar",
+    suggestion: "going to",
+    exp: "Colloquial contraction is non-academic.",
+  },
+  {
+    regex: /\bgetted\b/gi,
+    type: "syntax",
+    suggestion: "got",
+    exp: "Irregular verb form anomaly.",
+  },
+  {
+    regex: /\bkeeped\b/gi,
+    type: "syntax",
+    suggestion: "kept",
+    exp: "Irregular verb form anomaly.",
+  },
+  {
+    regex: /\b(it|this)\s+are\b/gi,
+    type: "grammar",
+    suggestion: "$1 is",
+    exp: "Singular agreement error.",
+  },
+  {
+    regex: /\bapples\s+is\b/gi,
+    type: "grammar",
+    suggestion: "apples are",
+    exp: "Plural agreement error.",
+  },
+  {
+    regex: /\bI\s+turns\b/gi,
+    type: "grammar",
+    suggestion: "I turn",
+    exp: "First-person subject requires base verb 'turn'.",
+  },
+  {
+    regex: /\bI\s+goes\b/gi,
+    type: "grammar",
+    suggestion: "I go",
+    exp: "First-person subject requires base verb 'go'.",
+  },
+  {
+    regex: /\bI\s+sees\b/gi,
+    type: "grammar",
+    suggestion: "I see",
+    exp: "First-person subject requires base verb 'see'.",
+  },
+  {
+    regex:
+      /\b(He|She|It)\s+(?:turn|see|go|want|think|know|remember|learn|make)\b/gi,
+    type: "grammar",
+    suggestion: "$1 [verb-s]",
+    exp: "Third-person singular subject requires verb with -s suffix.",
+  },
+  {
+    regex: /\bHim\s+was\b/gi,
+    type: "grammar",
+    suggestion: "He was",
+    exp: "Subject-case pronoun required.",
+  },
+  {
+    regex:
+      /\b(Him|Her|Us|Them)\s+(?:is|was|are|were|went|sat|saw|learned|learned|did|has|had)\b/gi,
+    type: "grammar",
+    suggestion: "Subject pronoun required",
+    exp: "Objective pronoun used incorrectly as the subject of a verb.",
+  },
+  {
+    regex: /\bit\s+make\s+me\b/gi,
+    type: "grammar",
+    suggestion: "it makes me",
+    exp: "Subject-verb agreement error.",
+  },
+  {
+    regex: /\bhelp\s+peoples\b/gi,
+    type: "grammar",
+    suggestion: "help people",
+    exp: "Irregular plural 'people' already implies plurality.",
+  },
+
+  // Syntax: Tense & Verb Forms (GREEN)
+  {
+    regex: /\b(goes|go)\b(?=.*?\byesterday\b)/gi,
+    type: "syntax",
+    suggestion: "went",
+    exp: "Tense mismatch with 'yesterday'.",
+  },
+  {
+    regex: /\b(is|are)\b(?=.*?\byesterday\b)/gi,
+    type: "syntax",
+    suggestion: "was",
+    exp: "Tense mismatch with 'yesterday'.",
+  },
+  {
+    regex: /\bIf\s+I\s+was\s+you\b/gi,
+    type: "syntax",
+    suggestion: "If I were you",
+    exp: "Subjunctive mood error.",
+  },
+  {
+    regex: /\bI\s+will\s+not\s+bought\b/gi,
+    type: "syntax",
+    suggestion: "I would not buy",
+    exp: "Modal-tense mismatch.",
+  },
+  {
+    regex: /\bbuyed\b/gi,
+    type: "syntax",
+    suggestion: "bought",
+    exp: "Irregular verb past form error.",
+  },
+  {
+    regex: /\bdrinked\b/gi,
+    type: "syntax",
+    suggestion: "drank",
+    exp: "Irregular verb past form error.",
+  },
+  {
+    regex: /\bsayed\b/gi,
+    type: "syntax",
+    suggestion: "said",
+    exp: "Irregular verb past form error.",
+  },
+  {
+    regex: /\bhurted\b/gi,
+    type: "syntax",
+    suggestion: "hurt",
+    exp: "Irregular verb past form error ('hurt' is its own past tense).",
+  },
+  {
+    regex: /\bcryed\b/gi,
+    type: "syntax",
+    suggestion: "cried",
+    exp: "Spelling/Verb form error.",
+  },
+  {
+    regex: /\bhas\s+goed\b/gi,
+    type: "syntax",
+    suggestion: "has gone",
+    exp: "Irregular verb anomaly.",
+  },
+  {
+    regex: /\blefted\b/gi,
+    type: "syntax",
+    suggestion: "left",
+    exp: "Irregular verb error.",
+  },
+  {
+    regex: /\bsitted\b/gi,
+    type: "syntax",
+    suggestion: "sat",
+    exp: "Irregular verb error.",
+  },
+  {
+    regex: /\bfinded\b/gi,
+    type: "syntax",
+    suggestion: "found",
+    exp: "Irregular verb error.",
+  },
+  {
+    regex: /\bI\s+seen\b/gi,
+    type: "syntax",
+    suggestion: "I saw",
+    exp: "Simple past vs past participle error.",
+  },
+  {
+    regex: /\bus\s+drinked\b/gi,
+    type: "syntax",
+    suggestion: "we drank",
+    exp: "Subject-case and verb form error.",
+  },
+  {
+    regex: /\bhim\s+cryed\b/gi,
+    type: "syntax",
+    suggestion: "he cried",
+    exp: "Subject-case and verb form anomaly.",
+  },
+  {
+    regex: /\b(should|could|would|might|must)\s+of\b/gi,
+    type: "syntax",
+    suggestion: "$1 have",
+    exp: "Modal verb followed by 'of' instead of 'have'.",
+  },
+  {
+    regex: /\b(Why|When|Where|How)\s+he\s+(\w+s)\b/gi,
+    type: "syntax",
+    suggestion: "$1 does he $2",
+    exp: "Question word order requires auxiliary inversion.",
+  },
+  {
+    regex: /\b(What|Which)\s+he\s+(\w+s)\b/gi,
+    type: "syntax",
+    suggestion: "$1 does he $2",
+    exp: "Question word order requires auxiliary inversion.",
+  },
+
+  // Tone & Sophistication (PURPLE)
+  {
+    regex: /\b(is|was|were|been|being)\s+\w+ed\s+by\b/gi,
+    type: "tone",
+    suggestion: "Use active voice",
+    exp: "Passive voice weakens scholarly authority.",
+  },
+  {
+    regex:
+      /\b(seems\s+to|appears\s+to|could\s+possibly|may\s+be|might\s+be)\b/gi,
+    type: "tone",
+    suggestion: "Use assertive language",
+    exp: "Over-hedging reduces the impact of findings.",
+  },
+  {
+    regex: /\bthink\b/gi,
+    type: "tone",
+    suggestion: "Assert",
+    exp: "Use assertive verbs to increase scholarly authority.",
+  },
+  {
+    regex: /\bbelieve\b/gi,
+    type: "tone",
+    suggestion: "Contend",
+    exp: "Academic 'Contend' is more rigorous than 'Believe'.",
+  },
+  {
+    regex: /\bmaybe\b/gi,
+    type: "tone",
+    suggestion: "Potentially",
+    exp: "Use formal probability markers.",
+  },
+  {
+    regex: /\bguess\b/gi,
+    type: "tone",
+    suggestion: "Hypothesize",
+    exp: "Professional research requires hypothesizing.",
+  },
+  {
+    regex: /\b(I|we)\s+(feel|guess|suppose)\b/gi,
+    type: "tone",
+    suggestion: "$1 contend | $1 argue | $1 assert",
+    exp: "Subjective language weakens academic authority.",
+  },
+  {
+    regex: /\bkinda\b|\bsorta\b/gi,
+    type: "tone",
+    suggestion: "somewhat | rather",
+    exp: "Colloquial modifiers are non-academic.",
+  },
+
+  // Diction & Modifiers (ORANGE)
+  {
+    regex: /\bmore\s+(\w+er)\b/gi,
+    type: "diction",
+    suggestion: "$1",
+    exp: "Double comparative error.",
+  },
+  {
+    regex: /\bmost\s+(\w+est)\b/gi,
+    type: "diction",
+    suggestion: "$1",
+    exp: "Double superlative error.",
+  },
+  {
+    regex: /\bthen\b(?=.*?\bthan\b)/gi,
+    type: "diction",
+    suggestion: "than",
+    exp: "Comparison word confusion.",
+  },
+  {
+    regex: /\bto\s+much\b/gi,
+    type: "diction",
+    suggestion: "too much",
+    exp: "Adverbial 'too' required.",
+  },
+  {
+    regex: /\bsourly\b/gi,
+    type: "diction",
+    suggestion: "sour",
+    exp: "Adjective/Adverb confusion.",
+  },
+  {
+    regex: /\bthirstly\b/gi,
+    type: "diction",
+    suggestion: "thirsty",
+    exp: "Incorrect adjective form.",
+  },
+  {
+    regex: /\bbrokenly\b/gi,
+    type: "diction",
+    suggestion: "broken",
+    exp: "Incorrect adjective form.",
+  },
+  {
+    regex: /\b(very|extremely|really|quite|totally|completely)\b/gi,
+    type: "diction",
+    suggestion: "Omit",
+    exp: "Weak adverbs reduce academic rigor.",
+  },
+  {
+    regex: /\btheir\s+(?:going|coming|walking|running)\b/gi,
+    type: "diction",
+    suggestion: "they're",
+    exp: "Homophone confusion: possessive 'their' vs contraction 'they're'.",
+  },
+  {
+    regex: /\byour\s+(?:going|coming|walking|running)\b/gi,
+    type: "diction",
+    suggestion: "you're",
+    exp: "Homophone confusion: possessive 'your' vs contraction 'you're'.",
+  },
+  {
+    regex: /\bits\s+(?:going|coming|raining|time)\b/gi,
+    type: "diction",
+    suggestion: "it's",
+    exp: "Possessive 'its' vs contraction 'it's'.",
+  },
+  {
+    regex: /\b(affect|effect)\s+(\w+)\b/gi,
+    type: "diction",
+    suggestion: "Check: affect (verb) vs effect (noun)",
+    exp: "Commonly confused word pair.",
+  },
+  {
+    regex: /\bloose\s+(\w+)\b/gi,
+    type: "diction",
+    suggestion: "lose",
+    exp: "Confusion between 'loose' (adjective) and 'lose' (verb).",
+  },
+
+  // Technical & Symbol Anomalies (RED)
+  {
+    regex: /([a-z]+)[^a-z\s0-9.?!,;:'"\-]+([a-z]+)/gi,
+    type: "spelling",
+    suggestion: "$1$2",
+    exp: "Technical character noise detected inside word structure.",
+  },
+  {
+    regex: /\broboticsc\b/gi,
+    type: "spelling",
+    suggestion: "robotics",
+    exp: "Common technical typo.",
+  },
+
+  // New High-Density Grammar Injection
+  {
+    regex: /\bpeople\s+is\b/gi,
+    type: "grammar",
+    suggestion: "people are",
+    exp: "Plural subject requires plural verb 'are'.",
+  },
+  {
+    regex: /\bpeoples\b/gi,
+    type: "grammar",
+    suggestion: "people",
+    exp: "The word 'people' is already the plural form of 'person'.",
+  },
+  {
+    regex: /\b(we|they)\s+(turns|goes|sees|wants|needs|shares)\b/gi,
+    type: "grammar",
+    suggestion: "$1 [base verb]",
+    exp: "Plural subjects require base verb form.",
+  },
+  {
+    regex: /\bthey\s+has\b/gi,
+    type: "grammar",
+    suggestion: "they have",
+    exp: "Plural subject requires plural verb 'have'.",
+  },
+  {
+    regex: /\bwhat\s+they\s+has\b/gi,
+    type: "grammar",
+    suggestion: "what they have",
+    exp: "Subject-verb agreement error.",
+  },
+  {
+    regex: /\bin\s+a\s+hurry\s+to\s+finished\b/gi,
+    type: "syntax",
+    suggestion: "in a hurry to finish",
+    exp: "Infinitive 'to' must be followed by base verb form.",
+  },
+  {
+    regex: /\bpeople\s+is\s+always\s+in\s+a\s+hurry\b/gi,
+    type: "grammar",
+    suggestion: "people are always in a hurry",
+    exp: "Agreement error.",
+  },
+  {
+    regex: /\bthey\s+often\s+forgets\b/gi,
+    type: "grammar",
+    suggestion: "they often forget",
+    exp: "Plural subject requires plural verb 'forget'.",
+  },
+  {
+    regex: /\bhas\s+wrote\b/gi,
+    type: "syntax",
+    suggestion: "have written",
+    exp: "Past participle 'written' required after 'have'.",
+  },
+  {
+    regex: /\bdoesn't\s+never\b/gi,
+    type: "syntax",
+    suggestion: "doesn't ever",
+    exp: "Double negative error detected.",
+  },
+  {
+    regex: /\bhardly\s+tel\b/gi,
+    type: "spelling",
+    suggestion: "hardly tell",
+    exp: "Spelling anomaly.",
+  },
+  {
+    regex: /\bsuposed\s+to\s+be\b/gi,
+    type: "syntax",
+    suggestion: "supposed to be",
+    exp: "Passive form 'supposed' required.",
+  },
+  {
+    regex: /\btoday\s+world\b/gi,
+    type: "grammar",
+    suggestion: "today's world",
+    exp: "Possessive case required for temporal reference.",
+  },
+  {
+    regex: /\breal\s+ment\b/gi,
+    type: "grammar",
+    suggestion: "really meant",
+    exp: "Adverb/Verb form error.",
+  },
+  {
+    regex: /\boriginal\s+massage\b/gi,
+    type: "diction",
+    suggestion: "original message",
+    exp: "Semantic error: 'massage' detected where 'message' is contextually implied.",
+  },
+
+  {
+    regex: /\bthere\s+work\b/gi,
+    type: "diction",
+    suggestion: "their work",
+    exp: "Possessive homophone confusion (their vs there).",
+  },
+  {
+    regex: /\binstead\s+of\s+there\b/gi,
+    type: "diction",
+    suggestion: "instead of their",
+    exp: "Homophone confusion.",
+  },
+
+  // Academic Rigor: Formal Contraction Expansion (TONE)
+  {
+    regex: /\b(don['’]t)\b/gi,
+    type: "tone",
+    suggestion: "do not",
+    exp: "Academic manuscripts require formal word expansion.",
+  },
+  {
+    regex: /\b(doesn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "does not",
+    exp: "Use expanded formal phrasing in academic context.",
+  },
+  {
+    regex: /\b(can['’]t)\b/gi,
+    type: "tone",
+    suggestion: "cannot",
+    exp: "Formal expansion required for scholarly rigor.",
+  },
+  {
+    regex: /\b(won['’]t)\b/gi,
+    type: "tone",
+    suggestion: "will not",
+    exp: "Avoid contractions in formal research documentation.",
+  },
+  {
+    regex: /\b(it['’]s)\b/gi,
+    type: "tone",
+    suggestion: "it is",
+    exp: "Differentiate between possessive 'its' and formal 'it is'.",
+  },
+  {
+    regex: /\b(you['’]re)\b/gi,
+    type: "tone",
+    suggestion: "you are",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(they['’]re)\b/gi,
+    type: "tone",
+    suggestion: "they are",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(we['’]re)\b/gi,
+    type: "tone",
+    suggestion: "we are",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(shouldn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "should not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(couldn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "could not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(wouldn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "would not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(aren['’]t)\b/gi,
+    type: "tone",
+    suggestion: "are not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(isn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "is not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(haven['’]t)\b/gi,
+    type: "tone",
+    suggestion: "have not",
+    exp: "Formal expansion required.",
+  },
+  {
+    regex: /\b(hasn['’]t)\b/gi,
+    type: "tone",
+    suggestion: "has not",
+    exp: "Formal expansion required.",
+  },
+  // Academic & Diction Refinements (PURPLE/ORANGE)
+  {
+    regex: /\bover-reliance\b/gi,
+    type: "spelling",
+    suggestion: "overreliance",
+    exp: "Standardized spelling (removing hyphen).",
+  },
+  {
+    regex: /\ballowing\s+(me|him|her|us|them)\s+to\s+([a-z]+)\b/gi,
+    type: "diction",
+    suggestion: (match) => {
+      const map = { me: "I", him: "he", her: "she", us: "we", them: "they" };
+      const sub = map[match[1].toLowerCase()] || match[1];
+      return `so that ${sub} can ${match[2]}`;
+    },
+    exp: "Sophistication: Rephrasing for better logical flow.",
+  },
+  {
+    regex: /\b(represents a significant departure from)\b/gi,
+    type: "acad",
+    suggestion: "diverges substantially from",
+    exp: "Academic Vigor: Using precise verbal phrases for impact.",
+  },
+  {
+    regex: /\b(functions as a powerful tool)\b/gi,
+    type: "acad",
+    suggestion: "serves as a robust mechanism",
+    exp: "Academic Vigor: Elevating functional descriptions.",
+  },
+  {
+    regex: /\b(leveraging|leverages)\s+the\s+human\s+tendency\b/gi,
+    type: "acad",
+    suggestion: "capitalizing on innate cognitive heuristics",
+    exp: "Academic Vigor: Using specialized psychological terminology.",
+  },
+];

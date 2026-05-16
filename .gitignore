@@ -26,4 +26,11 @@ dist-ssr
 dist-electron
 .builder-cache
 .env
-.features.md
+# .features.md
+
+# Python Build Artifacts
+server/build/
+server/dist/
+server/*.spec
+__pycache__/
+*.pyc

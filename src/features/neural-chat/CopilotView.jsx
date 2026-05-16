@@ -1,0 +1,369 @@
+import { useState, useEffect, useRef, memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Sparkles,
+  Send,
+  User,
+  ChevronRight,
+  X,
+  Square,
+  Bot,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Trash2,
+  ChevronLeft,
+} from "lucide-react";
+import { useStore } from "./../../store/useStore";
+import { formatNeuralText } from "../../utils/neuralFormat";
+
+// ── MINIMALIST TEXT-ONLY MESSAGE ─────────────────────────────────────
+const NeuralChatMessage = memo(({ message, index, isStreaming }) => {
+  const isAI = message.role === "assistant";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`group flex flex-col gap-1.5 ${isAI ? "" : "items-end"}`}
+    >
+      <div
+        className={`flex items-center gap-2 ${isAI ? "" : "flex-row-reverse opacity-40 group-hover:opacity-100 transition-opacity"}`}
+      >
+        <div
+          className={`h-4 w-4 flex items-center justify-center rounded-full border border-border/10 ${isAI ? "bg-accent/10 text-accent" : "bg-surface-3 text-muted"}`}
+        >
+          {isAI ? <Bot className="h-2 w-2" /> : <User className="h-2 w-2" />}
+        </div>
+        <span className="text-[9px] font-black text-muted/40">
+          {isAI ? "Neural assistant" : "Researcher"}
+        </span>
+      </div>
+
+      <div
+        className={`max-w-full p-0.5 rounded-[5px] transition-all dense-report ${isAI ? "" : "bg-surface-3/30 border border-border/5 px-3 py-2"}`}
+      >
+        <div
+          className="neural-report select-text cursor-text"
+          dangerouslySetInnerHTML={{
+            __html: formatNeuralText(message.content),
+          }}
+        />
+        {isStreaming && isAI && (
+          <span className="inline-block w-1 h-3 bg-accent/40 animate-pulse ml-1" />
+        )}
+      </div>
+    </motion.div>
+  );
+});
+
+export default memo(function CopilotView({
+  isOpen,
+  onClose,
+  onOpen,
+  api,
+  showToast,
+  sidebarMode = false,
+}) {
+  // ATOMIC STORE SUBSCRIPTION
+  const {
+    chatHistory: messages,
+    setChatHistory: setMessages,
+    copilotContext: contextItem,
+    isCopilotCollapsed: isCollapsed,
+    setIsCopilotCollapsed: setIsCollapsed,
+  } = useStore();
+
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const isTypingRef = useRef(false);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [input]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
+
+    const userMsg = { role: "user", content: input };
+    const assistantMsg = { role: "assistant", content: "" };
+    const assistantIdx = messages.length + 1;
+
+    setMessages([...messages, userMsg, assistantMsg]);
+    setInput("");
+    setIsTyping(true);
+    isTypingRef.current = true;
+    const context = contextItem || (useStore.getState().view === 'editor' ? useStore.getState().activeEditorContent : null);
+
+    const systemPrompt = context
+      ? `You are the Writella Neural Research Assistant & Linguistic Expert.
+
+PRIMARY RESEARCH CONTEXT:
+- Node Title: "${context.text}"
+- Source Content: "${context.definition}"
+
+MANDATE:
+Examine the PRIMARY RESEARCH CONTEXT provided above. Your primary goal is to fulfill the USER INSTRUCTION below with surgical precision. 
+
+USER INSTRUCTION: "${input}"
+
+GUIDELINES:
+1. TERMINOLOGY: When the user says "what do you see?","tell me about the doc", "the document", "the script", "the file", "the English script", or "this text", they are referring EXCLUSIVELY to the PRIMARY RESEARCH CONTEXT provided below (e.g. the Editor Draft or Research Node).
+2. If the context title is "Editor Draft", treat it as the user's active manuscript.
+3. If the user asks for analysis or scoring, provide a "### NEURAL AUDIT" section.
+4. SCORING RUBRIC (STRICT IELTS STANDARD):
+   - Band 9.0: Native-like, sophisticated vocabulary, near-perfect grammar.
+   - Band 7.0-8.0: High academic level, precise vocabulary, minor rare errors.
+   - Band 5.0-6.0: Communicative but frequent errors in precision or complex structures.
+   - DETERMINISTIC RULE: Do not guess. Evaluate the text against these specific bands. If the text is the same, the score MUST remain the same.
+5. If the user asks for extraction (e.g., "give me 3 words"), DO NOT provide an audit; simply perform the extraction accurately.
+6. Use clean academic formatting: 
+   - Use '### SECTION TITLE' (no icons) for headers.
+   - Use '1. ❌ "[Original]" / ✅ "[Corrected]"' for linguistic edits.
+   - Use '•' for lists.
+7. Keep explanations concise, professional, and high-fidelity.`
+      : `You are the Writella Neural Assistant. Fulfill the user's request with surgical precision. User Instruction: "${input}"`;
+
+    const finalMessagesForAI = [
+      ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      { role: userMsg.role, content: userMsg.content },
+    ];
+
+    const contentRef = { current: "" };
+    let lastUpdate = 0;
+    const UPDATE_INTERVAL = 150;
+    let unsubscribe = null;
+
+    try {
+      unsubscribe = api.onChatChunk(({ content }) => {
+        if (!isTypingRef.current) return;
+        contentRef.current += content;
+        const now = Date.now();
+        if (now - lastUpdate > UPDATE_INTERVAL) {
+          lastUpdate = now;
+          const snapContent = contentRef.current;
+          // Atomic functional update for maximum speed and stability
+          setMessages((cm) =>
+            cm.map((msg, idx) =>
+              idx === assistantIdx ? { ...msg, content: snapContent } : msg,
+            ),
+          );
+        }
+      });
+
+      const docContext = context?.definition
+        ? `[SUBJECT_PRIORITY_RULE: FOCUS ONLY ON ANALYZING THE DOCUMENT BELOW. TREAT USER CHAT AS COMMANDS TO BE PERFORMED ON THIS TEXT.]\n\n[RESEARCH_DOCUMENT_START]\n${context.definition}\n[RESEARCH_DOCUMENT_END]`
+        : "";
+
+      await api.chatWithAIStream({
+        messages: finalMessagesForAI,
+        context: docContext,
+      });
+    } catch (e) {
+      console.error("Neural stream failure", e);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `[SYSTEM_ALERT] ${e.message}` },
+      ]);
+    } finally {
+      if (unsubscribe) unsubscribe();
+      const finalContent = contentRef.current;
+      setMessages((cm) =>
+        cm.map((msg, idx) =>
+          idx === assistantIdx ? { ...msg, content: finalContent } : msg,
+        ),
+      );
+      setIsTyping(false);
+      isTypingRef.current = false;
+    }
+  };
+
+  const handleStop = async () => {
+    setIsTyping(false);
+    isTypingRef.current = false;
+    try {
+      if (api.stopAI) await api.stopAI();
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const renderHeader = (isSidebar) => (
+    <div className="h-12 shrink-0 px-5 flex items-center justify-between bg-surface">
+      <div className="flex items-center gap-3">
+        <div className="p-1.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)] text-white rounded-[5px]">
+          <Sparkles className="h-3.5 w-3.5" />
+        </div>
+        <div>
+          <p className="text-[14px] font-black text-text tracking-tight">
+            Neural Co-pilot
+          </p>
+          <div className="flex items-center gap-1.5">
+            <div
+              className={`h-1 w-1 ${contextItem ? "bg-emerald-400" : "bg-success"} rounded-full animate-pulse`}
+            />
+            <p className="text-[9px] text-muted font-bold tracking-tight truncate max-w-[120px]">
+              {contextItem
+                ? `Linked: ${contextItem.text}`
+                : "Neural stream active"}
+            </p>
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={isSidebar ? () => setIsCollapsed(true) : onClose}
+        className="p-1.5 text-muted hover:text-text hover:bg-surface-2 rounded-[5px] transition-all"
+      >
+        {isSidebar ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <X className="h-4 w-4" />
+        )}
+      </button>
+    </div>
+  );
+
+  const renderMessagesList = (padding) => (
+    <div
+      className={`flex-1 overflow-y-auto ${padding} space-y-6 scrollbar-thin bg-gradient-to-b from-background to-surface`}
+    >
+      {messages.length === 0 && (
+        <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-30">
+          <div className="p-5 bg-surface-2 rounded-full border border-border">
+            <Sparkles className="h-10 w-10 text-accent/30" />
+          </div>
+          <div className="max-w-[200px]">
+            <p className="text-[11px] font-black text-text tracking-tight mb-1">
+              Intelligence layer active
+            </p>
+            <p className="text-[9px] text-muted leading-relaxed tracking-tight">
+              Inquiry pending. Request neural synthesis.
+            </p>
+          </div>
+        </div>
+      )}
+      {messages.map((m, i) => (
+        <NeuralChatMessage
+          key={i}
+          message={m}
+          index={i}
+          isStreaming={isTyping && i === messages.length - 1}
+        />
+      ))}
+    </div>
+  );
+
+  const renderInput = () => (
+    <div className="h-[56px] border-t border-border bg-surface flex items-center px-3 md:px-6 shrink-0 relative">
+      <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 relative flex items-center bg-surface-2 border border-border/10 rounded-[6px] focus-within:border-accent/40 transition-all overflow-hidden h-9">
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Neural inquiry..."
+            className="w-full bg-transparent border-none focus:ring-0 text-[12px] text-text placeholder:text-muted/40 px-3 py-2.5 pr-12 resize-none max-h-[200px] scrollbar-none outline-none focus:none"
+          />
+          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center">
+            {isTyping ? (
+              <button
+                onClick={handleStop}
+                className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-lg flex items-center justify-center"
+              >
+                <Square className="h-3 w-3 fill-current" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="p-2 bg-accent text-white rounded-full hover:shadow-lg disabled:opacity-30 transition-all flex items-center justify-center"
+              >
+                <Send className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (sidebarMode) {
+    return (
+      <motion.div
+        initial={{ width: 55, opacity: 1 }}
+        animate={{
+          width: !isOpen ? 55 : isCollapsed ? 55 : 380,
+          opacity: 1,
+        }}
+        className="h-full border-l border-border bg-surface flex flex-col relative shrink-0 overflow-hidden z-[40]"
+      >
+        {!isOpen ? (
+          <div className="flex-1 h-full flex flex-col items-center border-l border-border/10 group pointer-events-none bg-surface">
+            <div className="h-12 w-full flex items-center justify-center">
+              <div
+                className="flex items-center justify-center text-accent/40 group-hover:text-accent cursor-pointer pointer-events-auto transition-all p-2 hover:bg-accent/10 rounded-[4px]"
+                onClick={() => onOpen && onOpen()}
+              >
+                <Sparkles className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+        ) : isCollapsed ? (
+          <div className="h-12 flex flex-col items-center justify-center bg-surface">
+            <button
+              onClick={() => setIsCollapsed(false)}
+              className="p-2 rounded-[5px] text-muted hover:text-emerald-500 hover:bg-emerald-500/10 transition-all shadow-sm"
+            >
+              <Sparkles className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col h-full overflow-hidden">
+            {renderHeader(true)}
+            {renderMessagesList("px-5 py-4")}
+            {renderInput()}
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-background/40 backdrop-blur-md z-[150]"
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
+            className="fixed top-0 right-0 h-full w-full lg:w-[420px] bg-background border-l border-border shadow-2xl z-[151] flex flex-col overflow-hidden will-change-transform"
+          >
+            {renderHeader(false)}
+            {renderMessagesList("px-5 py-4")}
+            {renderInput()}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+});

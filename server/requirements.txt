@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+psycopg2-binary
+yt-dlp
+youtube-transcript-api
+python-dotenv
+spacy

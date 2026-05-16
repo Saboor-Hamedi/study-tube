@@ -1,0 +1,388 @@
+import { useState, memo, useEffect, useCallback, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Pencil, 
+  X, 
+  Save, 
+  Plus, 
+  Sparkles, 
+  Activity, 
+  CheckCircle, 
+  Archive,
+  Loader2,
+  ArrowRight,
+  Brain,
+  MessageSquare,
+  AlertCircle
+} from "lucide-react";
+import { formatNeuralText } from "../../utils/neuralFormat";
+import { useRigor } from "../../hooks/useRigor";
+import WritingHub from "../writing/WritingHub";
+import WritingMenu from "../writing/WritingMenu";
+import ReactMarkdown from "react-markdown";
+
+const StaticContent = memo(({ html }) => (
+  <div
+    className="neural-report select-text cursor-text"
+    dangerouslySetInnerHTML={{ __html: html }}
+  />
+));
+
+const InsightDetailView = ({
+  item,
+  setView,
+  showToast,
+  api,
+  onUpdate,
+  onOpenCopilot,
+  onClose,
+  onOpenCapture,
+  collections,
+  selectedCollection,
+  setSelectedCollection,
+  isCopilotOpen,
+  isCopilotCollapsed,
+}) => {
+  const { analyze, isNeuralScanning, getCategoryColor, getCategoryBg } = useRigor();
+  
+  const [editVal, setEditVal] = useState(item?.definition || "");
+  const [titleEditVal, setTitleEditVal] = useState(item?.text || "");
+  const [isEditing, setIsEditing] = useState(false);
+  const [diagnostics, setDiagnostics] = useState(item?.diagnostics || { highlights: [] });
+  const [isAnalyzing, setIsAnalyzing] = useState(!!item?.diagnostics);
+  
+  const [selectedHl, setSelectedHl] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 800);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
+  
+  const containerRef = useRef(null);
+  const closeTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 800;
+      setIsMobile(mobile);
+      if (!mobile) setIsSidebarOpen(true);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (item) {
+      // Neural Scrub: Ensure node data is clean of technical markers
+      const raw = (item.definition || "").replace(/<[^>]*>/g, "");
+      const cleaned = raw.replace(/(?<!\n)\n(?!\n)/g, " ").trim();
+      
+      setEditVal(cleaned);
+      setTitleEditVal((item.text || "").replace(/<[^>]*>/g, ""));
+      setDiagnostics(item.diagnostics || { highlights: [] });
+      setIsAnalyzing(!!item.diagnostics);
+    }
+  }, [item]);
+
+  const handleSaveEdit = async () => {
+    try {
+      await onUpdate({
+        ...item,
+        text: titleEditVal,
+        definition: editVal,
+        diagnostics: diagnostics
+      });
+      setIsEditing(false);
+      if (showToast) showToast("Neural Archive Updated", "success");
+    } catch (err) {
+      if (showToast) showToast("Update Failed", "error");
+    }
+  };
+
+  const handleDeepAnalyze = async () => {
+    if (!editVal.trim()) return;
+    const results = await analyze(editVal);
+    if (results) {
+      setDiagnostics(results.diagnostics);
+      setIsAnalyzing(true);
+    }
+  };
+
+  const showHl = (hl, i, e) => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const parentRect = containerRef.current.getBoundingClientRect();
+    
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const preferUp = spaceBelow < 400; 
+
+    setSelectedHl({
+      ...hl,
+      index: i + 1,
+      top: preferUp 
+        ? rect.top - parentRect.top + containerRef.current.scrollTop - 16
+        : rect.bottom - parentRect.top + containerRef.current.scrollTop + 16,
+      left: Math.min(Math.max(10, rect.left - parentRect.left), parentRect.width - 230),
+      preferUp
+    });
+  };
+
+  const hideHl = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setSelectedHl(null);
+    }, 400);
+  };
+
+  const cancelHide = () => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+  };
+
+  if (!item) return null;
+
+  return (
+    <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
+        
+        {/* Source Analysis Window (Seamless) */}
+        <div className="flex-1 min-w-0 flex flex-col bg-surface overflow-hidden relative">
+          <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative" ref={containerRef}>
+            {/* Added PB-96 (384px) safe zone for bottom-of-page highlights */}
+            <div className="p-4 md:p-10 pb-96 min-h-full flex flex-col relative">
+              
+              {/* Document Identity Rail */}
+              <div className="mb-8 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="px-2 py-0.5 bg-accent/5 border border-accent/10 rounded-full flex items-center gap-1.5 shrink-0">
+                    <Brain className="h-2.5 w-2.5 text-accent" />
+                    <span className="text-[8px] font-black text-accent uppercase tracking-widest">
+                      {item.collection || "Unsorted"}
+                    </span>
+                  </div>
+                  <div className="h-px flex-1 bg-border/5" />
+                </div>
+                
+                {isEditing ? (
+                  <input
+                    value={titleEditVal}
+                    onChange={(e) => setTitleEditVal(e.target.value)}
+                    className="w-full bg-transparent border-none p-0 text-[18px] md:text-[24px] font-black text-text focus:outline-none placeholder:text-muted/20"
+                    placeholder="Insight Title..."
+                  />
+                ) : (
+                  <h1 className="text-[18px] md:text-[24px] font-black text-text tracking-tight uppercase leading-tight break-all">
+                    {item.text}
+                  </h1>
+                )}
+              </div>
+              {isAnalyzing ? (
+                <div className="flex-1">
+                  <div className="text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text">
+                    {(() => {
+                      let lastIndex = 0;
+                      const elements = [];
+                      const highlights = diagnostics?.highlights || [];
+                      const sorted = [...highlights].sort((a, b) => a.start - b.start);
+
+                      sorted.forEach((hl, i) => {
+                        elements.push(editVal.substring(lastIndex, hl.start));
+                        elements.push(
+                          <motion.span
+                            key={i}
+                            initial={{ backgroundColor: "rgba(255, 107, 0, 0)" }}
+                            animate={{ backgroundColor: getCategoryBg(hl.type) }}
+                            className={`cursor-help border-b-2 ${getCategoryColor(hl.type).replace("text-", "border-")} px-0.5 rounded-sm transition-colors relative inline-block group/hl`}
+                            onMouseEnter={(e) => showHl(hl, i, e)}
+                            onMouseLeave={hideHl}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showHl(hl, i, e);
+                            }}
+                          >
+                            <span className="relative">
+                              {editVal.substring(hl.start, hl.end)}
+                            </span>
+                            <span className={`absolute -top-1.5 -right-1 text-[7px] font-black opacity-80 px-0.5 rounded-[2px] leading-none ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}>
+                              {i + 1}
+                            </span>
+                          </motion.span>,
+                        );
+                        lastIndex = hl.end;
+                      });
+                      elements.push(editVal.substring(lastIndex));
+                      return elements;
+                    })()}
+                  </div>
+                </div>
+              ) : isEditing ? (
+                <textarea
+                  value={editVal}
+                  onChange={(e) => setEditVal(e.target.value)}
+                  placeholder="Drafting forensic research definition..."
+                  className="flex-1 h-full w-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.6] md:leading-[2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit"
+                />
+              ) : (
+                <div className="flex-1 text-[14px] md:text-[18px] text-text/80 leading-[1.8] md:leading-[2.2] font-light tracking-wide break-words font-outfit whitespace-pre-wrap">
+                   <ReactMarkdown>{editVal}</ReactMarkdown>
+                </div>
+              )}
+
+              {/* Synthesis Abstract */}
+              {item.summary && !isEditing && !isAnalyzing && (
+                <div className="mt-12 p-6 md:p-8 bg-accent/5 border border-accent/10 space-y-4 rounded-[12px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="flex items-center gap-2 text-accent">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.4em]">
+                      Final Neural Synthesis
+                    </span>
+                  </div>
+                  <div className="text-[14px] text-muted leading-relaxed font-light space-y-3">
+                    {item.summary.split("\n").map((l, i) => (
+                      <p key={i} className="flex gap-4 text-text">
+                        <span className="text-accent/30 font-black flex-shrink-0">/</span>
+                        {l.replace(/^[•\-\d\.]+\s*/, "")}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <AnimatePresence>
+                <WritingMenu
+                  selectedHl={selectedHl}
+                  content={editVal}
+                  onApplySuggestion={(suggestion) => {
+                    if (!selectedHl) return;
+                    const newContent = editVal.substring(0, selectedHl.start) + suggestion + editVal.substring(selectedHl.end);
+                    setEditVal(newContent);
+                    setSelectedHl(null);
+                    handleDeepAnalyze();
+                  }}
+                  onClose={() => setSelectedHl(null)}
+                  onMouseEnter={cancelHide}
+                  onMouseLeave={hideHl}
+                  getCategoryColor={getCategoryColor}
+                  getCategoryBg={getCategoryBg}
+                />
+              </AnimatePresence>
+
+              {isMobile && isAnalyzing && (
+                <div className="w-full mt-10 pb-6">
+                  <WritingHub
+                    diagnostics={diagnostics}
+                    isNeuralScanning={isNeuralScanning}
+                    isAnalyzing={isAnalyzing}
+                    setIsAnalyzing={setIsAnalyzing}
+                    content={editVal}
+                    getCategoryColor={getCategoryColor}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Diagnostics Sidebar (Desktop Only) */}
+        {!isMobile && isSidebarOpen && (
+          <div className="shrink-0 z-[60] relative">
+            <WritingHub
+              diagnostics={diagnostics}
+              isNeuralScanning={isNeuralScanning}
+              isAnalyzing={isAnalyzing}
+              setIsAnalyzing={setIsAnalyzing}
+              content={editVal}
+              getCategoryColor={getCategoryColor}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Unified Industrial Footer (Responsive) */}
+      <div className="h-[40px] border-t border-border bg-surface flex items-center justify-between px-3 md:px-6 shrink-0 z-[70] relative">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
+            {[
+              { label: "Words", value: editVal.trim().split(/\s+/).filter(Boolean).length },
+              { label: "Anomalies", value: diagnostics?.highlights?.length || 0 },
+            ].map((m) => (
+              <div key={m.label} className="flex items-center gap-1.5 md:gap-2">
+                <span className="text-[7px] md:text-[8px] font-bold text-muted/40 uppercase tracking-widest">{m.label}</span>
+                <span className="text-[9px] md:text-[10px] font-black text-text tabular-nums">{m.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {!isMobile && (
+            <>
+              <div className="h-4 w-px bg-border/10" />
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="h-1 w-1 md:h-1.5 md:w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[7px] md:text-[8px] font-bold text-muted/40 uppercase tracking-[0.2em]">Neural Synced</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => (isEditing ? handleSaveEdit() : setIsEditing(true))}
+            className={`h-8 px-4 md:px-8 rounded-[4px] flex items-center justify-center transition-all font-semibold text-[10px] md:text-[11px] ${
+              isEditing
+                ? "bg-accent text-white shadow-lg shadow-accent/20 border border-white/10"
+                : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 border border-white/10"
+            }`}
+          >
+            {isEditing ? "Save" : "Edit"}
+          </button>
+
+          <button
+            onClick={() =>
+              isAnalyzing ? setIsAnalyzing(false) : handleDeepAnalyze()
+            }
+            disabled={isNeuralScanning}
+            className={`h-8 px-4 md:px-8 rounded-[4px] flex items-center justify-center gap-1.5 transition-all font-semibold text-[10px] md:text-[11px] ${
+              isNeuralScanning
+                ? "bg-accent/20 text-accent animate-pulse"
+                : isAnalyzing
+                  ? "bg-surface-3 text-text border border-border/10 hover:bg-surface-4"
+                  : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/20 border border-white/10"
+            }`}
+          >
+            {isNeuralScanning ? (
+              <div className="flex items-center gap-2">
+                <div className="relative flex items-center justify-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="relative z-10 flex items-center justify-center"
+                  >
+                    <Loader2 className="h-3 w-3" />
+                  </motion.div>
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0, 0.5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 bg-white rounded-full blur-[2px]"
+                  />
+                </div>
+                <span>Scanning...</span>
+              </div>
+            ) : isAnalyzing ? (
+              "Reset"
+            ) : (
+              "Scan"
+            )}
+          </button>
+
+          <button
+            onClick={onClose}
+            className="h-8 w-8 md:w-10 flex items-center justify-center text-muted/40 hover:text-red-500 hover:bg-red-500/10 rounded-[4px] transition-all border border-transparent hover:border-red-500/20"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default memo(InsightDetailView);
