@@ -1,17 +1,13 @@
-import "dotenv/config";
-import {
-  app,
-  BrowserWindow,
-  Notification,
-  dialog,
-  ipcMain,
-  shell,
-  Menu,
-  MenuItem,
-  globalShortcut,
-} from "electron";
-import fs from "node:fs";
+import dotenv from "dotenv";
+import { app, BrowserWindow, Notification, dialog, ipcMain, shell, Menu, MenuItem, globalShortcut } from "electron";
 import path from "node:path";
+
+const envPath = app.isPackaged 
+  ? path.join(process.resourcesPath, "app.asar.unpacked", ".env") 
+  : path.resolve(process.cwd(), ".env");
+
+dotenv.config({ path: envPath });
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import ytdl from "@distube/ytdl-core";

@@ -38,6 +38,7 @@
       "electron/**/*",
       "server/**/*",
       "electron/grammars/**/*",
+      "electron/docs/**/*",
       "node_modules/**/*",
       "package.json",
       "data/**/*",
