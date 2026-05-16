@@ -40,7 +40,7 @@ export default function WritingHub({
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scroll">
         {!isAnalyzing ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-30">
-            <div className="p-5 bg-surface-2 rounded-full border border-border">
+            <div className="p-5 bg-surface-2 border border-border rounded-[5px]">
               <Activity className="h-10 w-10 text-blue-500/30" />
             </div>
             <div className="max-w-[200px]">
@@ -53,33 +53,35 @@ export default function WritingHub({
             </div>
           </div>
         ) : (
-          <div className="p-1 space-y-1">
-            {/* this my "neural scoreboard" - showing me exactly where my writing is weak */}
-            <div className="bg-surface-2/30 border border-border/10 rounded-[8px] overflow-hidden">
-              <div className="px-2 py-1 border-b border-border/5 bg-surface-3/20 flex items-center gap-1">
-                <Activity className="h-3 w-3 text-blue-400" />
+          <div className="p-2 space-y-5 pb-20">
+            {/* Section 1: Neural Analytics */}
+            <div className="space-y-2.5">
+              <div className="px-1">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">
+                  Neural Analytics
+                </span>
               </div>
-              <div className="p-1 grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-3 gap-1.5 px-0.5 py-1">
                 {[
                   {
                     label: "Gram",
                     value: diagnostics.grammar,
-                    color: "text-blue-500",
+                    color: "text-blue-400",
                   },
                   {
                     label: "Spell",
                     value: diagnostics.spelling,
-                    color: "text-red-500",
+                    color: "text-red-400",
                   },
                   {
                     label: "Syntx",
                     value: diagnostics.syntax,
-                    color: "text-emerald-500",
+                    color: "text-emerald-400",
                   },
                   {
                     label: "Dictn",
                     value: diagnostics.diction,
-                    color: "text-orange-500",
+                    color: "text-orange-400",
                   },
                   {
                     label: "Acad",
@@ -89,18 +91,18 @@ export default function WritingHub({
                   {
                     label: "Flow",
                     value: diagnostics.flow || 0,
-                    color: "text-pink-500",
+                    color: "text-pink-400",
                   },
-                ].map((stat, idx) => (
+                ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="flex flex-col items-center justify-center p-1 bg-surface-3/30 rounded-[6px] border border-border/5"
+                    className="bg-surface-3/30 border border-border/5 rounded-[6px] p-2 flex flex-col items-center justify-center"
                   >
-                    <span className="text-[6px] font-black text-muted/40 uppercase tracking-[0.1em] mb-0.5">
+                    <span className="text-[7px] font-black text-muted/50 uppercase tracking-widest mb-1">
                       {stat.label}
                     </span>
                     <span
-                      className={`text-[10px] font-black tabular-nums ${stat.color}`}
+                      className={`text-[11px] font-black tabular-nums ${stat.color}`}
                     >
                       {stat.value || 0}%
                     </span>
@@ -109,149 +111,133 @@ export default function WritingHub({
               </div>
             </div>
 
-            {/* Linguistic Health Summary */}
-            <div className="bg-surface-2/30 border border-border/10 p-2 rounded-[8px] grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="h-3 w-3 text-pink-400" />
-                    <span className="text-[8px] font-black text-muted uppercase tracking-widest">
-                      Cohesion
-                    </span>
-                  </div>
-                  <span className="text-[9px] font-black text-pink-500 tabular-nums">
-                    {diagnostics.flow || 0}%
-                  </span>
-                </div>
-                <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${diagnostics.flow || 0}%` }}
-                    className="h-full bg-pink-500"
-                  />
-                </div>
+            {/* Section 2: Linguistic Rigor & Flags */}
+            <div className="space-y-2.5">
+              <div className="px-1">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">
+                  Linguistic Rigor
+                </span>
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <RotateCcw className="h-3 w-3 text-emerald-400" />
-                    <span className="text-[8px] font-black text-muted uppercase tracking-widest">
-                      Rhythm
-                    </span>
-                  </div>
-                  <span className="text-[9px] font-black text-emerald-500 tabular-nums">
-                    {diagnostics.rhythm || 0}%
-                  </span>
+              <div className="px-1 py-1 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    {
+                      label: "Cohesion",
+                      value: diagnostics.flow || 0,
+                      color: "bg-pink-500",
+                      text: "text-pink-400",
+                    },
+                    {
+                      label: "Rhythm",
+                      value: diagnostics.rhythm || 0,
+                      color: "bg-emerald-500",
+                      text: "text-emerald-400",
+                    },
+                  ].map((m) => (
+                    <div key={m.label} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-black text-muted uppercase tracking-widest">
+                          {m.label}
+                        </span>
+                        <span
+                          className={`text-[9px] font-black tabular-nums ${m.text}`}
+                        >
+                          {m.value}%
+                        </span>
+                      </div>
+                      <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${m.value}%` }}
+                          className={`h-full ${m.color}`}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${diagnostics.rhythm || 0}%` }}
-                    className="h-full bg-emerald-500"
-                  />
+
+                <div className="flex items-center justify-between pt-3 border-t border-border/5">
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em]">
+                      Rigor Index
+                    </span>
+                    <p className="text-[10px] font-black text-text uppercase tracking-tight">
+                      IELTS Band Estimate
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[28px] font-black tabular-nums leading-none text-blue-400">
+                      {diagnostics.ielts || diagnostics.ieltsBand || "N/A"}
+                    </span>
+                    <p className="text-[6px] font-black text-muted uppercase tracking-widest mt-1">
+                      Band Est.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-border/5">
+                  <span className="text-[10px] font-black text-text uppercase tracking-widest">
+                    Detected Flags
+                  </span>
+                  <span className="text-[14px] font-black text-blue-400 tabular-nums">
+                    {anomalies.length}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Rigor Score Card */}
-            <div className="bg-surface-2/30 border border-border/10 p-2 rounded-[8px] space-y-2">
-              {/* this my "rigor index" - the final academic verdict */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">
-                    Rigor Index
-                  </span>
-                  <p className="text-[12px] font-black text-text tracking-tight uppercase leading-tight">
-                    IELTS Band Estimate
-                  </p>
-                </div>
-                <div className="text-right flex flex-col items-end min-w-[80px]">
-                  <div className="flex flex-col items-end">
-                    <span className="text-[32px] font-black tabular-nums leading-none text-blue-400">
-                      {diagnostics.ielts || diagnostics.ieltsBand || "N/A"}
-                    </span>
-                    <p className="text-[6px] font-black text-muted/40 uppercase tracking-[0.2em] mt-1">
-                      Band Est.
-                    </p>
-                  </div>
-
-                  <div className="mt-3 w-full space-y-1.5">
-                    <div className="flex justify-between items-end">
-                      <span className="text-[14px] font-black text-text tabular-nums leading-none">
-                        {anomalies.length}
-                      </span>
-                      {/* this my "anomaly heat bar" - when it turns red, i know i've got work to do */}
-                      <span className="text-[7px] font-black text-muted uppercase tracking-widest">
-                        Detected Flags
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full bg-surface-3 rounded-full overflow-hidden border border-border/10 relative">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{
-                          width: `${Math.min(100, (anomalies.length / 20) * 100)}%`,
-                        }}
-                        className={`h-full ${anomalies.length > 10 ? "bg-red-500" : anomalies.length > 5 ? "bg-orange-500" : "bg-blue-500"} transition-all duration-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]`}
-                      />
-                    </div>
-                  </div>
-                </div>
+            {/* Section 3: Anomaly Map Feed */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">
+                  Anomaly Map
+                </span>
+                <span className="text-[8px] font-black text-blue-400/40 uppercase tracking-widest">
+                  {anomalies.length} Flagged
+                </span>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between px-1">
-                  <h3 className="text-[9px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-blue-400" />
-                    Anomaly Map
-                  </h3>
-                  <span className="text-[7px] font-black text-blue-400/40 uppercase tracking-widest">
-                    {anomalies.length} Flagged
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  {/* this my "forensic timeline" - every single flag mapped out in order */}
-                  {anomalies.map((hl, i) => (
-                    <motion.div
-                      key={i}
-                      id={`anomaly-${i + 1}`}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      onClick={() => scrollToHl(i + 1)}
-                      className={`p-1.5 bg-surface-2/50 border border-border/10 rounded-[6px] space-y-1 group hover:border-blue-500/20 transition-all cursor-pointer relative overflow-hidden`}
-                    >
-                      <div
-                        className={`absolute left-0 top-0 bottom-0 w-1 ${getCategoryColor(hl.type).replace("text-", "bg-")}`}
-                      />
-
-                      <div className="px-2 py-1.5 border-b border-border/10 bg-surface-3/30 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-2.5 w-2.5 text-blue-400" />
-                          <span className="text-[7px] font-black uppercase tracking-[0.2em] text-muted">
-                            Neural Action
-                          </span>
-                        </div>
-                        <span
-                          className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
-                        >
-                          {hl.type}
+              <div className="space-y-3 pb-12">
+                {anomalies.map((hl, i) => (
+                  <motion.div
+                    key={i}
+                    id={`anomaly-${i + 1}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => scrollToHl(i + 1)}
+                    className="group relative bg-surface border border-border/20 shadow-sm rounded-[12px] overflow-hidden transition-all hover:border-blue-500/30 cursor-pointer"
+                  >
+                    {/* Titlebar - h-8 */}
+                    <div className="h-8 px-3 border-b border-border/10 bg-surface-3/30 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 h-full">
+                        <Zap className="h-3 w-3 text-blue-400" />
+                        <span className="text-[7px] font-black uppercase tracking-[0.2em] text-muted/60">
+                          Neural Audit
                         </span>
                       </div>
+                      <span
+                        className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
+                      >
+                        {hl.type}
+                      </span>
+                    </div>
 
+                    <div className="p-3.5 space-y-3.5">
+                      {/* Content: Reason & Forensic Detail */}
                       <div className="space-y-1">
-                        <p className="text-[11px] font-black text-text/80 leading-snug">
+                        <p className="text-[11px] font-black text-text/90 leading-snug">
                           {hl.reason || hl.message}
                         </p>
+                        {hl.explanation && (
+                          <p className="text-[9px] text-muted leading-relaxed opacity-60 font-medium">
+                            {hl.explanation}
+                          </p>
+                        )}
                       </div>
 
-                      {hl.explanation && (
-                        <p className="text-[9px] text-muted leading-relaxed opacity-60">
-                          {hl.explanation}
-                        </p>
-                      )}
-
-                      <div className="pt-2 flex flex-wrap gap-1.5 border-t border-border/5">
+                      {/* Correction Options - 1:1 Parity with WritingMenu */}
+                      <div className="space-y-2">
                         {(() => {
                           const suggestions = Array.isArray(hl.suggestions)
                             ? hl.suggestions
@@ -261,36 +247,46 @@ export default function WritingHub({
 
                           if (suggestions.length === 0) {
                             return (
-                              <div className="w-full py-2 flex flex-col items-center justify-center gap-2 bg-surface-3/50 border border-border/5 rounded-[4px] border-dashed">
-                                <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                                  No Neural Auto-Fix Available
+                              <div className="py-2.5 flex items-center justify-center gap-2 bg-surface-3/20 border border-dashed border-border/10 rounded-[8px]">
+                                <EyeOff className="h-3 w-3 text-muted/20" />
+                                <span className="text-[8px] font-black text-muted/30 uppercase tracking-widest">
+                                  Manual Fix Required
                                 </span>
                               </div>
                             );
                           }
 
                           return suggestions.map((s, si) => (
-                            <div key={si} className="space-y-1.5 w-full">
-                              {/* Section 3: Word & Suggestion */}
-                              <div className="flex flex-col gap-1 p-1.5 bg-blue-500/5 border border-blue-500/10 rounded-[4px]">
-                                <span className="text-[9px] font-black text-text/40  ">
-                                  {truncateChars(
-                                    content.substring(hl.start, hl.end),
-                                    40,
-                                  )}
-                                </span>
-                                <div className="flex items-center gap-1.5">
-                                  <ArrowRight className="h-2 w-2 text-blue-400 shrink-0" />
-                                  <span className="text-[10px] font-black text-blue-400 leading-snug">
+                            <div key={si} className="group/suggest space-y-3">
+                              <div className="flex items-center gap-3 py-1">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[7px] font-black text-muted/30 uppercase tracking-widest mb-1">
+                                    Current
+                                  </p>
+                                  <p className="text-[11px] font-black text-text/40 truncate italic leading-none">
+                                    {truncateChars(
+                                      content.substring(hl.start, hl.end),
+                                      15,
+                                    )}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center justify-center">
+                                  <ArrowRight className="h-3 w-3 text-blue-400/30 group-hover/suggest:text-blue-400 transition-colors" />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[7px] font-black text-blue-400/40 uppercase tracking-widest mb-1">
+                                    Suggest
+                                  </p>
+                                  <p className="text-[11px] font-black text-blue-400 leading-none truncate">
                                     {s}
-                                  </span>
+                                  </p>
                                 </div>
                               </div>
 
-                              {/* Section 4: Action Section (Bottom Right) */}
-                              <div className="flex justify-end pt-1 border-t border-border/5">
+                              <div className="flex justify-end pt-1">
                                 <button
-                                  // this my "neural bridge" - the button that triggers my ghost preview animation
                                   onMouseEnter={() =>
                                     setGhostPreview({
                                       start: hl.start,
@@ -302,7 +298,7 @@ export default function WritingHub({
                                     e.stopPropagation();
                                     onApplySuggestion(s, hl);
                                   }}
-                                  className="px-3 py-1 bg-blue-500 text-white text-[9px] font-black rounded-[4px] hover:brightness-110 transition-all shadow-sm"
+                                  className="px-6 py-1.5 bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-black uppercase tracking-[0.1em] rounded-[8px] transition-all shadow-lg shadow-blue-500/10 active:scale-[0.98]"
                                 >
                                   Apply
                                 </button>
@@ -311,9 +307,9 @@ export default function WritingHub({
                           ));
                         })()}
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </div>

@@ -108,19 +108,25 @@ export default function Sidebar({
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin p-3 space-y-8`}>
-          
+        <div
+          className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin p-3 space-y-8`}
+        >
           {/* Primary Navigation */}
           <div className="space-y-1">
             {!isCollapsed && (
               <div className="px-2 mb-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">Navigation</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted/20">
+                  Navigation
+                </p>
               </div>
             )}
             {navItems.map((item) => {
               const active = view === item.id;
               return (
-                <div key={item.id} className="group relative flex justify-center">
+                <div
+                  key={item.id}
+                  className="group relative flex justify-center"
+                >
                   {!isCollapsed && active && (
                     <div className="absolute left-0 w-[1.5px] h-3 top-1/2 -translate-y-1/2 bg-accent opacity-100" />
                   )}
@@ -128,12 +134,18 @@ export default function Sidebar({
                     onClick={() => setView?.(item.id)}
                     className={`flex items-center transition-all duration-200 text-left shrink-0 ${
                       isCollapsed
-                        ? `w-10 h-10 justify-center rounded-full border-0 ${active ? "bg-accent/10 text-accent shadow-[inset_0_0_0_1px_rgba(var(--accent-rgb),0.1)]" : "text-muted/40 hover:bg-surface-3 hover:text-text"}`
-                        : `w-full gap-3 px-3 py-2 rounded-[5px] border ${active ? "bg-accent/10 border-accent/10 text-accent font-black shadow-sm" : "border-transparent text-muted hover:bg-surface-3 hover:text-text"}`
+                        ? `w-10 h-10 justify-center rounded-full border-0  ${active ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-accent/10 hover:text-accent "}`
+                        : `w-full gap-3 px-3 py-2 rounded-[5px] border border-transparent ${active ? "bg-accent/10 text-accent font-black bg-gray-200" : "text-muted hover:bg-gray-200 hover:text-accent"}`
                     }`}
                   >
-                    <item.icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`} />
-                    {!isCollapsed && <span className="text-[11px] font-black truncate flex-1">{item.name}</span>}
+                    <item.icon
+                      className={`h-3.5 w-3.5 shrink-0 ${active ? "text-accent" : "opacity-40 group-hover:opacity-100"}`}
+                    />
+                    {!isCollapsed && (
+                      <span className="text-[11px] font-black truncate flex-1">
+                        {item.name}
+                      </span>
+                    )}
                     {isCollapsed && (
                       <div className="absolute left-full ml-4 px-3 py-1.5 bg-text text-background text-[10px] font-black opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-border z-[120] uppercase tracking-widest">
                         {item.name}
@@ -144,7 +156,6 @@ export default function Sidebar({
               );
             })}
           </div>
-
         </div>
 
         <SidebarFooter isCollapsed={isCollapsed} setView={setView} />

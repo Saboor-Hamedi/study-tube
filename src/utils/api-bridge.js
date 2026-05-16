@@ -522,6 +522,9 @@ const HybridRouter = {
   updater: isElectron
     ? window.youtubeAPI.updater
     : { check: async () => ({}), install: async () => {} },
+
+  toggleDevTools: async () => 
+    isElectron ? await window.youtubeAPI.toggleDevTools() : false,
 };
 
 const api = HybridRouter;

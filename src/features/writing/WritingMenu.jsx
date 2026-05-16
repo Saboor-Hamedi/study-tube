@@ -38,24 +38,24 @@ const WritingMenu = ({
       exit={{ opacity: 0, scale: 0.95, y: isTop ? -10 : 10 }}
       className="bg-surface border border-border/20 shadow-2xl rounded-[12px] overflow-hidden w-[280px] select-text cursor-text"
     >
-      <div className="p-3 border-b border-border/10 bg-surface-3/30 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <Zap className="h-2.5 w-2.5 text-blue-400" />
+      <div className="h-8 pl-3 border-b border-border/10 bg-surface-3/30 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 h-full">
+          <Zap className="h-3 w-3 text-blue-400" />
           <span className="text-[7px] font-black uppercase tracking-[0.2em] text-muted/60">
             Audit
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center h-full">
           <span
-            className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider ${getCategoryColor(selectedHl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(selectedHl.type)}`}
+            className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider mr-2 ${getCategoryColor(selectedHl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(selectedHl.type)}`}
           >
             {selectedHl.type}
           </span>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-surface-4 rounded-full transition-colors text-muted hover:text-text"
+            className="h-full w-8 flex items-center justify-center hover:bg-red-500/10 transition-colors text-muted hover:text-red-500 border-l border-border/10"
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -128,14 +128,16 @@ const WritingMenu = ({
                     </div>
                   </div>
 
-                  <button
-                    onMouseEnter={() => setGhostPreview({ start: selectedHl.start, suggestion: s })}
-                    onMouseLeave={() => setGhostPreview(null)}
-                    onClick={() => onApplySuggestion(s, selectedHl)}
-                    className="w-full py-2 bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-black uppercase tracking-[0.1em] rounded-[8px] transition-all shadow-lg shadow-blue-500/10 active:scale-[0.98]"
-                  >
-                    Apply Neural Logic
-                  </button>
+                  <div className="flex justify-end pt-1">
+                    <button
+                      onMouseEnter={() => setGhostPreview({ start: selectedHl.start, suggestion: s })}
+                      onMouseLeave={() => setGhostPreview(null)}
+                      onClick={() => onApplySuggestion(s, selectedHl)}
+                      className="px-6 py-1.5 bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-black uppercase tracking-[0.1em] rounded-[8px] transition-all shadow-lg shadow-blue-500/10 active:scale-[0.98]"
+                    >
+                      Apply
+                    </button>
+                  </div>
                 </div>
               ));
             })()}

@@ -96,4 +96,6 @@ contextBridge.exposeInMainWorld('youtubeAPI', {
   getForensicWhitelistMetadata: () => ipcRenderer.invoke("forensic:get-metadata"),
   addForensicWord: (word) => ipcRenderer.invoke("forensic:add-word", word),
   removeForensicWord: (word) => ipcRenderer.invoke("forensic:remove-word", word),
+  toggleDevTools: () => ipcRenderer.invoke("settings:toggle-dev-tools"),
+  getDocs: () => ipcRenderer.invoke("docs:load"),
 })

@@ -1,7 +1,7 @@
 import React from "react";
 import { Settings } from "lucide-react";
 
-export default function SidebarFooter({ isCollapsed, setView }) {
+export default function SidebarFooter({ isCollapsed, setView, view }) {
   return (
     <div
       className={`px-3 border-t border-border bg-surface-3 transition-colors duration-500 flex flex-col justify-center h-[40px] ${isCollapsed ? "items-center" : ""}`}
@@ -12,8 +12,8 @@ export default function SidebarFooter({ isCollapsed, setView }) {
           style={isCollapsed ? { width: "32px", height: "32px" } : {}}
           className={`flex items-center transition-all duration-200 text-left ${
             isCollapsed
-              ? "justify-center rounded-full text-muted/40 hover:bg-surface-2 hover:text-text"
-              : "w-full gap-3 px-3 py-2 rounded-[5px] text-muted hover:bg-surface-2 hover:text-text"
+              ? `justify-center rounded-full ${view === "settings" ? "bg-accent/10 text-accent" : "text-muted/40 hover:bg-accent/10 hover:text-accent"}`
+              : `w-full gap-3 px-3 py-2 rounded-[5px] ${view === "settings" ? "bg-accent/10 text-accent font-black" : "text-muted hover:bg-accent/10 hover:text-accent"}`
           }`}
         >
           <Settings className="h-3.5 w-3.5 shrink-0" />

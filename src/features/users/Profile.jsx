@@ -251,9 +251,9 @@ const Profile = ({
                         historyRef={historyRef}
                       />
                     ) : (
-                      <div className="flex flex-col h-full bg-surface overflow-hidden">
+                      <div className="flex flex-col h-full bg-surface p-1 overflow-hidden">
                         <div className="flex-1 overflow-y-auto custom-scroll">
-                          <div className="p-1 w-full pb-20">
+                          <div className="pb-20 w-full">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
                               {vocab
                                 .filter((v) => !v.archived)
@@ -261,7 +261,7 @@ const Profile = ({
                                 .map((item) => (
                                   <motion.div
                                     key={item.id}
-                                    initial={{ opacity: 0, y: 10 }}
+                                    initial={false}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="h-auto min-h-[150px] flex flex-col transition-all duration-500 border rounded-[5px] overflow-hidden border-border/10 bg-surface-2/50 group hover:border-blue-500/20 transition-all cursor-pointer relative shadow-sm"
                                     onClick={() => handleLoadDraft(item)}

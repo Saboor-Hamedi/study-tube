@@ -134,7 +134,7 @@ const LibraryView = ({
                         Neural Archive
                       </span>
                     </div>
-                    
+
                     <div className="min-w-0 space-y-1">
                       <h4 className="text-[12px] font-black text-text leading-snug group-hover:text-accent transition-colors line-clamp-2">
                         {truncateWords(v.text, 15)}
@@ -155,7 +155,9 @@ const LibraryView = ({
                   {/* Beautiful Slim Footer */}
                   <div className="px-3 py-1.5 bg-surface-2/30 border-t border-border/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                       <span className="text-[6px] font-black text-muted/30 uppercase tracking-[0.2em]">Diagnostic Node</span>
+                      <span className="text-[6px] font-black text-muted/30 uppercase tracking-[0.2em]">
+                        Diagnostic Node
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -177,7 +179,10 @@ const LibraryView = ({
                                   vocab.filter((item) => item.id !== v.id),
                                 );
                                 if (showToast)
-                                  showToast("Fragment Decommissioned", "success");
+                                  showToast(
+                                    "Fragment Decommissioned",
+                                    "success",
+                                  );
                               }
                             } catch (err) {
                               console.error("Purge failure:", err);
@@ -209,10 +214,9 @@ const LibraryView = ({
   }, [filteredVocab, displayLimit, onExpand, api, setVocab, vocab, showToast]);
 
   return (
-    <div className="h-full flex flex-col bg-surface text-text font-sans relative overflow-hidden select-text">
-
+    <div className="h-full flex flex-col bg-surface text-text p-1 font-sans relative overflow-hidden select-text">
       <div className="flex-1 overflow-y-auto custom-scroll ">
-        <div className="p-1 md:p-6 pb-128">
+        <div className="pb-20">
           <div className="max-w-[1400px] mx-auto relative ">
             <AnimatePresence>
               {loading && (

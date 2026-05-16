@@ -621,6 +621,8 @@ async function downloadVideo({
 }
 
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
+let allowDevTools = false;
+
 function registerIpcHandlers() {
   console.log("[SENTRY] Bootstrapping Neural IPC Bridge...");
   const safeHandle = (channel, fn) => {
@@ -902,6 +904,10 @@ function registerIpcHandlers() {
   });
   safeHandle("grammar:check", async () => {
     return loadGrammars();
+  });
+
+  safeHandle("docs:load", async () => {
+    return loadDocs();
   });
 
   safeHandle("download:start", async (event, payload) => {
@@ -1271,6 +1277,11 @@ function registerIpcHandlers() {
     return { success: true, message: "Cloud Bridge Active" };
   });
 
+  safeHandle("settings:toggle-dev-tools", () => {
+    allowDevTools = !allowDevTools;
+    return allowDevTools;
+  });
+
   ipcMain.handle("ai:explain", async (_e, { text, videoTitle }) => {
     const apiKey = resolveAiApiKey();
     if (!apiKey) return { text, definition: "No API Key" };
@@ -1423,27 +1434,28 @@ function createWindow() {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      devTools: !app.isPackaged,
       webSecurity: false,
     },
   });
 
-  // Smart DevTool Protocol: Disable shortcuts in production
+  // Smart DevTool Protocol: Disable shortcuts in production by default, but allow toggling
   if (app.isPackaged) {
     mainWindow.removeMenu();
     mainWindow.webContents.on("devtools-opened", () => {
-      mainWindow.webContents.closeDevTools();
+      if (!allowDevTools) mainWindow.webContents.closeDevTools();
     });
     mainWindow.webContents.on("before-input-event", (event, input) => {
-      if (
-        (input.control || input.meta) &&
-        input.shift &&
-        input.key.toLowerCase() === "i"
-      ) {
-        event.preventDefault();
-      }
-      if (input.key === "F12") {
-        event.preventDefault();
+      if (!allowDevTools) {
+        if (
+          (input.control || input.meta) &&
+          input.shift &&
+          input.key.toLowerCase() === "i"
+        ) {
+          event.preventDefault();
+        }
+        if (input.key === "F12") {
+          event.preventDefault();
+        }
       }
     });
   }
@@ -1568,10 +1580,41 @@ app.whenReady().then(async () => {
 // Grammar
 
 function loadGrammars() {
-  const dir = path.join(__dirname, "grammars");
+  let dir = app.isPackaged 
+    ? path.join(__dirname, "../dist/grammars") 
+    : path.join(__dirname, "../public/grammars");
+
+  if (!fs.existsSync(dir)) {
+    dir = path.join(__dirname, "grammars"); // Fallback
+  }
   if (!fs.existsSync(dir)) return [];
 
-  const files = fs.readdirSync(dir);
+  const files = fs.readdirSync(dir).filter(f => f.endsWith(".md"));
+
+  // Sort: Move introduction.md to the front
+  const sortedFiles = files.sort((a, b) => {
+    if (a.toLowerCase() === "introduction.md") return -1;
+    if (b.toLowerCase() === "introduction.md") return 1;
+    return a.localeCompare(b);
+  });
+
+  return sortedFiles.map((file) => ({
+    name: file,
+    content: fs.readFileSync(path.join(dir, file), "utf-8"),
+  }));
+}
+
+function loadDocs() {
+  let dir = app.isPackaged 
+    ? path.join(__dirname, "../dist/docs") 
+    : path.join(__dirname, "../public/docs");
+
+  if (!fs.existsSync(dir)) {
+    dir = path.join(__dirname, "docs"); // Fallback
+  }
+  if (!fs.existsSync(dir)) return [];
+
+  const files = fs.readdirSync(dir).filter(f => f.endsWith(".md"));
 
   // Sort: Move introduction.md to the front
   const sortedFiles = files.sort((a, b) => {

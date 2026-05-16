@@ -60,9 +60,9 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-surface overflow-hidden">
+    <div className="flex flex-col h-full bg-surface p-1 overflow-hidden">
       <div className="flex-1 overflow-y-auto custom-scroll">
-        <div className="p-1 md:p-6 pb-20">
+        <div className="pb-20 min-h-full flex flex-col">
           {/* Global Trash Actions */}
           {trashItems.length > 0 && (
             <div className="flex items-center justify-end gap-2 mb-3 px-2">
@@ -86,7 +86,7 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
             </div>
           )}
           {loading ? (
-            <div className="h-full py-20 flex flex-col items-center justify-center gap-4">
+            <div className="flex-1 py-20 flex flex-col items-center justify-center gap-4">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent/40" />
               <span className="text-[9px] font-black uppercase tracking-widest text-muted/40">
                 Synchronizing Void...
@@ -99,7 +99,7 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
                   <motion.div
                     key={item.id}
                     layout
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="h-auto min-h-[150px] flex flex-col transition-all duration-500 border rounded-[5px] overflow-hidden border-border/10 bg-surface-2/50 group hover:border-red-500/20 transition-all cursor-pointer relative shadow-sm"
@@ -174,15 +174,12 @@ const LibraryTrash = ({ api, showToast, onRestore, onDeletePermanent }) => {
               </AnimatePresence>
             </div>
           ) : (
-            <div className="h-full py-20 flex flex-col items-center justify-center text-center space-y-3 opacity-20">
+            <div className="flex-1 py-20 flex flex-col items-center justify-center text-center space-y-3 opacity-20">
               <Trash2 className="h-12 w-12 text-muted" />
-              <div className="space-y-1">
+              <div className="space-y-1 mx-auto">
                 <h3 className="text-[11px] font-black uppercase tracking-[0.2em]">
                   The Void is Empty
                 </h3>
-                <p className="text-[9px] font-medium uppercase tracking-widest">
-                  No neural fragments detected in disposal stream.
-                </p>
               </div>
             </div>
           )}
