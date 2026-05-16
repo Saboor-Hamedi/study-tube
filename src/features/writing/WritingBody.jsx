@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PulseLoader from "../research-vault/PulseLoader";
 
@@ -18,19 +18,36 @@ const WritingBody = ({
   floatingMenu,
 }) => {
   const textareaRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const savedScrollTop = useRef(0);
 
-  // this my "auto-growing editor" - keeps the workspace clean as i write more
   useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      savedScrollTop.current = container.scrollTop;
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useLayoutEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height =
         textareaRef.current.scrollHeight + "px";
     }
-  }, [content]);
+
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = savedScrollTop.current;
+    }
+  }, [content, isAnalyzing]);
 
   return (
     <div className="flex-1 min-w-0 flex flex-col bg-surface relative z-[70] selection:bg-blue-500/10">
-      <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative">
+      <div ref={scrollContainerRef} className="flex-1 min-w-0 overflow-y-auto custom-scroll relative">
         {floatingMenu}
         {/* this my "document canvas" - true full-width layout with scroll clearance */}
         <div className="w-full max-w-none p-4 md:px-6 md:py-10 pb-96 min-h-full flex flex-col relative select-text cursor-text">
@@ -50,7 +67,7 @@ const WritingBody = ({
 
           {isAnalyzing ? (
             <div className="w-full relative">
-              <div className="w-full text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text cursor-text">
+              <div className="w-full p-0 m-0 border-none box-border text-[14px] md:text-[18px] text-text/90 leading-[1.8] md:leading-[2.2] font-light tracking-wide whitespace-pre-wrap break-words font-outfit select-text cursor-text">
                 {(() => {
                   let lastIndex = 0;
                   const elements = [];
@@ -155,8 +172,7 @@ const WritingBody = ({
               onChange={(e) => setContent(e.target.value)}
               onBlur={() => takeSnapshot(content)}
               placeholder="Paste academic manuscript for neural forensic auditing..."
-              // this my "industrial editor" - matched line-height exactly with read-mode to prevent jumping
-              className="flex-1 w-full min-h-[400px] md:min-h-full bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.8] md:leading-[2.2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-y-auto custom-scroll font-outfit select-text cursor-text"
+              className="w-full p-0 m-0 border-none box-border bg-transparent text-text/80 text-[14px] md:text-[18px] leading-[1.8] md:leading-[2.2] font-light tracking-wide focus:outline-none resize-none placeholder:text-muted/20 overflow-hidden font-outfit select-text cursor-text"
             />
           )}
         </div>
