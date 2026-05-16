@@ -71,48 +71,56 @@ const WritingBody = ({
                           scrollToAnomaly(i + 1);
                         }}
                       >
-                        <span
-                          // this my "zero-shift grid" - back to the stack but with better baseline logic
-                          className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline rounded-sm transition-colors duration-200"
-                          style={{ display: "inline-grid" }}
-                        >
-                          {/*  this my "old word sliding up" */}
-                          <motion.span
-                            className="grid-area-1-1 font-light tracking-wide px-[2px] mx-[0.5px] rounded-[2px]"
-                            style={{
-                              gridArea: "1/1",
-                              // this my "industrial highlight" - clean colors with microscopic vertical gaps to prevent merging
-                              background: `linear-gradient(to bottom, transparent 4%, ${getCategoryBg(hl.type)} 4%, ${getCategoryBg(hl.type)} 95%, transparent 95%)`,
-                            }}
-                            animate={{
-                              y: ghostPreview?.start === hl.start ? -15 : 0,
-                              opacity: ghostPreview?.start === hl.start ? 0 : 1,
-                            }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                          >
-                            {content.substring(hl.start, hl.end)}
-                          </motion.span>
+                        {content
+                          .substring(hl.start, hl.end)
+                          .split("\n")
+                          .map((part, partIdx, arr) => (
+                            <React.Fragment key={partIdx}>
+                              {partIdx > 0 && "\n"}
+                              <span
+                                // this my "zero-shift grid" - back to the stack but with better baseline logic
+                                className="relative inline-grid grid-cols-1 grid-rows-1 align-baseline rounded-sm transition-colors duration-200"
+                                style={{ display: "inline-grid" }}
+                              >
+                                {/* this my "old word sliding up" */}
+                                <motion.span
+                                  className="grid-area-1-1 font-light tracking-wide px-[2px] mx-[0.5px] rounded-[2px]"
+                                  style={{
+                                    gridArea: "1/1",
+                                    // this my "industrial highlight" - clean colors with microscopic vertical gaps to prevent merging
+                                    background: `linear-gradient(to bottom, transparent 4%, ${getCategoryBg(hl.type)} 4%, ${getCategoryBg(hl.type)} 95%, transparent 95%)`,
+                                  }}
+                                  animate={{
+                                    y: ghostPreview?.start === hl.start ? -15 : 0,
+                                    opacity: ghostPreview?.start === hl.start ? 0 : 1,
+                                  }}
+                                  transition={{ duration: 0.2, ease: "easeOut" }}
+                                >
+                                  {part}
+                                </motion.span>
 
-                          {/* this my "new word sliding in" - showing me the future before i commit */}
-                          {ghostPreview?.start === hl.start && (
-                            <motion.span
-                              initial={{ y: 15, opacity: 0 }}
-                              animate={{ y: 0, opacity: 1 }}
-                              transition={{ duration: 0.2, ease: "easeOut" }}
-                              // this my "ghost stack" - sharing the exact same grid space as the original
-                              className="grid-area-1-1 font-light tracking-wide whitespace-nowrap text-[14px] md:text-[18px] pointer-events-none select-none"
-                              style={{ gridArea: "1/1" }}
-                            >
-                              {ghostPreview.suggestion === "Omit" ? (
-                                <span className="opacity-20 line-through">
-                                  {content.substring(hl.start, hl.end)}
-                                </span>
-                              ) : (
-                                ghostPreview.suggestion
-                              )}
-                            </motion.span>
-                          )}
-                        </span>
+                                {/* this my "new word sliding in" - showing me the future before i commit */}
+                                {ghostPreview?.start === hl.start && partIdx === arr.length - 1 && (
+                                  <motion.span
+                                    initial={{ y: 15, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.2, ease: "easeOut" }}
+                                    // this my "ghost stack" - sharing the exact same grid space as the original
+                                    className="grid-area-1-1 font-light tracking-wide whitespace-nowrap text-[14px] md:text-[18px] pointer-events-none select-none"
+                                    style={{ gridArea: "1/1" }}
+                                  >
+                                    {ghostPreview.suggestion === "Omit" ? (
+                                      <span className="opacity-20 line-through">
+                                        {part}
+                                      </span>
+                                    ) : (
+                                      ghostPreview.suggestion
+                                    )}
+                                  </motion.span>
+                                )}
+                              </span>
+                            </React.Fragment>
+                          ))}
                         <span
                           // this my "anomaly index" - perfect circles for an industrial look
                           className={`absolute -top-3.5 -right-3.5 w-5 h-5 flex items-center justify-center text-[9px] font-black rounded-full shadow-sm border border-white/10 select-none cursor-pointer ${getCategoryColor(hl.type)} ${getCategoryColor(
