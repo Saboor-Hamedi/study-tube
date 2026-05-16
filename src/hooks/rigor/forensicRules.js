@@ -591,7 +591,7 @@ export const forensicRules = [
 
   // Technical & Symbol Anomalies (RED)
   {
-    regex: /([a-z]+)[^a-z\s0-9.?!,;:'"\-]+([a-z]+)/gi,
+    regex: /([a-z]+)[^a-z\s0-9.?!,;:'"\-\(\)\[\]_\/&@]+([a-z]+)/gi,
     type: "spelling",
     suggestion: "$1$2",
     exp: "Technical character noise detected inside word structure.",

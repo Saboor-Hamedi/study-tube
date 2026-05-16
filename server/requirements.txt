@@ -6,3 +6,4 @@ yt-dlp
 youtube-transcript-api
 python-dotenv
 spacy
+sentence-transformers

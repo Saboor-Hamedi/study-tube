@@ -230,10 +230,11 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    from forensic_logic import nlp
+    from forensic_logic import nlp, minilm_model
     return {
         "status": "online",
         "engine": "ready" if nlp else "blind",
+        "minilm": "ready" if minilm_model else "blind",
         "model": "en_core_web_sm"
     }
 

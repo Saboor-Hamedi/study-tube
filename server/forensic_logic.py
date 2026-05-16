@@ -14,6 +14,15 @@ except:
     print("[FORENSIC ENGINE] Model 'en_core_web_sm' missing. Run: python -m spacy download en_core_web_sm")
     nlp = None
 
+# INDUSTRIAL COLLOCATION EMBEDDINGS (MiniLM)
+try:
+    from sentence_transformers import SentenceTransformer, util
+    minilm_model = SentenceTransformer("all-MiniLM-L6-v2")
+    print("[FORENSIC ENGINE] MiniLM Collocation Embeddings: LOADED ('all-MiniLM-L6-v2')")
+except:
+    minilm_model = None
+    print("[FORENSIC ENGINE] SentenceTransformer missing or model not downloaded. Collocation check will bypass.")
+
 def analyze_linguistics(text: str) -> List[Dict]:
     """
     Performs a deep structural audit of the text using POS tagging and Dependency Parsing.
@@ -232,9 +241,18 @@ def analyze_linguistics(text: str) -> List[Dict]:
         if token.pos_ == "DET" and token.dep_ == "det":
             noun = token.head
             if noun.pos_ == "NOUN":
-                det_plural = token.text.lower() in ["those", "these", "many", "several", "few"]
+                det_plural = token.text.lower() in [
+                    "those", "these", "many", "several", "few", 
+                    "various", "numerous", "multiple", "both", "certain", "fewer"
+                ]
                 noun_plural = noun.tag_ in ["NNS", "NNPS"]
-                if det_plural != noun_plural and token.text.lower() not in ["the", "a", "an", "some", "any", "no", "all"]:
+                neutral_dets = [
+                    "the", "a", "an", "some", "any", "no", "all", "what", "which", "whose",
+                    "my", "your", "his", "her", "its", "our", "their",
+                    "such", "other", "enough", "more", "most", "less", "least",
+                    "whichever", "whatever"
+                ]
+                if det_plural != noun_plural and token.text.lower() not in neutral_dets:
                     highlights.append({
                         "start": token.idx,
                         "end": token.idx + len(token.text),
@@ -430,13 +448,26 @@ def analyze_linguistics(text: str) -> List[Dict]:
                 is_aux = token.dep_ in ["aux", "auxpass"]
                 is_negated = any(c.dep_ == "neg" for c in token.children) or any(c.text == "n't" for c in token.children)
                 if not is_aux and not is_negated:
+                    suggested_word = strength_map[word_lower]
+                    collocation_warning = ""
+                    if minilm_model:
+                        try:
+                            sent_text = token.sent.text
+                            word_emb = minilm_model.encode(suggested_word, convert_to_tensor=True)
+                            sent_emb = minilm_model.encode(sent_text, convert_to_tensor=True)
+                            sim = util.cos_sim(word_emb, sent_emb).item()
+                            if sim < 0.15:
+                                collocation_warning = f" (Note: Neural collocation similarity is low [{sim:.2f}]. Verify context fit.)"
+                        except Exception as e:
+                            print(f"[FORENSIC] MiniLM Collocation Error: {e}")
+
                     highlights.append({
                         "start": token.idx,
                         "end": token.idx + len(token.text),
                         "type": "diction",
                         "reason": "Weak Academic Verb",
-                        "suggestion": strength_map[word_lower],
-                        "explanation": f"The word '{token.text}' is vague. Consider a more precise academic alternative like '{strength_map[word_lower]}'."
+                        "suggestion": suggested_word,
+                        "explanation": f"The word '{token.text}' is vague. Consider a more precise academic alternative like '{suggested_word}'.{collocation_warning}"
                     })
                 
         # Subjective Words Check
@@ -499,7 +530,10 @@ def analyze_linguistics(text: str) -> List[Dict]:
         has_finite_verb = any(t.tag_ in ["VBP", "VBZ", "VBD", "MD"] for t in sent)
         is_non_finite_root = root.tag_ in ["VBG", "VBN"] and not any(t.dep_ in ["aux", "auxpass"] for t in root.children)
         
-        if (not has_subject or not has_finite_verb or is_non_finite_root) and len(sent) > 2:
+        # INDUSTRIAL FALLBACK: Check if there is at least one main verb/auxiliary in the sentence
+        has_main_verb = any(t.pos_ in ["VERB", "AUX"] and t.dep_ != "relcl" for t in sent)
+        
+        if (not has_subject or not has_finite_verb or is_non_finite_root) and not has_main_verb and len(sent) > 2:
             if sent[-1].text in [".", "!", "?"]:
                 highlights.append({
                     "start": sent.start_char,
@@ -542,7 +576,21 @@ def analyze_linguistics(text: str) -> List[Dict]:
         transitions = ["however", "furthermore", "moreover", "consequently", "therefore", "nevertheless", "additionally", "similarly", "consequently"]
         found_transitions = [t for t in transitions if t in para.lower()]
         
-        if len(para_doc) > 60 and len(found_transitions) < 1:
+        # NEURAL COHESION FALLBACK (MiniLM)
+        neural_cohesion_ok = False
+        if len(found_transitions) < 1 and minilm_model and len(sentences) >= 2:
+            try:
+                sims = []
+                for i in range(len(sentences) - 1):
+                    emb1 = minilm_model.encode(sentences[i].text, convert_to_tensor=True)
+                    emb2 = minilm_model.encode(sentences[i+1].text, convert_to_tensor=True)
+                    sims.append(util.cos_sim(emb1, emb2).item())
+                if sum(sims) / len(sims) > 0.30: # Strong semantic link between sentences
+                    neural_cohesion_ok = True
+            except Exception as e:
+                print(f"[FORENSIC] MiniLM Cohesion Error: {e}")
+        
+        if len(para_doc) > 60 and len(found_transitions) < 1 and not neural_cohesion_ok:
             highlights.append({
                 "start": start_idx,
                 "end": start_idx + min(len(para), 40), # Highlight the "Topic Sentence"

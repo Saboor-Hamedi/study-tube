@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useStore } from "../store/useStore";
 import {
   commonMistakes,
   academicLexicon,
@@ -51,6 +52,19 @@ export const useRigor = () => {
         if (!window.youtubeAPI && retries > 0) {
           setTimeout(() => loadWhitelist(retries - 1), 300);
           return;
+        }
+
+        // Check Neural Engine Health & Model Download Status
+        try {
+          const healthRes = await fetch("http://127.0.0.1:8000/health");
+          if (healthRes.ok) {
+            const health = await healthRes.json();
+            if (health.engine === "blind" || health.minilm === "blind") {
+              useStore.getState().showToast("Neural Models downloading... Please wait.", "error");
+            }
+          }
+        } catch (err) {
+          useStore.getState().showToast("Connecting to Neural Engine... (Downloading models)", "error");
         }
 
         if (window.youtubeAPI?.getForensicWhitelist) {
@@ -398,7 +412,15 @@ export const useRigor = () => {
           .replace(/’/g, "'")
           .replace(/[^a-z'-]/g, ""); // Industrial: Allow hyphens and apostrophes
 
-        if (cleanWord.length >= 3 && !truthTrie.has(cleanWord)) {
+        let isKnown = truthTrie.has(cleanWord);
+        if (!isKnown && cleanWord.includes("-")) {
+          const parts = cleanWord.split("-").filter((p) => p.length > 0);
+          if (parts.length > 0 && parts.every((p) => truthTrie.has(p))) {
+            isKnown = true;
+          }
+        }
+
+        if (cleanWord.length >= 3 && !isKnown) {
           // Only check if not already highlighted by forensic rules
           const isAlreadyFlagged = highlights.some(
             (h) => currentIndex >= h.start && currentIndex < h.end,
