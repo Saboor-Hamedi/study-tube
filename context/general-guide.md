@@ -24,6 +24,7 @@
 - **[05: Research Archival System](file:///b:/writella/context/features/05-research-archival-system.md)**: YouTube capture, FTS indexing, and PostgreSQL storage logic.
 - **[06: AI Dialogue Bridge](file:///b:/writella/context/features/06-ai-dialogue-bridge.md)**: DeepSeek integration, streaming dialogue, and contextual injection.
 - **[07: Format Synchronization Fix](file:///b:/writella/context/features/07-format-sync-fix.md)**: Solving the 'dropping character' and 'newline collapse' UI errors.
+- **[08: Hybrid Architecture Guidelines](file:///b:/writella/context/features/08-hybrid-architecture-guidelines.md)**: Enforcing IPC routing, DevTools shortcut integrity, and PostgreSQL initialization rules.
 
 ## 3. Maintenance & Safeguards (The Shield)
 

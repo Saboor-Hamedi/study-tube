@@ -1,9 +1,19 @@
 import dotenv from "dotenv";
-import { app, BrowserWindow, Notification, dialog, ipcMain, shell, Menu, MenuItem, globalShortcut } from "electron";
+import {
+  app,
+  BrowserWindow,
+  Notification,
+  dialog,
+  ipcMain,
+  shell,
+  Menu,
+  MenuItem,
+  globalShortcut,
+} from "electron";
 import path from "node:path";
 
-const envPath = app.isPackaged 
-  ? path.join(process.resourcesPath, "app.asar.unpacked", ".env") 
+const envPath = app.isPackaged
+  ? path.join(process.resourcesPath, "app.asar.unpacked", ".env")
   : path.resolve(process.cwd(), ".env");
 
 dotenv.config({ path: envPath });
@@ -1437,24 +1447,29 @@ function createWindow() {
   // Smart DevTool Protocol: Disable shortcuts in production by default, but allow toggling
   if (app.isPackaged) {
     mainWindow.removeMenu();
-    mainWindow.webContents.on("devtools-opened", () => {
-      if (!allowDevTools) mainWindow.webContents.closeDevTools();
-    });
-    mainWindow.webContents.on("before-input-event", (event, input) => {
-      if (!allowDevTools) {
-        if (
-          (input.control || input.meta) &&
-          input.shift &&
-          input.key.toLowerCase() === "i"
-        ) {
-          event.preventDefault();
-        }
-        if (input.key === "F12") {
-          event.preventDefault();
+  }
+
+  // Handle DevTools keyboard shortcuts natively since we have no Application Menu
+  mainWindow.webContents.on("devtools-opened", () => {
+    if (!allowDevTools) mainWindow.webContents.closeDevTools();
+  });
+
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    const isDevToolsKey =
+      input.key === "F12" ||
+      ((input.control || input.meta) &&
+        input.shift &&
+        input.key.toLowerCase() === "i");
+
+    if (isDevToolsKey) {
+      if (allowDevTools) {
+        if (input.type === "keyDown") {
+          mainWindow.webContents.toggleDevTools();
         }
       }
-    });
-  }
+      event.preventDefault(); // Always prevent default to stop unwanted behaviors
+    }
+  });
 
   if (isDev) mainWindow.loadURL("http://localhost:5173");
   else mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
@@ -1560,12 +1575,7 @@ app.whenReady().then(async () => {
     console.log("[SYSTEM] Launching Research Studio...");
     createWindow();
 
-    const toggleDevTools = () => {
-      const win = BrowserWindow.getFocusedWindow();
-      if (win) win.webContents.toggleDevTools();
-    };
-    globalShortcut.register("F12", toggleDevTools);
-    globalShortcut.register("CommandOrControl+Shift+I", toggleDevTools);
+    // Local shortcuts handled via before-input-event instead of OS-wide globalShortcut
 
     console.log("[SYSTEM] >>> STARTUP COMPLETE - BRIDGE ONLINE <<<");
   } catch (err) {
@@ -1576,8 +1586,8 @@ app.whenReady().then(async () => {
 // Grammar
 
 function loadGrammars() {
-  let dir = app.isPackaged 
-    ? path.join(__dirname, "../dist/grammars") 
+  let dir = app.isPackaged
+    ? path.join(__dirname, "../dist/grammars")
     : path.join(__dirname, "../public/grammars");
 
   if (!fs.existsSync(dir)) {
@@ -1585,7 +1595,7 @@ function loadGrammars() {
   }
   if (!fs.existsSync(dir)) return [];
 
-  const files = fs.readdirSync(dir).filter(f => f.endsWith(".md"));
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".md"));
 
   // Sort: Move introduction.md to the front
   const sortedFiles = files.sort((a, b) => {
@@ -1601,8 +1611,8 @@ function loadGrammars() {
 }
 
 function loadDocs() {
-  let dir = app.isPackaged 
-    ? path.join(__dirname, "../dist/docs") 
+  let dir = app.isPackaged
+    ? path.join(__dirname, "../dist/docs")
     : path.join(__dirname, "../public/docs");
 
   if (!fs.existsSync(dir)) {
@@ -1610,7 +1620,7 @@ function loadDocs() {
   }
   if (!fs.existsSync(dir)) return [];
 
-  const files = fs.readdirSync(dir).filter(f => f.endsWith(".md"));
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".md"));
 
   // Sort: Move introduction.md to the front
   const sortedFiles = files.sort((a, b) => {

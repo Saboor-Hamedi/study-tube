@@ -1,7 +1,14 @@
 import pg from 'pg';
 const { Pool } = pg;
 import dotenv from 'dotenv';
-dotenv.config();
+import { app } from 'electron';
+import path from 'node:path';
+
+const envPath = app.isPackaged 
+  ? path.join(process.resourcesPath, "app.asar.unpacked", ".env") 
+  : path.resolve(process.cwd(), ".env");
+
+dotenv.config({ path: envPath });
 
 // Industrial PostgreSQL Connection Pool
 const pool = new Pool({

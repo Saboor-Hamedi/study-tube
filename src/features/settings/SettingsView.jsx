@@ -10,7 +10,7 @@ import {
   RefreshCcw,
   Check,
 } from "lucide-react";
-import { api as bridgeApi } from "./../../utils/api-bridge";
+import { api as bridgeApi, isElectron } from "./../../utils/api-bridge";
 
 const Toggle = ({ enabled, onChange }) => (
   <button
@@ -57,7 +57,11 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
 
     if (activeApi?.updater?.onUpdateStatus) {
       const unsubs = activeApi.updater.onUpdateStatus((data) => {
-        setUpdateStatus(data.status);
+        if (data.status === "not-available" || data.status === "error") {
+          setTimeout(() => setUpdateStatus(data.status), 600);
+        } else {
+          setUpdateStatus(data.status);
+        }
         if (data.info) setUpdateInfo(data.info);
         if (data.status === "downloading" && data.info?.percent) {
           setUpdateProgress(Math.round(data.info.percent));
@@ -83,7 +87,17 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
     }
   };
 
-  const handleCheckUpdate = () => activeApi?.updater?.check();
+  const handleCheckUpdate = async () => {
+    setUpdateStatus("checking");
+    try {
+      const res = await activeApi?.updater?.check();
+      if (res?.success === false) {
+        setTimeout(() => setUpdateStatus("not-available"), 600);
+      }
+    } catch (err) {
+      setTimeout(() => setUpdateStatus("error"), 600);
+    }
+  };
   const handleInstallUpdate = () => activeApi?.updater?.install();
 
   const handleToggleDevTools = async () => {
@@ -148,29 +162,32 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
                 <div className="flex items-center gap-2 text-sm font-medium text-text">
                   <Key className="w-4 h-4" /> API Key
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex gap-2">
                   <input
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Enter API Key..."
-                    className="flex-1 bg-surface-3 border border-border rounded-md py-2 px-3 text-sm text-text outline-none focus:border-accent transition-colors font-mono"
+                    placeholder="Enter your AI secret key..."
+                    className="flex-1 bg-surface-2 border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-accent transition-colors"
                   />
                   <button
                     onClick={handleSaveKey}
                     disabled={isSaving}
-                    className="px-4 py-2 bg-text text-background text-sm font-medium rounded-md hover:bg-text/90 transition-all disabled:opacity-50 flex items-center gap-2"
+                    className="bg-accent hover:bg-accent/90 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1 shadow-sm active:scale-[0.98]"
                   >
-                    {isSaving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : "Save"}
+                    {isSaving ? (
+                      <RefreshCcw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    Save
                   </button>
                 </div>
-                <AnimatePresence>
-                  {showStatus && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="text-xs text-emerald-500 flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Saved successfully
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {showStatus && (
+                  <p className="text-xs text-emerald-500 font-medium animate-pulse">
+                    ✓ API Key saved successfully.
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -218,23 +235,37 @@ const SettingsView = ({ api, theme, onToggleTheme, onExport }) => {
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-text">Version {version}</span>
-                  <span className="text-xs text-muted mt-0.5">
-                    {updateStatus === "downloaded" ? "Update ready to install." : 
-                     updateStatus === "available" ? "Downloading update..." : 
-                     updateStatus === "checking" ? "Checking for updates..." : "Up to date."}
-                  </span>
+                  {isElectron && (
+                    <span className="text-xs text-muted mt-0.5">
+                      {updateStatus === "downloaded" ? "Update ready to install." : 
+                       updateStatus === "available" ? "Downloading update..." : 
+                       updateStatus === "checking" ? "Checking for updates..." : 
+                       updateStatus === "error" ? "Update check failed." :
+                       updateStatus === "not-available" ? "App is up to date." : "Up to date."}
+                    </span>
+                  )}
                 </div>
-                {updateStatus === "downloaded" ? (
-                  <button onClick={handleInstallUpdate} className="text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-md transition-colors">
-                    Restart to Update
-                  </button>
-                ) : (
-                  <button onClick={handleCheckUpdate} disabled={updateStatus === "checking" || updateStatus === "downloading"} className="text-xs font-medium text-text px-3 py-1.5 border border-border bg-surface-3 rounded-md hover:bg-surface-2 transition-colors disabled:opacity-50">
-                    Check for Updates
-                  </button>
+                {isElectron && (
+                  updateStatus === "downloaded" ? (
+                    <button onClick={handleInstallUpdate} className="text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 rounded-md transition-all shadow-sm hover:shadow active:scale-[0.98]">
+                      Restart to Update
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleCheckUpdate} 
+                      disabled={updateStatus === "checking" || updateStatus === "downloading"} 
+                      className="text-xs font-medium text-text px-3.5 py-2 border border-border bg-surface-2 rounded-md hover:bg-surface-3 hover:border-text/20 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
+                    >
+                      {updateStatus === "checking" && <RefreshCcw className="w-3.5 h-3.5 animate-spin" />}
+                      {updateStatus === "checking" ? "Checking..." : 
+                       updateStatus === "downloading" ? "Downloading..." : 
+                       updateStatus === "not-available" ? "Check Again" : 
+                       updateStatus === "error" ? "Retry Check" : "Check for Updates"}
+                    </button>
+                  )
                 )}
               </div>
-              {updateStatus === "downloading" && (
+              {isElectron && updateStatus === "downloading" && (
                 <div className="mt-4 space-y-1.5">
                   <div className="flex justify-between text-xs text-muted">
                     <span>Downloading...</span>

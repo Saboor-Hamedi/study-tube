@@ -2,6 +2,7 @@
  * Neural API Bridge - Cloud-First Edition
  * Standardized for PostgreSQL Sidecar (FastAPI).
  */
+import pkg from "../../package.json";
 
 const isElectron =
   typeof window !== "undefined" && window.youtubeAPI !== undefined;
@@ -50,8 +51,15 @@ const cloudRequest = async (path, options = {}) => {
 };
 
 const HybridRouter = {
+  // --- App Metadata ---
+  getVersion: async () => {
+    if (isElectron) return await window.youtubeAPI.getVersion?.();
+    return pkg.version;
+  },
+
   // --- Neural Dialogue & AI Core ---
   getAppSettings: async () => {
+    if (isElectron) return await window.youtubeAPI.getSettings();
     try {
       return await cloudRequest("/settings");
     } catch (err) {
@@ -207,20 +215,22 @@ const HybridRouter = {
   checkGrammar: async (text) => {
     // Routed to sidecar AI engine
     if (isElectron) return await window.youtubeAPI.checkGrammar(text);
-    
+
     // Web Fallback: Fetch from public archive
     try {
       const response = await fetch("/grammars/index.json");
       let files = await response.json();
-      
+
       // Safety: Ensure files is an array (PowerShell single-item fix)
       if (!Array.isArray(files)) files = [files];
-      
-      const grammars = await Promise.all(files.map(async (f) => {
-        const contentResponse = await fetch(`/grammars/${f.Name}`);
-        const content = await contentResponse.text();
-        return { name: f.Name, content };
-      }));
+
+      const grammars = await Promise.all(
+        files.map(async (f) => {
+          const contentResponse = await fetch(`/grammars/${f.Name}`);
+          const content = await contentResponse.text();
+          return { name: f.Name, content };
+        }),
+      );
 
       return grammars;
     } catch (err) {
@@ -239,19 +249,21 @@ const HybridRouter = {
         console.warn("[ELECTRON] Docs IPC failure, falling back to web fetch.");
       }
     }
-    
+
     try {
       const response = await fetch("/docs/index.json");
       let files = await response.json();
-      
+
       // Safety: Ensure files is an array
       if (!Array.isArray(files)) files = [files];
-      
-      const docs = await Promise.all(files.map(async (f) => {
-        const contentResponse = await fetch(`/docs/${f.Name}`);
-        const content = await contentResponse.text();
-        return { name: f.Name, content };
-      }));
+
+      const docs = await Promise.all(
+        files.map(async (f) => {
+          const contentResponse = await fetch(`/docs/${f.Name}`);
+          const content = await contentResponse.text();
+          return { name: f.Name, content };
+        }),
+      );
 
       return docs;
     } catch (err) {
@@ -262,6 +274,7 @@ const HybridRouter = {
 
   // --- Industrial Data Persistence (PostgreSQL ONLY) ---
   loadVocab: async (includeArchived = false) => {
+    if (isElectron) return await window.youtubeAPI.loadVocab(includeArchived);
     try {
       return await cloudRequest(`/library?archived=${includeArchived ? 1 : 0}`);
     } catch (err) {
@@ -271,6 +284,7 @@ const HybridRouter = {
   },
 
   loadVocabPage: async (criteria) => {
+    if (isElectron) return await window.youtubeAPI.loadVocabPage(criteria);
     try {
       const query = new URLSearchParams(criteria).toString();
       return await cloudRequest(`/library/page?${query}`);
@@ -280,6 +294,7 @@ const HybridRouter = {
   },
 
   saveVocabItem: async (item) => {
+    if (isElectron) return await window.youtubeAPI.saveVocabItem(item);
     try {
       await cloudRequest("/sync", {
         method: "POST",
@@ -293,6 +308,7 @@ const HybridRouter = {
   },
 
   deleteVocabItem: async (id) => {
+    if (isElectron) return await window.youtubeAPI.deleteVocabItem(id);
     try {
       await cloudRequest(`/library/${id}`, { method: "DELETE" });
       return true;
@@ -303,6 +319,7 @@ const HybridRouter = {
 
   // --- Collection & Research Logic ---
   loadCollections: async () => {
+    if (isElectron) return await window.youtubeAPI.loadCollections();
     try {
       return await cloudRequest("/collections");
     } catch (err) {
@@ -322,6 +339,7 @@ const HybridRouter = {
   },
 
   loadNotes: async () => {
+    if (isElectron) return await window.youtubeAPI.loadNotes();
     try {
       return await cloudRequest("/notes");
     } catch (err) {
@@ -341,6 +359,7 @@ const HybridRouter = {
   },
 
   getLibraryStats: async () => {
+    if (isElectron) return await window.youtubeAPI.getLibraryStats();
     try {
       return await cloudRequest("/library/stats");
     } catch (err) {
@@ -349,6 +368,7 @@ const HybridRouter = {
   },
 
   archiveVocabItem: async (id) => {
+    if (isElectron) return await window.youtubeAPI.archiveVocabItem(id);
     try {
       await cloudRequest(`/library/${id}/archive`, { method: "POST" });
       return true;
@@ -358,6 +378,7 @@ const HybridRouter = {
   },
 
   restoreVocabItem: async (id) => {
+    if (isElectron) return await window.youtubeAPI.restoreVocabItem(id);
     try {
       await cloudRequest(`/library/${id}/restore`, { method: "POST" });
       return true;
@@ -506,10 +527,6 @@ const HybridRouter = {
     localStorage.setItem("study_theme", t);
     return t;
   },
-  getVersion: async () =>
-    isElectron
-      ? (await window.youtubeAPI.getVersion?.()) || "1.0.13"
-      : "1.0.13-web",
 
   exportDossier: async (data) =>
     isElectron ? await window.youtubeAPI.exportDossier(data) : null,
@@ -523,7 +540,7 @@ const HybridRouter = {
     ? window.youtubeAPI.updater
     : { check: async () => ({}), install: async () => {} },
 
-  toggleDevTools: async () => 
+  toggleDevTools: async () =>
     isElectron ? await window.youtubeAPI.toggleDevTools() : false,
 };
 

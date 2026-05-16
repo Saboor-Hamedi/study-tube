@@ -37,7 +37,7 @@ export const useShortcuts = (librarySearch) => {
       }
 
       // Ctrl + I: Toggle Copilot Collapse (Minimize to Rail)
-      if (isCmd && key === 'i') {
+      if (isCmd && !e.shiftKey && key === 'i') {
         e.preventDefault();
         setIsCopilotOpen(true);
         setIsCopilotCollapsed((prev) => !prev);
