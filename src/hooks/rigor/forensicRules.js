@@ -1,14 +1,9 @@
 export const forensicRules = [
   // Grammar: Capitalization & Sentence Structure (BLUE)
   {
-    regex: /(?:^|[.!?]\s+)([a-z])/g,
+    regex: /(?<=^|[.!?]\s+)([a-z])(?![.)\]])/g,
     type: "grammar",
-    suggestion: (match) => {
-      // If match is just a single char (start of text), return upper
-      if (match[0].length === 1) return match[0].toUpperCase();
-      // Otherwise, keep the boundary (dot + space) and upper the char
-      return match[0].slice(0, -1) + match[1].toUpperCase();
-    },
+    suggestion: (match) => match[0].toUpperCase(),
     exp: "Sentences must start with a capital letter.",
   },
 
