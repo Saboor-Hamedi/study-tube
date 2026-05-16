@@ -100,6 +100,10 @@ const WritingMenu = ({
 
         <div className="space-y-2">
             {(() => {
+              if (selectedHl.reason === "Passive Voice" || selectedHl.message === "Passive Voice") {
+                return null;
+              }
+
               const suggestions = Array.isArray(selectedHl.suggestions)
                 ? selectedHl.suggestions
                 : selectedHl.suggestion

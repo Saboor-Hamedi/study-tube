@@ -7,6 +7,7 @@ import {
   offset,
   flip,
   shift,
+  hide,
   autoUpdate,
 } from "@floating-ui/react";
 import { useRigor } from "../../hooks/useRigor";
@@ -82,15 +83,18 @@ export default function WritingView({
     open: !!selectedHl,
     onOpenChange: (open) => !open && setSelectedHl(null),
     placement: "bottom-start",
-    strategy: "fixed",
+    strategy: "absolute",
     middleware: [
       offset(15),
       flip({
         padding: 20,
         fallbackPlacements: ["top-start", "bottom-end", "top-end"],
-        boundary: "clippingAncestors",
+        boundary: containerRef.current || "clippingAncestors",
       }),
-      shift({ padding: 10 }),
+      shift({
+        padding: 10,
+        boundary: containerRef.current || "clippingAncestors",
+      }),
     ],
     whileElementsMounted: autoUpdate,
   });
@@ -316,7 +320,7 @@ export default function WritingView({
 
   return (
     <div className="h-full flex flex-col bg-surface text-text overflow-hidden font-sans select-text relative">
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
+      <div ref={containerRef} className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative">
         <WritingBody
           content={content}
           setContent={setContent}
@@ -329,6 +333,38 @@ export default function WritingView({
           showHl={showHl}
           scrollToAnomaly={scrollToAnomaly}
           takeSnapshot={takeSnapshot}
+          floatingMenu={
+            <AnimatePresence>
+              {selectedHl && (
+                <div
+                  ref={refs.setFloating}
+                  style={{
+                    position: strategy,
+                    top: y ?? 0,
+                    left: x ?? 0,
+                    width: "max-content",
+                  }}
+                  className="z-[90] pointer-events-auto"
+                >
+                  <WritingMenu
+                    selectedHl={selectedHl}
+                    content={content}
+                    onApplySuggestion={handleApplySuggestion}
+                    onAddToDictionary={handleAddToDictionary}
+                    onIgnore={handleIgnoreHighlight}
+                    onClose={() => {
+                      setSelectedHl(null);
+                      setGhostPreview(null);
+                    }}
+                    setGhostPreview={setGhostPreview}
+                    getCategoryColor={getCategoryColor}
+                    getCategoryBg={getCategoryBg}
+                    placement={finalPlacement}
+                  />
+                </div>
+              )}
+            </AnimatePresence>
+          }
         />
 
         {!isMobile && isSidebarOpen && document.getElementById("writing-hub-portal") && createPortal(
@@ -395,7 +431,7 @@ export default function WritingView({
                 value: diagnostics?.highlights?.length || 0,
               },
             ].map((m) => (
-              <div key={m.label} className="flex items-center gap-1.5">
+               <div key={m.label} className="flex items-center gap-1.5">
                 <span className="text-[7px] md:text-[8px] font-bold text-muted/40 uppercase tracking-widest">
                   {m.label}
                 </span>
@@ -479,37 +515,6 @@ export default function WritingView({
           )}
         </div>
       </div>
-
-      <AnimatePresence>
-        {selectedHl && (
-          <div
-            ref={refs.setFloating}
-            style={{
-              position: strategy,
-              top: y ?? 0,
-              left: x ?? 0,
-              width: "max-content",
-            }}
-            className="z-[9999] pointer-events-auto"
-          >
-            <WritingMenu
-              selectedHl={selectedHl}
-              content={content}
-              onApplySuggestion={handleApplySuggestion}
-              onAddToDictionary={handleAddToDictionary}
-              onIgnore={handleIgnoreHighlight}
-              onClose={() => {
-                setSelectedHl(null);
-                setGhostPreview(null);
-              }}
-              setGhostPreview={setGhostPreview}
-              getCategoryColor={getCategoryColor}
-              getCategoryBg={getCategoryBg}
-              placement={finalPlacement}
-            />
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

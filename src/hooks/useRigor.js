@@ -212,7 +212,7 @@ export const useRigor = () => {
       setIsNeuralScanning(true);
       await new Promise((r) => setTimeout(r, 1200));
 
-      const text = content.replace(/’/g, "'");
+      const text = content.replace(/’/g, "'").replace(/[—–]/g, " ");
       const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
       const wordsArray = text.split(/\s+/).filter((w) => w.trim().length > 0);
       let highlights = [];
@@ -398,7 +398,9 @@ export const useRigor = () => {
             forensicData.highlights.forEach((highlight) => {
               // AUTHORITY OVERRIDE: Sidecar highlights replace overlapping Regex/Local highlights unless the local highlight is a fundamental Grammar Capitalization error
               highlights = highlights.filter((h) => {
-                const overlaps = (highlight.start >= h.start && highlight.start < h.end) || (h.start >= highlight.start && h.start < highlight.end);
+                const overlaps =
+                  (highlight.start >= h.start && highlight.start < h.end) ||
+                  (h.start >= highlight.start && h.start < highlight.end);
                 // If it overlaps, but the local highlight is a Grammar error (Capitalization), KEEP the Grammar error and ignore the Sidecar tone highlight!
                 if (overlaps && h.type === "grammar") {
                   highlight.ignore = true; // Mark sidecar highlight to be skipped
@@ -448,7 +450,9 @@ export const useRigor = () => {
       }
 
       // 3. NEURAL FUZZY LOOP (Similarity Scoring)
-      const words = text.split(/(\s+)/);
+      // Replace em-dashes and en-dashes with an explicit space before splitting text into word tokens
+      const sanitizedText = text.replace(/[—–]/g, " ");
+      const words = sanitizedText.split(/(\s+)/);
       let currentIndex = 0;
       words.forEach((word) => {
         const trimmed = word.trim();
@@ -472,6 +476,20 @@ export const useRigor = () => {
           if (!isKnown && cleanWord.includes("-")) {
             const parts = cleanWord.split("-").filter((p) => p.length > 0);
             if (parts.length > 0 && parts.every((p) => truthTrie.has(p))) {
+              isKnown = true;
+            }
+          }
+
+          // Zero-space punctuation fallback
+          if (!isKnown && trimmed.includes(".") && !isAcronymOrTech) {
+            const parts = trimmed
+              .toLowerCase()
+              .replace(/[^a-z.]/g, "")
+              .split(".");
+            if (
+              parts.length > 0 &&
+              parts.every((p) => p.length === 0 || truthTrie.has(p))
+            ) {
               isKnown = true;
             }
           }

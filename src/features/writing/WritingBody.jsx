@@ -15,6 +15,7 @@ const WritingBody = ({
   hideHl,
   scrollToAnomaly,
   takeSnapshot,
+  floatingMenu,
 }) => {
   const textareaRef = useRef(null);
 
@@ -30,6 +31,7 @@ const WritingBody = ({
   return (
     <div className="flex-1 min-w-0 flex flex-col bg-surface relative z-[70] selection:bg-blue-500/10">
       <div className="flex-1 min-w-0 overflow-y-auto custom-scroll relative">
+        {floatingMenu}
         {/* this my "document canvas" - true full-width layout with scroll clearance */}
         <div className="w-full max-w-none p-4 md:px-6 md:py-10 pb-96 min-h-full flex flex-col relative select-text cursor-text">
           <AnimatePresence>
