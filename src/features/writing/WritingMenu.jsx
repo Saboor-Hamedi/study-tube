@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -9,6 +9,7 @@ import {
   EyeOff,
   BookOpen,
   X,
+  Edit2,
 } from "lucide-react";
 import { truncateChars } from "../../utils/textUtils";
 
@@ -26,6 +27,16 @@ const WritingMenu = ({
   getCategoryBg,
   placement = "bottom",
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [customText, setCustomText] = useState("");
+
+  useEffect(() => {
+    if (selectedHl) {
+      setCustomText(content.substring(selectedHl.start, selectedHl.end));
+      setIsEditing(false);
+    }
+  }, [selectedHl, content]);
+
   if (!selectedHl) return null;
 
   const isTop = placement.startsWith("top");
@@ -60,7 +71,7 @@ const WritingMenu = ({
         </div>
       </div>
 
-      <div className="px-3 py-2 bg-surface-2/50 border-b border-border/10 flex items-center gap-2">
+      <div className="px-3 py-2 bg-surface-2/50 border-b border-border/10 flex items-center gap-1.5">
         {/* this my "vocabulary forge" - adding words so the engine remembers them */}
         <button
           onClick={() =>
@@ -68,19 +79,28 @@ const WritingMenu = ({
               content.substring(selectedHl.start, selectedHl.end),
             )
           }
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 hover:bg-surface-3 transition-colors rounded-[6px] border border-border/5"
+          className="flex-[1.2] flex items-center justify-center gap-1.5 py-1.5 hover:bg-surface-3 transition-colors rounded-[6px] border border-border/5 overflow-hidden"
         >
-          <BookOpen className="h-3 w-3 text-blue-400" />
-          <span className="text-[8px] font-black text-text/80 uppercase tracking-widest">
+          <BookOpen className="h-3 w-3 text-blue-400 shrink-0" />
+          <span className="text-[7.5px] font-black text-text/80 uppercase tracking-wider truncate">
             Dictionary
           </span>
         </button>
         <button
-          onClick={() => onIgnore(selectedHl)}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 hover:bg-red-500/10 hover:text-red-500 transition-all rounded-[6px] border border-border/5"
+          onClick={() => setIsEditing(!isEditing)}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 transition-all rounded-[6px] border border-border/5 overflow-hidden ${isEditing ? 'bg-blue-500/10 text-blue-400' : 'hover:bg-surface-3'}`}
         >
-          <EyeOff className="h-3 w-3" />
-          <span className="text-[8px] font-black uppercase tracking-widest">
+          <Edit2 className="h-3 w-3 shrink-0" />
+          <span className="text-[7.5px] font-black uppercase tracking-wider truncate">
+            {isEditing ? 'Cancel' : 'Edit'}
+          </span>
+        </button>
+        <button
+          onClick={() => onIgnore(selectedHl)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 hover:bg-red-500/10 hover:text-red-500 transition-all rounded-[6px] border border-border/5 overflow-hidden"
+        >
+          <EyeOff className="h-3 w-3 shrink-0" />
+          <span className="text-[7.5px] font-black uppercase tracking-wider truncate">
             Ignore
           </span>
         </button>
@@ -104,11 +124,43 @@ const WritingMenu = ({
                 return null;
               }
 
+              if (isEditing) {
+                return (
+                  <div className="space-y-3">
+                    <textarea
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      className="w-full h-24 bg-surface-3 text-[11px] text-text p-2 rounded-[6px] border border-border/10 resize-none focus:outline-none focus:border-blue-500/50 custom-scroll"
+                      placeholder="Type your custom edit here..."
+                    />
+                    <div className="flex justify-end pt-1">
+                      <button
+                        onClick={() => onApplySuggestion(customText, selectedHl)}
+                        className="px-6 py-1.5 bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-black uppercase tracking-[0.1em] rounded-[8px] transition-all shadow-lg shadow-blue-500/10 active:scale-[0.98]"
+                      >
+                        Apply Edit
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
               const suggestions = Array.isArray(selectedHl.suggestions)
                 ? selectedHl.suggestions
                 : selectedHl.suggestion
                   ? [selectedHl.suggestion]
                   : [];
+
+              if (suggestions.length === 0) {
+                 return (
+                   <div className="py-2.5 flex items-center justify-center gap-2 bg-surface-3/20 border border-dashed border-border/10 rounded-[8px]">
+                     <EyeOff className="h-3 w-3 text-muted/20" />
+                     <span className="text-[8px] font-black text-muted/30 uppercase tracking-widest">
+                       Manual Fix Required
+                     </span>
+                   </div>
+                 );
+              }
 
               return suggestions.map((s, si) => (
                 <div key={si} className="group/suggest space-y-3">

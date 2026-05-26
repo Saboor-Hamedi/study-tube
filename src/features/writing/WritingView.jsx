@@ -40,6 +40,7 @@ export default function WritingView({
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
   const [selectedHl, setSelectedHl] = useState(null);
   const [ghostPreview, setGhostPreview] = useState(null);
+  const [lockedCoords, setLockedCoords] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const containerRef = useRef(null);
@@ -98,6 +99,14 @@ export default function WritingView({
     ],
     whileElementsMounted: autoUpdate,
   });
+
+  useEffect(() => {
+    if (ghostPreview && !lockedCoords) {
+      setLockedCoords({ x, y, finalPlacement });
+    } else if (!ghostPreview && lockedCoords) {
+      setLockedCoords(null);
+    }
+  }, [ghostPreview, x, y, finalPlacement, lockedCoords]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -172,9 +181,20 @@ export default function WritingView({
       }
     }
 
+    let replacement = suggestion.trim();
+    
+    if (replacement === "Omit") {
+      replacement = "";
+      if (end < content.length && content[end] === " ") {
+        end += 1;
+      } else if (start > 0 && content[start - 1] === " ") {
+        start -= 1;
+      }
+    }
+
     const newContent =
-      content.substring(0, start) + suggestion.trim() + content.substring(end);
-    const delta = suggestion.trim().length - (end - start);
+      content.substring(0, start) + replacement + content.substring(end);
+    const delta = replacement.length - (end - start);
 
     setDiagnostics((prev) => {
       const existing = prev.highlights || [];
@@ -334,36 +354,39 @@ export default function WritingView({
           scrollToAnomaly={scrollToAnomaly}
           takeSnapshot={takeSnapshot}
           floatingMenu={
-            <AnimatePresence>
-              {selectedHl && (
-                <div
-                  ref={refs.setFloating}
-                  style={{
-                    position: strategy,
-                    top: y ?? 0,
-                    left: x ?? 0,
-                    width: "max-content",
-                  }}
-                  className="z-[90] pointer-events-auto"
-                >
-                  <WritingMenu
-                    selectedHl={selectedHl}
-                    content={content}
-                    onApplySuggestion={handleApplySuggestion}
-                    onAddToDictionary={handleAddToDictionary}
-                    onIgnore={handleIgnoreHighlight}
-                    onClose={() => {
-                      setSelectedHl(null);
-                      setGhostPreview(null);
+            document.body ? createPortal(
+              <AnimatePresence>
+                {selectedHl && (
+                  <div
+                    ref={refs.setFloating}
+                    style={{
+                      position: strategy,
+                      top: lockedCoords ? lockedCoords.y : (y ?? 0),
+                      left: lockedCoords ? lockedCoords.x : (x ?? 0),
+                      width: "max-content",
                     }}
-                    setGhostPreview={setGhostPreview}
-                    getCategoryColor={getCategoryColor}
-                    getCategoryBg={getCategoryBg}
-                    placement={finalPlacement}
-                  />
-                </div>
-              )}
-            </AnimatePresence>
+                    className="z-[9999] pointer-events-auto"
+                  >
+                    <WritingMenu
+                      selectedHl={selectedHl}
+                      content={content}
+                      onApplySuggestion={handleApplySuggestion}
+                      onAddToDictionary={handleAddToDictionary}
+                      onIgnore={handleIgnoreHighlight}
+                      onClose={() => {
+                        setSelectedHl(null);
+                        setGhostPreview(null);
+                      }}
+                      setGhostPreview={setGhostPreview}
+                      getCategoryColor={getCategoryColor}
+                      getCategoryBg={getCategoryBg}
+                      placement={lockedCoords ? lockedCoords.finalPlacement : finalPlacement}
+                    />
+                  </div>
+                )}
+              </AnimatePresence>,
+              document.body
+            ) : null
           }
         />
 

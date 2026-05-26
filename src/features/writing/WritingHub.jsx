@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
@@ -10,6 +10,7 @@ import {
   EyeOff,
   Layers,
   ArrowRight,
+  Edit2,
 } from "lucide-react";
 import { truncateChars } from "../../utils/textUtils";
 
@@ -26,6 +27,12 @@ export default function WritingHub({
   setGhostPreview,
 }) {
   const anomalies = diagnostics?.highlights || [];
+  const [editingId, setEditingId] = useState(null);
+  const [customTexts, setCustomTexts] = useState({});
+
+  const handleEditChange = (index, value) => {
+    setCustomTexts(prev => ({ ...prev, [index]: value }));
+  };
 
   return (
     <div className="w-full bg-surface flex flex-col min-h-0 h-full overflow-x-hidden select-text cursor-text">
@@ -216,11 +223,19 @@ export default function WritingHub({
                           Neural Audit
                         </span>
                       </div>
-                      <span
-                        className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
-                      >
-                        {hl.type}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingId(editingId === i ? null : i); }}
+                          className={`p-1 rounded-[4px] transition-colors ${editingId === i ? 'bg-blue-500/10 text-blue-400' : 'hover:bg-surface-3 text-muted'}`}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </button>
+                        <span
+                          className={`text-[7px] font-black px-1.5 py-0.5 rounded-[3px] uppercase tracking-wider ${getCategoryColor(hl.type).replace("text-", "bg-").replace("-500", "-500/10")} ${getCategoryColor(hl.type)}`}
+                        >
+                          {hl.type}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="p-3.5 space-y-3.5">
@@ -239,6 +254,40 @@ export default function WritingHub({
                       {/* Correction Options - 1:1 Parity with WritingMenu */}
                       <div className="space-y-2">
                         {(() => {
+                          const isEditing = editingId === i;
+                          const currentCustomText = customTexts[i] !== undefined ? customTexts[i] : content.substring(hl.start, hl.end);
+
+                          if (isEditing) {
+                             return (
+                               <div className="space-y-3">
+                                 <textarea
+                                   value={currentCustomText}
+                                   onChange={(e) => handleEditChange(i, e.target.value)}
+                                   onClick={(e) => e.stopPropagation()}
+                                   className="w-full h-20 bg-surface-3 text-[11px] text-text p-2 rounded-[6px] border border-border/10 resize-none focus:outline-none focus:border-blue-500/50 custom-scroll"
+                                 />
+                                 <div className="flex justify-end pt-1 gap-2">
+                                   <button
+                                     onClick={(e) => { e.stopPropagation(); setEditingId(null); }}
+                                     className="px-4 py-1.5 hover:bg-surface-3 text-text/60 text-[9px] font-black uppercase tracking-[0.1em] rounded-[8px] transition-all"
+                                   >
+                                     Cancel
+                                   </button>
+                                   <button
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       onApplySuggestion(currentCustomText, hl);
+                                       setEditingId(null);
+                                     }}
+                                     className="px-6 py-1.5 bg-blue-500 hover:bg-blue-400 text-white text-[9px] font-black uppercase tracking-[0.1em] rounded-[8px] transition-all shadow-lg shadow-blue-500/10 active:scale-[0.98]"
+                                   >
+                                     Apply
+                                   </button>
+                                 </div>
+                               </div>
+                             );
+                          }
+
                           const suggestions = Array.isArray(hl.suggestions)
                             ? hl.suggestions
                             : hl.suggestion
